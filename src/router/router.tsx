@@ -5,6 +5,7 @@ import HackathonDetail from '../pages/HackathonDetail'
 import Camp from '../pages/Camp'
 import Rankings from '../pages/Rankings'
 import CampCreate from "../pages/CampCreate"
+import CampEdit from "../pages/CampEdit"
 
 export const router = createBrowserRouter([
   { path: '/', element: <Home /> },
@@ -12,5 +13,6 @@ export const router = createBrowserRouter([
   { path: '/hackathons/:slug', element: <HackathonDetail /> },
   { path: '/camp', element: <Camp /> },
   { path: '/rankings', element: <Rankings /> },
-  { path: "/camp/new", element: <CampCreate /> }
+  { path: "/camp/new", element: <CampCreate /> },
+  { path: "/camp/edit/:id", element: <CampEdit /> }
 ])

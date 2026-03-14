@@ -1,11 +1,12 @@
-import { useState } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
-import { createTeam } from "../api/teamApi"
+import { useState, useEffect } from "react"
+import { useNavigate, useParams } from "react-router-dom"
+import { useTeam, useUpdateTeam } from "../hooks/useTeams"
 
-export default function CampCreate() {
+export default function CampEdit() {
+  const { id: teamCode } = useParams()
   const navigate = useNavigate()
-  const [params] = useSearchParams()
-  const hackathonSlug = params.get("hackathon") || undefined
+  const { data: team, isLoading } = useTeam(teamCode || "")
+  const mutation = useUpdateTeam()
 
   const [name, setName] = useState("")
   const [intro, setIntro] = useState("")
@@ -14,34 +15,49 @@ export default function CampCreate() {
   const [lookingFor, setLookingFor] = useState("")
   const [contactUrl, setContactUrl] = useState("")
 
+  useEffect(() => {
+    if (team) {
+      setName(team.name)
+      setIntro(team.intro)
+      setIsOpen(team.isOpen)
+      setMemberCount(team.memberCount)
+      setLookingFor(team.lookingFor.join(", "))
+      setContactUrl(team.contact.url)
+    }
+  }, [team])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!name || !intro) {
+    if (!teamCode || !name || !intro) {
       alert("팀명과 소개는 필수입니다.")
       return
     }
 
-    await createTeam({
-      name,
-      intro,
-      isOpen,
-      memberCount,
-      lookingFor: lookingFor ? lookingFor.split(",").map((v) => v.trim()) : [],
-      contact: {
-        type: "link",
-        url: contactUrl
-      },
-      hackathonSlug
+    await mutation.mutateAsync({
+      teamCode,
+      updates: {
+        name,
+        intro,
+        isOpen,
+        memberCount,
+        lookingFor: lookingFor ? lookingFor.split(",").map((v) => v.trim()) : [],
+        contact: {
+          type: "link",
+          url: contactUrl
+        }
+      }
     })
 
-    navigate(hackathonSlug ? `/camp?hackathon=${hackathonSlug}` : "/camp")
+    navigate("/camp")
   }
+
+  if (isLoading) return <div>Loading...</div>
+  if (!team) return <div>팀을 찾을 수 없습니다.</div>
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1>팀 모집글 생성</h1>
-      {hackathonSlug && <p>대상 해커톤: <strong>{hackathonSlug}</strong></p>}
+      <h1>팀 모집글 수정</h1>
 
       <form onSubmit={handleSubmit}>
         <div>
@@ -102,7 +118,7 @@ export default function CampCreate() {
         </div>
 
         <div>
-          <label>연락 링크 (오픈카톡/구글폼 등)</label>
+          <label>연락 링크</label>
           <br />
           <input
             value={contactUrl}
@@ -113,7 +129,9 @@ export default function CampCreate() {
         </div>
 
         <div style={{ marginTop: "20px" }}>
-          <button type="submit">생성</button>
+          <button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? "저장 중..." : "수정 완료"}
+          </button>
           <button type="button" onClick={() => navigate(-1)} style={{ marginLeft: "10px", backgroundColor: "#eee", color: "#333" }}>
             취소
           </button>
