@@ -1,22 +1,45 @@
-import { useHackathons } from '../hooks/useHackathons'
+import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import HackathonCard from '../components/HackathonCard'
+import type { Hackathon } from '../types/hackathon'
 
-export default function Hackathons(){
+const HACKATHONS_STORAGE_KEY = 'hackathons'
 
- const {data,isLoading} = useHackathons()
+function getHackathonsFromStorage(): Hackathon[] {
+  const raw = localStorage.getItem(HACKATHONS_STORAGE_KEY)
+  if (!raw) return []
 
- if(isLoading) return <div>loading...</div>
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as Hackathon[]) : []
+  } catch {
+    return []
+  }
+}
 
- return (
-  <div>
+export default function Hackathons() {
+  const navigate = useNavigate()
+  const hackathons = useMemo(getHackathonsFromStorage, [])
 
-   <h1>Hackathons</h1>
+  return (
+    <div>
+      <h1>Hackathons</h1>
 
-   {data.map((h:any)=> (
-    <HackathonCard key={h.id} hackathon={h}/>
-   ))}
-
-  </div>
- )
-
+      {hackathons.length === 0 ? (
+        <p>해커톤 데이터가 없습니다.</p>
+      ) : (
+        hackathons.map((hackathon) => (
+          <HackathonCard
+            key={hackathon.slug}
+            title={hackathon.title}
+            status={hackathon.status}
+            tags={hackathon.tags}
+            thumbnailUrl={hackathon.thumbnailUrl}
+            deadline={hackathon.period.submissionDeadlineAt}
+            onClick={() => navigate(`/hackathons/${hackathon.slug}`)}
+          />
+        ))
+      )}
+    </div>
+  )
 }
