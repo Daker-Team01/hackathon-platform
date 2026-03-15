@@ -1,10 +1,17 @@
 export type Hackathon = {
-  id: string
   slug: string
   title: string
-  description: string
   status: string
-  startDate: string
-  endDate: string
-  participants: number
+  tags: string[]
+  thumbnailUrl: string
+  period: {
+    timezone: string
+    submissionDeadlineAt: string
+    endAt: string
+  }
+  links: {
+    detail: string
+    rules: string
+    faq: string
+  }
 }
