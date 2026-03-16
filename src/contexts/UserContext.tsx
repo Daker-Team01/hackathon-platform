@@ -23,7 +23,7 @@ type UserContextType = {
   login: (username: string, password: string) => boolean
   logout: () => void
 }
-
+//깃허브테스트
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
 // 모든 유저 데이터를 하나의 배열로 관리
