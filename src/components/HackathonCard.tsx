@@ -1,46 +1,18 @@
-type HackathonCardProps = {
-  title: string
-  status: string
-  tags: string[]
-  thumbnailUrl: string
-  deadline: string
-  onClick?: () => void
-}
+import { useNavigate } from 'react-router-dom'
 
-function formatDeadline(isoDate: string): string {
-  const date = new Date(isoDate)
-  if (Number.isNaN(date.getTime())) return isoDate
-  return date.toLocaleString()
-}
+export default function HackathonCard({ hackathon }: any) {
 
-export default function HackathonCard({
-  title,
-  status,
-  tags,
-  thumbnailUrl,
-  deadline,
-  onClick,
-}: HackathonCardProps) {
+  const navigate = useNavigate()
 
   return (
     <div
-      onClick={onClick}
-      style={{
-        border: '1px solid gray',
-        padding: 20,
-        margin: 10,
-        cursor: onClick ? 'pointer' : 'default',
-      }}
+      onClick={() => navigate(`/hackathons/${hackathon.slug}`)}
+      style={{border:'1px solid gray',padding:20,margin:10}}
     >
-      <img
-        src={thumbnailUrl}
-        alt={title}
-        style={{ width: '100%', maxWidth: 420, height: 200, objectFit: 'cover' }}
-      />
-      <h3>{title}</h3>
-      <p>{status}</p>
-      <p>{tags.join(', ')}</p>
-      <p>Submission Deadline: {formatDeadline(deadline)}</p>
+      <h3>{hackathon.title}</h3>
+      <p>{hackathon.status}</p>
+      <p>{hackathon.startDate} ~ {hackathon.endDate}</p>
+      <p>참가자 {hackathon.participants}</p>
     </div>
   )
 }
