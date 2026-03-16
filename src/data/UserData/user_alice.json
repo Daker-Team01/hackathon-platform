@@ -1,0 +1,11 @@
+{
+  "id": "1",
+  "username": "alice",
+  "password": "alice1234",
+  "nickname": "Alice Kim",
+  "profileImage": "https://api.dicebear.com/7.x/avataaars/svg?seed=alice",
+  "ranking": 5,
+  "points": 2450,
+  "techStack": ["React", "TypeScript", "Node.js", "PostgreSQL"],
+  "personalityTags": ["창의적", "리더십", "책임감"]
+}
