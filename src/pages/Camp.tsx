@@ -1,9 +1,10 @@
-import { useSearchParams } from "react-router-dom"
+import { useSearchParams, useNavigate } from "react-router-dom"
 import { useTeams, useUpdateTeam } from "../hooks/useTeams"
 import { Link } from "react-router-dom"
 import { useUser } from "../contexts/UserContext"
 
 export default function Camp() {
+  const navigate = useNavigate()
   const [params] = useSearchParams()
   const slug = params.get("hackathon") || undefined
 
@@ -19,6 +20,21 @@ export default function Camp() {
 
   return (
     <div style={{ padding: "20px" }}>
+      <button 
+        onClick={() => navigate('/')}
+        style={{ 
+          padding: 10,
+          marginBottom: 20,
+          backgroundColor: "#6c757d",
+          color: "white",
+          border: "none",
+          borderRadius: 4,
+          cursor: "pointer",
+          fontSize: 14
+        }}
+      >
+        ← 메인으로
+      </button>
       <h1>팀 모집</h1>
       {slug && <p>해커톤: <strong>{slug}</strong> 필터링됨</p>}
       

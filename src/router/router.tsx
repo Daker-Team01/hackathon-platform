@@ -6,6 +6,7 @@ import Camp from '../pages/Camp'
 import Rankings from '../pages/Rankings'
 import CampCreate from "../pages/CampCreate"
 import CampEdit from "../pages/CampEdit"
+import Analytics from "../pages/Analytics"
 
 export const router = createBrowserRouter([
   { path: '/', element: <Home /> },
@@ -14,5 +15,6 @@ export const router = createBrowserRouter([
   { path: '/camp', element: <Camp /> },
   { path: '/rankings', element: <Rankings /> },
   { path: "/camp/new", element: <CampCreate /> },
-  { path: "/camp/edit/:id", element: <CampEdit /> }
+  { path: "/camp/edit/:id", element: <CampEdit /> },
+  { path: "/analytics", element: <Analytics /> }
 ])

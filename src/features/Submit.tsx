@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import hackathonDetailData from '../data/public_hackathon_detail.json'
+import { useLog } from '../contexts/LogContext'
 
 type SubmitProps = {
   hackathonSlug: string
@@ -94,6 +95,7 @@ function getTeamOptionsFromStorage(hackathonSlug: string): TeamOption[] {
 }
 
 export default function Submit({ hackathonSlug }: SubmitProps) {
+  const { recordEvent } = useLog()
   const submitSection = useMemo(() => getSubmitSectionBySlug(hackathonSlug), [hackathonSlug])
   const teamOptions = useMemo(() => getTeamOptionsFromStorage(hackathonSlug), [hackathonSlug])
   const allowedArtifactTypes = submitSection?.allowedArtifactTypes ?? []
@@ -136,6 +138,11 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
     const submissions = getSubmissionsFromStorage()
     const updated = [...submissions, newSubmission]
     localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(updated))
+
+    recordEvent('submit_project', 'hackathon', hackathonSlug, {
+      teamId: selectedTeam?.id,
+      teamName: selectedTeam?.name,
+    })
 
     setNotes('')
     setTeamId('')

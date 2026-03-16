@@ -7,6 +7,7 @@ import App from "./App"
 import { router } from "./router/router"
 import { ChatProvider } from "./contexts/ChatContext"
 import { UserProvider } from "./contexts/UserContext"
+import { LogProvider } from "./contexts/LogContext"
 import hackathonsData from "./data/public_hackathons.json"
 import teamsData from "./data/public_teams.json"
 
@@ -30,9 +31,11 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <ChatProvider>
         <UserProvider>
-          <App>
-            <RouterProvider router={router} />
-          </App>
+          <LogProvider>
+            <App>
+              <RouterProvider router={router} />
+            </App>
+          </LogProvider>
         </UserProvider>
       </ChatProvider>
     </QueryClientProvider>

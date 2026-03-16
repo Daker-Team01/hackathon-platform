@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom'
-import { useMemo } from 'react'
+import { useMemo, useEffect, useRef } from 'react'
 import Overview from '../features/Overview'
 import Schedule from '../features/Schedule'
 import Prize from '../features/Prize'
@@ -7,6 +7,7 @@ import Teams from '../features/Teams'
 import Submit from '../features/Submit'
 import Leaderboard from '../features/Leaderboard'
 import type { Hackathon } from '../types/hackathon'
+import { useLog } from '../contexts/LogContext'
 
 const HACKATHONS_STORAGE_KEY = 'hackathons'
 
@@ -30,10 +31,20 @@ function formatDateTime(value: string): string {
 
 export default function HackathonDetail() {
   const { slug } = useParams()
+  const { recordEvent } = useLog()
+  const hasLoggedView = useRef(false)
+
   const hackathon = useMemo(() => {
     const hackathons = getHackathonsFromStorage()
     return hackathons.find((item) => item.slug === slug)
   }, [slug])
+
+  useEffect(() => {
+    if (hackathon && !hasLoggedView.current) {
+      recordEvent('hackathon_view', 'hackathon', hackathon.slug)
+      hasLoggedView.current = true
+    }
+  }, [hackathon, recordEvent])
 
   if (!slug || !hackathon) {
     return <div>해당 해커톤을 찾을 수 없습니다.</div>
