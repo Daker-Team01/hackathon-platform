@@ -3,10 +3,33 @@
 
 import hackathons from '../data/public_hackathons.json'
 import teams from '../data/public_teams.json'
-import leaderboard from '../data/public_leaderboard.json'
+import userAlice from '../data/UserData/user_alice.json'
+import userBob from '../data/UserData/user_bob.json'
+import userCharlie from '../data/UserData/user_charlie.json'
+import userDiana from '../data/UserData/user_diana.json'
+import userEvan from '../data/UserData/user_evan.json'
 
 type HackathonData = (typeof hackathons)[0]
 type TeamData = (typeof teams)[0]
+
+interface UserData {
+  id: string
+  nickname: string
+  points: number
+  ranking: number
+}
+
+// 개인 사용자 데이터
+const users: UserData[] = [
+  { id: userAlice.id, nickname: userAlice.nickname, points: userAlice.points, ranking: userAlice.ranking },
+  { id: userBob.id, nickname: userBob.nickname, points: userBob.points, ranking: userBob.ranking },
+  { id: userCharlie.id, nickname: userCharlie.nickname, points: userCharlie.points, ranking: userCharlie.ranking },
+  { id: userDiana.id, nickname: userDiana.nickname, points: userDiana.points, ranking: userDiana.ranking },
+  { id: userEvan.id, nickname: userEvan.nickname, points: userEvan.points, ranking: userEvan.ranking }
+]
+
+// 포인트 기준 정렬
+const usersByPoints = [...users].sort((a, b) => b.points - a.points)
 
 // 텍스트 유사도 계산 (간단한 키워드 매칭)
 const calculateSimilarity = (text1: string, text2: string): number => {
@@ -55,19 +78,6 @@ const getHackathonsByStatus = (status: 'ongoing' | 'upcoming' | 'ended'): Hackat
   return hackathons.filter(h => h.status === status)
 }
 
-// 랭킹 정보 가져오기
-const getLeaderboardInfo = (slug?: string) => {
-  if (slug) {
-    if (leaderboard.hackathonSlug === slug) {
-      return leaderboard
-    }
-    if (leaderboard.extraLeaderboards) {
-      return leaderboard.extraLeaderboards.find(lb => lb.hackathonSlug === slug)
-    }
-  }
-  return leaderboard
-}
-
 // 질문 의도 파악
 const detectIntent = (query: string): string => {
   const queryLower = query.toLowerCase()
@@ -77,6 +87,9 @@ const detectIntent = (query: string): string => {
   }
   if (queryLower.includes('앞으로') || queryLower.includes('예정') || queryLower.includes('upcoming')) {
     return 'upcoming_hackathons'
+  }
+  if ((queryLower.includes('팀') && queryLower.includes('랭킹')) || queryLower.includes('팀 순위')) {
+    return 'team_ranking'
   }
   if (queryLower.includes('랭킹') || queryLower.includes('순위') || queryLower.includes('leaderboard')) {
     return 'leaderboard'
@@ -122,27 +135,67 @@ export const generateChatbotResponse = (userMessage: string): string => {
     }
     
     case 'leaderboard': {
-      const lb = getLeaderboardInfo()
-      if (!lb || !lb.entries || lb.entries.length === 0) {
+      if (usersByPoints.length === 0) {
         return '현재 이용 가능한 랭킹 정보가 없습니다. 😅'
       }
-      const topEntries = lb.entries.slice(0, 3)
-      const list = topEntries
-        .map(e => `🥇 ${e.rank}등: **${e.teamName}** (점수: ${e.score})`)
+      const topUsers = usersByPoints.slice(0, 3)
+      const list = topUsers
+        .map((user, idx) => `${idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'} **${user.nickname}** (${user.points}점)`)
         .join('\n')
-      return `**해커톤 랭킹** (상위 3개)\n\n${list}\n\n자세한 순위는 랭킹 페이지에서 확인하세요! 📊`
+      return `**🏆 개인 포인트 랭킹** (상위 3명)\n\n${list}\n\n자세한 순위는 랭킹 페이지에서 확인하세요! 📊`
+    }
+
+    case 'team_ranking': {
+      const teamsWithPoints = teams.map(team => ({
+        ...team,
+        totalPoints: team.memberCount * 100 // 팀원 수 기반 포인트 계산
+      }))
+      
+      const topTeams = teamsWithPoints.sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3)
+      
+      if (topTeams.length === 0) {
+        return '현재 팀 랭킹 정보가 없습니다. 😅'
+      }
+      
+      const list = topTeams
+        .map((team, idx) => `${idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'} **${team.name}** (${team.memberCount}명, ${team.totalPoints}점)`)
+        .join('\n')
+      return `**🏅 팀 랭킹** (상위 3팀)\n\n${list}\n\n더 많은 팀 정보는 팀 찾기 페이지에서 확인하세요! 👥`
     }
     
     case 'teams': {
       const openTeams = teams.filter(t => t.isOpen)
+      
+      // 팀 찾기 정보
+      let response = ''
       if (openTeams.length === 0) {
-        return '현재 모집 중인 팀이 없습니다. 잠시 후 다시 확인해주세요! 👥'
+        response = '현재 모집 중인 팀이 없습니다. 잠시 후 다시 확인해주세요! 👥'
+      } else {
+        const sample = openTeams.slice(0, 3)
+        const teamList = sample
+          .map(t => `• **${t.name}** (찾는 역할: ${t.lookingFor.join(', ')})`)
+          .join('\n')
+        response = `**👥 모집 중인 팀** (상위 3개):\n\n${teamList}\n\n`
       }
-      const sample = openTeams.slice(0, 3)
-      const list = sample
-        .map(t => `• **${t.name}** (찾는 역할: ${t.lookingFor.join(', ')})`)
-        .join('\n')
-      return `현재 모집 중인 팀입니다 (상위 3개):\n\n${list}\n\n팀 찾기 페이지에서 더 많은 팀을 확인하세요! 🤝`
+      
+      // 팀 랭킹 추가
+      const teamsWithPoints = teams.map(team => ({
+        ...team,
+        totalPoints: team.memberCount * 100
+      }))
+      
+      const topTeams = teamsWithPoints.sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3)
+      
+      if (topTeams.length > 0) {
+        const rankList = topTeams
+          .map((team, idx) => `${idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'} **${team.name}** (${team.memberCount}명)`)
+          .join('\n')
+        response += `**🏅 팀 상위 랭킹**:\n\n${rankList}\n\n팀 찾기 페이지에서 더 많은 팀을 확인하세요! 🤝`
+      } else {
+        response += `팀 찾기 페이지에서 더 많은 팀을 확인하세요! 🤝`
+      }
+      
+      return response
     }
     
     case 'hackathons': {
@@ -170,8 +223,8 @@ export const generateChatbotResponse = (userMessage: string): string => {
 • "팀 모집" (팀 정보)
 
 📊 **순위 관련**
-• "랭킹" (현재 순위)
-• "순위" (대회 성적)
+• "랭킹" (개인 포인트 순위)
+• "팀 랭킹" (팀별 순위)
 
 도움이 필요하면 언제든 물어봐주세요! 😊`
     }

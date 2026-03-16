@@ -38,9 +38,9 @@ export default function ChatInput({ onSend, isLoading = false, isChatbot = false
         <div style={{
           padding: "12px 12px 0 12px",
           display: "flex",
-          gap: 8,
+          gap: 6,
           flexWrap: "wrap",
-          borderBottom: "1px solid #f0f0f0"
+          backgroundColor: "transparent"
         }}>
           {QUICK_QUESTIONS.map((question) => (
             <button
@@ -48,29 +48,33 @@ export default function ChatInput({ onSend, isLoading = false, isChatbot = false
               onClick={() => handleQuickQuestion(question)}
               disabled={isLoading}
               style={{
-                padding: "6px 12px",
-                backgroundColor: "#f0f0f0",
+                padding: "8px 14px",
+                backgroundColor: "transparent",
                 color: "#4f46e5",
-                border: "1px solid #d1d5db",
+                border: "1.5px solid #4f46e5",
                 borderRadius: 20,
-                fontSize: 12,
-                fontWeight: 500,
+                fontSize: 13,
+                fontWeight: 600,
                 cursor: isLoading ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
+                transition: "all 0.2s ease",
                 opacity: isLoading ? 0.5 : 1,
                 whiteSpace: "nowrap"
               }}
               onMouseEnter={(e) => {
                 if (!isLoading) {
                   const button = e.currentTarget
-                  button.style.backgroundColor = "#e5e7eb"
-                  button.style.borderColor = "#9ca3af"
+                  button.style.backgroundColor = "#4f46e5"
+                  button.style.color = "white"
+                  button.style.boxShadow = "0 4px 12px rgba(79, 70, 229, 0.3)"
+                  button.style.transform = "translateY(-2px)"
                 }
               }}
               onMouseLeave={(e) => {
                 const button = e.currentTarget
-                button.style.backgroundColor = "#f0f0f0"
-                button.style.borderColor = "#d1d5db"
+                button.style.backgroundColor = "transparent"
+                button.style.color = "#4f46e5"
+                button.style.boxShadow = "none"
+                button.style.transform = "translateY(0)"
               }}
             >
               {question}
