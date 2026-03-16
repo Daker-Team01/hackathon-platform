@@ -1,11 +1,15 @@
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { createTeam } from "../api/teamApi"
+import { useCreateTeam } from "../hooks/useTeams"
+import { useUser } from "../contexts/UserContext"
 
 export default function CampCreate() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const hackathonSlug = params.get("hackathon") || undefined
+  const { user, isLoggedIn } = useUser()
+  const mutation = useCreateTeam()
+  const hasAlerted = useRef(false)
 
   const [name, setName] = useState("")
   const [intro, setIntro] = useState("")
@@ -14,15 +18,25 @@ export default function CampCreate() {
   const [lookingFor, setLookingFor] = useState("")
   const [contactUrl, setContactUrl] = useState("")
 
+  useEffect(() => {
+    if (!isLoggedIn && !hasAlerted.current) {
+      hasAlerted.current = true
+      alert("로그인이 필요한 서비스입니다.")
+      navigate("/camp")
+    }
+  }, [isLoggedIn, navigate])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!user) return
 
     if (!name || !intro) {
       alert("팀명과 소개는 필수입니다.")
       return
     }
 
-    await createTeam({
+    mutation.mutate({
       name,
       intro,
       isOpen,
@@ -32,11 +46,16 @@ export default function CampCreate() {
         type: "link",
         url: contactUrl
       },
-      hackathonSlug
+      hackathonSlug,
+      authorId: user.id
+    }, {
+      onSuccess: () => {
+        navigate(hackathonSlug ? `/camp?hackathon=${hackathonSlug}` : "/camp")
+      }
     })
-
-    navigate(hackathonSlug ? `/camp?hackathon=${hackathonSlug}` : "/camp")
   }
+
+  if (!isLoggedIn) return null
 
   return (
     <div style={{ padding: "20px" }}>
@@ -113,7 +132,9 @@ export default function CampCreate() {
         </div>
 
         <div style={{ marginTop: "20px" }}>
-          <button type="submit">생성</button>
+          <button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? "생성 중..." : "생성"}
+          </button>
           <button type="button" onClick={() => navigate(-1)} style={{ marginLeft: "10px", backgroundColor: "#eee", color: "#333" }}>
             취소
           </button>

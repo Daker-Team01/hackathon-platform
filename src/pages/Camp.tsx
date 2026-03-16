@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router-dom"
 import { useTeams, useUpdateTeam } from "../hooks/useTeams"
 import { Link } from "react-router-dom"
+import { useUser } from "../contexts/UserContext"
 
 export default function Camp() {
   const [params] = useSearchParams()
@@ -8,6 +9,7 @@ export default function Camp() {
 
   const { data: teams, isLoading } = useTeams(slug)
   const mutation = useUpdateTeam()
+  const { user } = useUser()
 
   const handleToggleOpen = (teamCode: string, currentIsOpen: boolean) => {
     mutation.mutate({ teamCode, updates: { isOpen: !currentIsOpen } })
@@ -25,55 +27,63 @@ export default function Camp() {
       </Link>
 
       <div style={{ display: "grid", gap: "20px" }}>
-        {teams?.map((team) => (
-          <div key={team.teamCode} style={{ border: "1px solid #ccc", padding: "15px", borderRadius: "8px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-              <div>
-                <span style={{ fontSize: "0.8rem", color: "#888" }}>{team.teamCode}</span>
-                <h3>{team.name} ({team.memberCount}명)</h3>
+        {teams?.map((team) => {
+          const isAuthor = user?.id === team.authorId
+          
+          return (
+            <div key={team.teamCode} style={{ border: "1px solid #ccc", padding: "15px", borderRadius: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                <div>
+                  <span style={{ fontSize: "0.8rem", color: "#888" }}>{team.teamCode}</span>
+                  <h3>{team.name} ({team.memberCount}명)</h3>
+                </div>
+                <span style={{ 
+                  padding: "4px 8px", 
+                  borderRadius: "4px", 
+                  backgroundColor: team.isOpen ? "#e6fffa" : "#fff5f5",
+                  color: team.isOpen ? "#2c7a7b" : "#c53030",
+                  fontSize: "0.8rem",
+                  fontWeight: "bold"
+                }}>
+                  {team.isOpen ? "모집중" : "모집마감"}
+                </span>
               </div>
-              <span style={{ 
-                padding: "4px 8px", 
-                borderRadius: "4px", 
-                backgroundColor: team.isOpen ? "#e6fffa" : "#fff5f5",
-                color: team.isOpen ? "#2c7a7b" : "#c53030",
-                fontSize: "0.8rem",
-                fontWeight: "bold"
-              }}>
-                {team.isOpen ? "모집중" : "모집마감"}
-              </span>
-            </div>
-            
-            <p>{team.intro}</p>
-            {team.hackathonSlug && (
-              <p style={{ fontSize: "0.9rem", color: "#666" }}>
-                연결된 해커톤: <strong>{team.hackathonSlug}</strong>
-              </p>
-            )}
-            <p><strong>모집 포지션:</strong> {team.lookingFor.length > 0 ? team.lookingFor.join(", ") : "없음"}</p>
-            
-            <div style={{ marginTop: "15px", display: "flex", gap: "10px" }}>
-              {team.contact.url && (
-                <a href={team.contact.url} target="_blank" rel="noopener noreferrer">
-                  <button>연락하기</button>
-                </a>
-              )}
               
-              <button 
-                onClick={() => handleToggleOpen(team.teamCode, team.isOpen)}
-                style={{ backgroundColor: team.isOpen ? "#fbd38d" : "#cbd5e0" }}
-              >
-                {team.isOpen ? "모집 마감하기" : "다시 모집하기"}
-              </button>
+              <p>{team.intro}</p>
+              {team.hackathonSlug && (
+                <p style={{ fontSize: "0.9rem", color: "#666" }}>
+                  연결된 해커톤: <strong>{team.hackathonSlug}</strong>
+                </p>
+              )}
+              <p><strong>모집 포지션:</strong> {team.lookingFor.length > 0 ? team.lookingFor.join(", ") : "없음"}</p>
+              
+              <div style={{ marginTop: "15px", display: "flex", gap: "10px" }}>
+                {team.contact.url && (
+                  <a href={team.contact.url} target="_blank" rel="noopener noreferrer">
+                    <button>연락하기</button>
+                  </a>
+                )}
+                
+                {isAuthor && (
+                  <>
+                    <button 
+                      onClick={() => handleToggleOpen(team.teamCode, team.isOpen)}
+                      style={{ backgroundColor: team.isOpen ? "#fbd38d" : "#cbd5e0" }}
+                    >
+                      {team.isOpen ? "모집 마감하기" : "다시 모집하기"}
+                    </button>
 
-              <Link to={`/camp/edit/${team.teamCode}`}>
-                <button style={{ backgroundColor: "#edf2f7", color: "#4a5568" }}>
-                  수정
-                </button>
-              </Link>
+                    <Link to={`/camp/edit/${team.teamCode}`}>
+                      <button style={{ backgroundColor: "#edf2f7", color: "#4a5568" }}>
+                        수정
+                      </button>
+                    </Link>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
         {teams?.length === 0 && <p>모집 중인 팀이 없습니다.</p>}
       </div>
     </div>
