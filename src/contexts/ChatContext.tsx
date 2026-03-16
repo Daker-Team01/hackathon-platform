@@ -5,6 +5,10 @@ export type ChatMessage = {
   user: string
   text: string
   timestamp: string
+  action?: {
+    label: string
+    path: string
+  }
 }
 
 export type ChatRoom = {

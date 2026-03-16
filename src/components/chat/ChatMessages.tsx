@@ -1,10 +1,15 @@
 import { useEffect, useRef } from 'react'
+import { router } from '../../router/router'
 
 type Message = {
   id: string
   user: string
   text: string
   timestamp: string
+  action?: {
+    label: string
+    path: string
+  }
 }
 
 type Props = {
@@ -88,6 +93,29 @@ export default function ChatMessages({ messages }: Props) {
                 }}
                 dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }}
               />
+              {msg.user === 'Chatbot' && msg.action && (
+                <button
+                  onClick={() => {
+                    if (msg.action) {
+                      router.navigate(msg.action.path)
+                    }
+                  }}
+                  style={{
+                    marginTop: 10,
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    border: 'none',
+                    backgroundColor: '#4f46e5',
+                    color: 'white',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {msg.action.label}
+                </button>
+              )}
             </div>
           </div>
         ))

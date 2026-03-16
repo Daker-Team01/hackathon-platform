@@ -19,6 +19,11 @@ interface UserData {
   ranking: number
 }
 
+export type ChatbotAction = {
+  label: string
+  path: string
+}
+
 // 개인 사용자 데이터
 const users: UserData[] = [
   { id: userAlice.id, nickname: userAlice.nickname, points: userAlice.points, ranking: userAlice.ranking },
@@ -105,6 +110,26 @@ const detectIntent = (query: string): string => {
   }
   
   return 'general'
+}
+
+const getActionByIntent = (intent: string): ChatbotAction | undefined => {
+  switch (intent) {
+    case 'ongoing_hackathons':
+    case 'hackathons':
+      return { label: '해커톤 페이지로 이동', path: '/hackathons' }
+    case 'teams':
+    case 'team_ranking':
+      return { label: '팀 찾기 페이지로 이동', path: '/camp' }
+    case 'leaderboard':
+      return { label: '랭킹 페이지로 이동', path: '/rankings' }
+    default:
+      return undefined
+  }
+}
+
+export const getChatbotAction = (userMessage: string): ChatbotAction | undefined => {
+  const intent = detectIntent(userMessage)
+  return getActionByIntent(intent)
 }
 
 // 챗봇 응답 생성
