@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useUser } from '../../contexts/UserContext'
+import { useChat } from '../../contexts/ChatContext'
 import ChatRoomList from './ChatRoomList'
 import ChatMessages from './ChatMessages'
 import ChatInput from './ChatInput'
@@ -10,7 +11,8 @@ type Props = {
 }
 
 export default function ChatPanel({ open, onClose }: Props) {
-  const { isLoggedIn, chatData, addMessage } = useUser()
+  const { isLoggedIn } = useUser()
+  const { chatData, addMessage } = useChat()
   const [selectedRoomId, setSelectedRoomId] = useState('1')
 
   // 로그인하지 않았으면 아무것도 렌더링하지 않음
