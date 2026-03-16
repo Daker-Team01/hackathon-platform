@@ -1,9 +1,9 @@
 // 챗봇 RAG (Retrieval Augmented Generation) API
 // 내부 데이터만 사용하여 챗봇 응답 생성
 
-import hackathons from '../mock/public_hackathons.json'
-import teams from '../mock/public_teams.json'
-import leaderboard from '../mock/public_leaderboard.json'
+import hackathons from '../data/public_hackathons.json'
+import teams from '../data/public_teams.json'
+import leaderboard from '../data/public_leaderboard.json'
 
 type HackathonData = (typeof hackathons)[0]
 type TeamData = (typeof teams)[0]
