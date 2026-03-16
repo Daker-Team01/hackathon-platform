@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import App from "./App"
 import { router } from "./router/router"
+import { UserProvider } from "./contexts/UserContext"
 import hackathonsData from "./data/public_hackathons.json"
 import teamsData from "./data/public_teams.json"
 
@@ -26,9 +27,11 @@ if (storedTeams === null) {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App>
-        <RouterProvider router={router} />
-      </App>
+      <UserProvider>
+        <App>
+          <RouterProvider router={router} />
+        </App>
+      </UserProvider>
     </QueryClientProvider>
   </StrictMode>
 )
