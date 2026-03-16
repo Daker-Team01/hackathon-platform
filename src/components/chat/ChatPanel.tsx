@@ -1,20 +1,8 @@
 import { useState } from 'react'
+import { useUser } from '../../contexts/UserContext'
 import ChatRoomList from './ChatRoomList'
 import ChatMessages from './ChatMessages'
 import ChatInput from './ChatInput'
-
-type ChatRoom = {
-  id: string
-  name: string
-  unreadCount: number
-}
-
-type Message = {
-  id: string
-  user: string
-  text: string
-  timestamp: string
-}
 
 type Props = {
   open: boolean
@@ -22,36 +10,22 @@ type Props = {
 }
 
 export default function ChatPanel({ open, onClose }: Props) {
-  const [rooms] = useState<ChatRoom[]>([
-    { id: '1', name: '일반', unreadCount: 0 },
-    { id: '2', name: '공지', unreadCount: 2 },
-    { id: '3', name: '팀 찾기', unreadCount: 0 }
-  ])
-
+  const { isLoggedIn, chatData, addMessage } = useUser()
   const [selectedRoomId, setSelectedRoomId] = useState('1')
 
-  const [roomMessages, setRoomMessages] = useState<{ [key: string]: Message[] }>({
-    '1': [
-      { id: '1', user: 'Admin', text: '안녕하세요! 해커톤 플랫폼에 오신 것을 환영합니다.', timestamp: '10:00' }
-    ],
-    '2': [
-      { id: '1', user: 'Admin', text: '[공지] 해커톤이 시작되었습니다!', timestamp: '09:00' }
-    ],
-    '3': []
-  })
+  // 로그인하지 않았으면 아무것도 렌더링하지 않음
+  if (!isLoggedIn || !chatData) {
+    return null
+  }
 
   const handleSendMessage = (text: string) => {
-    const newMessage: Message = {
-      id: String((roomMessages[selectedRoomId]?.length || 0) + 1),
+    const newMessage = {
+      id: String((chatData.messages[selectedRoomId]?.length || 0) + 1),
       user: 'You',
       text,
       timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
     }
-
-    setRoomMessages(prev => ({
-      ...prev,
-      [selectedRoomId]: [...(prev[selectedRoomId] || []), newMessage]
-    }))
+    addMessage(selectedRoomId, newMessage)
   }
 
   return (
@@ -121,7 +95,7 @@ export default function ChatPanel({ open, onClose }: Props) {
         }}>
           {/* 왼쪽: 채팅방 목록 */}
           <ChatRoomList
-            rooms={rooms}
+            rooms={chatData.rooms}
             selectedRoomId={selectedRoomId}
             onSelectRoom={setSelectedRoomId}
           />
@@ -132,7 +106,7 @@ export default function ChatPanel({ open, onClose }: Props) {
             display: 'flex',
             flexDirection: 'column'
           }}>
-            <ChatMessages messages={roomMessages[selectedRoomId] || []} />
+            <ChatMessages messages={chatData.messages[selectedRoomId] || []} />
             <ChatInput onSend={handleSendMessage} />
           </div>
         </div>
