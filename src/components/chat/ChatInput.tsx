@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 type Props = {
-  onSend: (text: string) => void
+  onSend: (text: string) => void | Promise<void>
   isLoading?: boolean
 }
 

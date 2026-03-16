@@ -22,7 +22,7 @@ export default function ChatPanel({ open, onClose }: Props) {
     return null
   }
 
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = async (text: string) => {
     const messageCount = (chatData.messages[selectedRoomId]?.length || 0) + 1
     const timestamp = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
     
@@ -38,9 +38,9 @@ export default function ChatPanel({ open, onClose }: Props) {
     // 챗봇 룸일 경우 자동 응답
     if (selectedRoomId === '4') {
       setIsWaitingForResponse(true)
-      // 실제 API 호출처럼 약간의 지연 추가 (UX 개선)
-      setTimeout(() => {
-        const botResponse = generateChatbotResponse(text)
+      try {
+        // OpenAI API 호출 (async)
+        const botResponse = await generateChatbotResponse(text)
         const botMessage = {
           id: String(messageCount + 1),
           user: 'Chatbot',
@@ -48,8 +48,18 @@ export default function ChatPanel({ open, onClose }: Props) {
           timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
         }
         addMessage(selectedRoomId, botMessage)
+      } catch (error) {
+        console.error('챗봇 응답 오류:', error)
+        const errorMessage = {
+          id: String(messageCount + 1),
+          user: 'Chatbot',
+          text: '죄송하지만 응답을 생성할 수 없습니다. 잠시 후 다시 시도해주세요. 😅',
+          timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+        }
+        addMessage(selectedRoomId, errorMessage)
+      } finally {
         setIsWaitingForResponse(false)
-      }, 600)
+      }
     }
   }
 
