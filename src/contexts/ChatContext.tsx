@@ -32,7 +32,8 @@ const createUserChatData = (username: string): UserChatData => ({
   rooms: [
     { id: '1', name: '일반', unreadCount: 0 },
     { id: '2', name: '공지', unreadCount: 0 },
-    { id: '3', name: '팀 찾기', unreadCount: 0 }
+    { id: '3', name: '팀 찾기', unreadCount: 0 },
+    { id: '4', name: '🤖 챗봇', unreadCount: 0 }
   ],
   messages: {
     '1': [
@@ -41,7 +42,10 @@ const createUserChatData = (username: string): UserChatData => ({
     '2': [
       { id: '1', user: 'Admin', text: '[공지] 해커톤이 시작되었습니다!', timestamp: '09:00' }
     ],
-    '3': []
+    '3': [],
+    '4': [
+      { id: '1', user: 'Chatbot', text: '안녕하세요! 저는 해커톤 플랫폼 챗봇입니다. 해커톤, 팀, 랭킹 등에 대해 궁금하신 점을 물어보세요! 📚', timestamp: '10:00' }
+    ]
   }
 })
 
