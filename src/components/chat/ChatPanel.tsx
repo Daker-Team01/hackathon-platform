@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useUser } from '../../contexts/UserContext'
 import { useChat } from '../../contexts/ChatContext'
-import { generateChatbotResponse } from '../../api/chatbotApi'
+import { generateChatbotResponse, getChatbotAction } from '../../api/chatbotApi'
 import ChatRoomList from './ChatRoomList'
 import ChatMessages from './ChatMessages'
 import ChatInput from './ChatInput'
@@ -23,12 +23,12 @@ export default function ChatPanel({ open, onClose }: Props) {
   }
 
   const handleSendMessage = (text: string) => {
-    const messageCount = (chatData.messages[selectedRoomId]?.length || 0) + 1
     const timestamp = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    const uniqueId = Date.now().toString() // 고유한 ID 생성
     
     // 사용자 메시지 추가
     const userMessage = {
-      id: String(messageCount),
+      id: uniqueId,
       user: 'You',
       text,
       timestamp
@@ -41,11 +41,13 @@ export default function ChatPanel({ open, onClose }: Props) {
       // 실제 API 호출처럼 약간의 지연 추가 (UX 개선)
       setTimeout(() => {
         const botResponse = generateChatbotResponse(text)
+        const botAction = getChatbotAction(text)
         const botMessage = {
-          id: String(messageCount + 1),
+          id: (Date.now() + 1).toString(), // 고유한 ID 생성
           user: 'Chatbot',
           text: botResponse,
-          timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+          timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+          action: botAction
         }
         addMessage(selectedRoomId, botMessage)
         setIsWaitingForResponse(false)
@@ -132,7 +134,11 @@ export default function ChatPanel({ open, onClose }: Props) {
             flexDirection: 'column'
           }}>
             <ChatMessages messages={chatData.messages[selectedRoomId] || []} />
-            <ChatInput onSend={handleSendMessage} isLoading={selectedRoomId === '4' && isWaitingForResponse} />
+            <ChatInput 
+              onSend={handleSendMessage} 
+              isLoading={selectedRoomId === '4' && isWaitingForResponse}
+              isChatbot={selectedRoomId === '4'}
+            />
           </div>
         </div>
       </div>

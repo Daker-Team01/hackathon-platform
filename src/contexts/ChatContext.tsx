@@ -5,6 +5,10 @@ export type ChatMessage = {
   user: string
   text: string
   timestamp: string
+  action?: {
+    label: string
+    path: string
+  }
 }
 
 export type ChatRoom = {
@@ -98,21 +102,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }
 
   const addMessage = (roomId: string, message: ChatMessage) => {
-    if (!chatData) return
+    setChatData((prevChatData) => {
+      if (!prevChatData) return prevChatData
 
-    const updatedChatData = {
-      ...chatData,
-      messages: {
-        ...chatData.messages,
-        [roomId]: [...(chatData.messages[roomId] || []), message]
+      const updatedChatData = {
+        ...prevChatData,
+        messages: {
+          ...prevChatData.messages,
+          [roomId]: [...(prevChatData.messages[roomId] || []), message]
+        }
       }
-    }
 
-    setChatData(updatedChatData)
-    // 즉시 저장
-    if (currentUsername) {
-      saveChatDataToSession(currentUsername, updatedChatData)
-    }
+      // 즉시 저장
+      if (currentUsername) {
+        saveChatDataToSession(currentUsername, updatedChatData)
+      }
+
+      return updatedChatData
+    })
   }
 
   return (
