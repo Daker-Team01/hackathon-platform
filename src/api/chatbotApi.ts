@@ -1,0 +1,195 @@
+// 챗봇 RAG (Retrieval Augmented Generation) API
+// 내부 데이터만 사용하여 챗봇 응답 생성
+
+import hackathons from '../mock/public_hackathons.json'
+import teams from '../mock/public_teams.json'
+import leaderboard from '../mock/public_leaderboard.json'
+
+type HackathonData = (typeof hackathons)[0]
+type TeamData = (typeof teams)[0]
+
+// 텍스트 유사도 계산 (간단한 키워드 매칭)
+const calculateSimilarity = (text1: string, text2: string): number => {
+  const normalize = (s: string) => s.toLowerCase().trim()
+  const t1 = normalize(text1).split(/\s+/)
+  const t2 = normalize(text2).split(/\s+/)
+  
+  const matches = t1.filter(word => t2.some(w => w.includes(word) || word.includes(w)))
+  return matches.length / Math.max(t1.length, t2.length)
+}
+
+// 해커톤 검색
+const searchHackathons = (query: string): HackathonData[] => {
+  const queryLower = query.toLowerCase()
+  return hackathons
+    .filter(h => 
+      h.title.toLowerCase().includes(queryLower) ||
+      h.tags.some(tag => tag.toLowerCase().includes(queryLower)) ||
+      h.slug.toLowerCase().includes(queryLower)
+    )
+    .sort((a, b) => {
+      const simA = calculateSimilarity(query, a.title)
+      const simB = calculateSimilarity(query, b.title)
+      return simB - simA
+    })
+}
+
+// 팀 검색
+const searchTeams = (query: string): TeamData[] => {
+  const queryLower = query.toLowerCase()
+  return teams
+    .filter(t => 
+      t.name.toLowerCase().includes(queryLower) ||
+      t.intro.toLowerCase().includes(queryLower) ||
+      t.lookingFor.some(role => role.toLowerCase().includes(queryLower))
+    )
+    .sort((a, b) => {
+      const simA = calculateSimilarity(query, a.name)
+      const simB = calculateSimilarity(query, b.name)
+      return simB - simA
+    })
+}
+
+// 상태별 해커톤 필터링
+const getHackathonsByStatus = (status: 'ongoing' | 'upcoming' | 'ended'): HackathonData[] => {
+  return hackathons.filter(h => h.status === status)
+}
+
+// 랭킹 정보 가져오기
+const getLeaderboardInfo = (slug?: string) => {
+  if (slug) {
+    if (leaderboard.hackathonSlug === slug) {
+      return leaderboard
+    }
+    if (leaderboard.extraLeaderboards) {
+      return leaderboard.extraLeaderboards.find(lb => lb.hackathonSlug === slug)
+    }
+  }
+  return leaderboard
+}
+
+// 질문 의도 파악
+const detectIntent = (query: string): string => {
+  const queryLower = query.toLowerCase()
+  
+  if (queryLower.includes('진행중') || queryLower.includes('현재') || queryLower.includes('ongoing')) {
+    return 'ongoing_hackathons'
+  }
+  if (queryLower.includes('앞으로') || queryLower.includes('예정') || queryLower.includes('upcoming')) {
+    return 'upcoming_hackathons'
+  }
+  if (queryLower.includes('랭킹') || queryLower.includes('순위') || queryLower.includes('leaderboard')) {
+    return 'leaderboard'
+  }
+  if (queryLower.includes('팀') || queryLower.includes('모집') || queryLower.includes('팀찾') || queryLower.includes('팀원')) {
+    return 'teams'
+  }
+  if (queryLower.includes('해커톤') || queryLower.includes('대회') || queryLower.includes('hackathon')) {
+    return 'hackathons'
+  }
+  if (queryLower.includes('도움말') || queryLower.includes('help') || queryLower.includes('?')) {
+    return 'help'
+  }
+  
+  return 'general'
+}
+
+// 챗봇 응답 생성
+export const generateChatbotResponse = (userMessage: string): string => {
+  const intent = detectIntent(userMessage)
+  
+  switch (intent) {
+    case 'ongoing_hackathons': {
+      const ongoing = getHackathonsByStatus('ongoing')
+      if (ongoing.length === 0) {
+        return '현재 진행 중인 해커톤이 없습니다. 다가오는 해커톤을 확인해보세요! 📅'
+      }
+      const list = ongoing
+        .map(h => `• **${h.title}** (마감: ${new Date(h.period.submissionDeadlineAt).toLocaleDateString('ko-KR')})`)
+        .join('\n')
+      return `현재 진행 중인 해커톤입니다:\n\n${list}`
+    }
+    
+    case 'upcoming_hackathons': {
+      const upcoming = getHackathonsByStatus('upcoming')
+      if (upcoming.length === 0) {
+        return '예정된 해커톤이 없습니다. 다른 해커톤을 찾아보세요! 🔍'
+      }
+      const list = upcoming
+        .map(h => `• **${h.title}** (시작: ${new Date(h.period.submissionDeadlineAt).toLocaleDateString('ko-KR')})`)
+        .join('\n')
+      return `앞으로 예정된 해커톤입니다:\n\n${list}`
+    }
+    
+    case 'leaderboard': {
+      const lb = getLeaderboardInfo()
+      if (!lb || !lb.entries || lb.entries.length === 0) {
+        return '현재 이용 가능한 랭킹 정보가 없습니다. 😅'
+      }
+      const topEntries = lb.entries.slice(0, 3)
+      const list = topEntries
+        .map(e => `🥇 ${e.rank}등: **${e.teamName}** (점수: ${e.score})`)
+        .join('\n')
+      return `**해커톤 랭킹** (상위 3개)\n\n${list}\n\n자세한 순위는 랭킹 페이지에서 확인하세요! 📊`
+    }
+    
+    case 'teams': {
+      const openTeams = teams.filter(t => t.isOpen)
+      if (openTeams.length === 0) {
+        return '현재 모집 중인 팀이 없습니다. 잠시 후 다시 확인해주세요! 👥'
+      }
+      const sample = openTeams.slice(0, 3)
+      const list = sample
+        .map(t => `• **${t.name}** (찾는 역할: ${t.lookingFor.join(', ')})`)
+        .join('\n')
+      return `현재 모집 중인 팀입니다 (상위 3개):\n\n${list}\n\n팀 찾기 페이지에서 더 많은 팀을 확인하세요! 🤝`
+    }
+    
+    case 'hackathons': {
+      const results = searchHackathons(userMessage)
+      if (results.length === 0) {
+        return '해당하는 해커톤을 찾을 수 없습니다. 다른 검색어로 시도해보세요! 🔍'
+      }
+      const sample = results.slice(0, 3)
+      const list = sample
+        .map(h => `• **${h.title}** (상태: ${h.status === 'ongoing' ? '진행중' : h.status === 'upcoming' ? '예정' : '종료'})`)
+        .join('\n')
+      return `찾은 해커톤입니다:\n\n${list}`
+    }
+    
+    case 'help': {
+      return `안녕하세요! 저는 해커톤 플랫폼 챗봇입니다. 다음과 같이 물어볼 수 있습니다:
+
+📋 **해커톤 관련**
+• "진행 중인 해커톤이 뭐가 있어?"
+• "모델 경량화" (특정 해커톤 검색)
+• "예정된 해커톤" (앞으로의 대회)
+
+👥 **팀 관련**
+• "팀 찾기" (모집 중인 팀)
+• "팀 모집" (팀 정보)
+
+📊 **순위 관련**
+• "랭킹" (현재 순위)
+• "순위" (대회 성적)
+
+도움이 필요하면 언제든 물어봐주세요! 😊`
+    }
+    
+    default: {
+      // 키워드 기반 일반 검색
+      const hackResults = searchHackathons(userMessage)
+      const teamResults = searchTeams(userMessage)
+      
+      if (hackResults.length > 0) {
+        return `**해커톤** 검색 결과:\n\n• **${hackResults[0].title}**\n태그: ${hackResults[0].tags.join(', ')}`
+      }
+      
+      if (teamResults.length > 0) {
+        return `**팀** 검색 결과:\n\n• **${teamResults[0].name}** (${teamResults[0].memberCount}명)\n${teamResults[0].intro}`
+      }
+      
+      return `죄송하지만 정확히 이해하지 못했습니다. 😅\n다음과 같이 재시도해보세요:\n• "진행 중인 해커톤"\n• "팀 모집"\n• "도움말 (또는 ?)"을 입력해보세요!`
+    }
+  }
+}

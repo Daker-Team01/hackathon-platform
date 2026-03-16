@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useUser } from '../../contexts/UserContext'
 import { useChat } from '../../contexts/ChatContext'
+import { generateChatbotResponse } from '../../api/chatbotApi'
 import ChatRoomList from './ChatRoomList'
 import ChatMessages from './ChatMessages'
 import ChatInput from './ChatInput'
@@ -14,6 +15,7 @@ export default function ChatPanel({ open, onClose }: Props) {
   const { isLoggedIn } = useUser()
   const { chatData, addMessage } = useChat()
   const [selectedRoomId, setSelectedRoomId] = useState('1')
+  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false)
 
   // 로그인하지 않았으면 아무것도 렌더링하지 않음
   if (!isLoggedIn || !chatData) {
@@ -21,13 +23,34 @@ export default function ChatPanel({ open, onClose }: Props) {
   }
 
   const handleSendMessage = (text: string) => {
-    const newMessage = {
-      id: String((chatData.messages[selectedRoomId]?.length || 0) + 1),
+    const messageCount = (chatData.messages[selectedRoomId]?.length || 0) + 1
+    const timestamp = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    
+    // 사용자 메시지 추가
+    const userMessage = {
+      id: String(messageCount),
       user: 'You',
       text,
-      timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+      timestamp
     }
-    addMessage(selectedRoomId, newMessage)
+    addMessage(selectedRoomId, userMessage)
+
+    // 챗봇 룸일 경우 자동 응답
+    if (selectedRoomId === '4') {
+      setIsWaitingForResponse(true)
+      // 실제 API 호출처럼 약간의 지연 추가 (UX 개선)
+      setTimeout(() => {
+        const botResponse = generateChatbotResponse(text)
+        const botMessage = {
+          id: String(messageCount + 1),
+          user: 'Chatbot',
+          text: botResponse,
+          timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+        }
+        addMessage(selectedRoomId, botMessage)
+        setIsWaitingForResponse(false)
+      }, 600)
+    }
   }
 
   return (
@@ -109,7 +132,7 @@ export default function ChatPanel({ open, onClose }: Props) {
             flexDirection: 'column'
           }}>
             <ChatMessages messages={chatData.messages[selectedRoomId] || []} />
-            <ChatInput onSend={handleSendMessage} />
+            <ChatInput onSend={handleSendMessage} isLoading={selectedRoomId === '4' && isWaitingForResponse} />
           </div>
         </div>
       </div>
