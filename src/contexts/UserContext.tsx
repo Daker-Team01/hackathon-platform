@@ -66,6 +66,29 @@ const createUserChatData = (username: string): UserChatData => ({
   }
 })
 
+// sessionStorage에서 사용자 채팅 데이터 불러오기
+const loadChatDataFromSession = (username: string): UserChatData => {
+  const storageKey = `chat_${username}`
+  const savedData = sessionStorage.getItem(storageKey)
+  
+  if (savedData) {
+    try {
+      return JSON.parse(savedData)
+    } catch (error) {
+      console.error('Failed to parse chat data from session:', error)
+      return createUserChatData(username)
+    }
+  }
+  
+  return createUserChatData(username)
+}
+
+// sessionStorage에 사용자 채팅 데이터 저장
+const saveChatDataToSession = (username: string, chatData: UserChatData) => {
+  const storageKey = `chat_${username}`
+  sessionStorage.setItem(storageKey, JSON.stringify(chatData))
+}
+
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [chatData, setChatData] = useState<UserChatData | null>(null)
@@ -80,30 +103,40 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // 비밀번호 제거하고 사용자 정보 저장
       const { password, ...userWithoutPassword } = foundUser
       setUser(userWithoutPassword)
-      // 사용자별 채팅 데이터 생성
-      setChatData(createUserChatData(username))
+      
+      // sessionStorage에서 채팅 데이터 불러오기 또는 새로 생성
+      const savedChatData = loadChatDataFromSession(username)
+      setChatData(savedChatData)
+      
       return true
     }
     return false
   }
 
   const logout = () => {
+    // 현재 채팅 데이터를 sessionStorage에 저장
+    if (user && chatData) {
+      saveChatDataToSession(user.username, chatData)
+    }
+    
     setUser(null)
     setChatData(null)
   }
 
   const addMessage = (roomId: string, message: ChatMessage) => {
-    if (!chatData) return
-    setChatData(prev => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        messages: {
-          ...prev.messages,
-          [roomId]: [...(prev.messages[roomId] || []), message]
-        }
+    if (!chatData || !user) return
+    
+    const updatedChatData = {
+      ...chatData,
+      messages: {
+        ...chatData.messages,
+        [roomId]: [...(chatData.messages[roomId] || []), message]
       }
-    })
+    }
+    
+    setChatData(updatedChatData)
+    // 즉시 sessionStorage에 저장
+    saveChatDataToSession(user.username, updatedChatData)
   }
 
   return (
