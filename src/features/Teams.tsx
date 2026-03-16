@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { useLog } from '../contexts/LogContext'
 
 type Team = {
   id: string
@@ -163,6 +164,7 @@ function generateId(prefix: string): string {
 }
 
 export default function Teams({ hackathonSlug }: TeamsProps) {
+  const { recordEvent } = useLog()
   const [teams, setTeams] = useState<Team[]>(() => getTeamsFromStorage())
   const [invitations, setInvitations] = useState<Invitation[]>(() => getInvitationsFromStorage())
   const [currentUser, setCurrentUser] = useState<string>(
@@ -225,6 +227,13 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
 
     const updatedTeams = [...teams, newTeam]
     persistTeams(updatedTeams)
+
+    recordEvent('team_create', 'hackathon', hackathonSlug, {
+      teamId: newTeam.id,
+      teamName: newTeam.name,
+    })
+    recordEvent('hackathon_join', 'hackathon', hackathonSlug)
+
     setForm({
       name: '',
       description: '',
@@ -238,6 +247,17 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
       invitation.id === invitationId ? { ...invitation, status } : invitation
     )
     persistInvitations(updatedInvitations)
+
+    if (status === 'accepted') {
+      const invitation = invitations.find((i) => i.id === invitationId)
+      if (invitation) {
+        recordEvent('team_join', 'team', invitation.teamId, {
+          teamName: invitation.teamName,
+          hackathonSlug: invitation.hackathonSlug,
+        })
+        recordEvent('hackathon_join', 'hackathon', invitation.hackathonSlug)
+      }
+    }
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {

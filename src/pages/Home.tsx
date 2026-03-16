@@ -54,6 +54,21 @@ export default function Home(){
      >
        랭킹 보기
      </button>
+
+     <button 
+       onClick={()=>navigate('/analytics')}
+       style={{
+         padding: '12px 24px',
+         fontSize: 16,
+         cursor: 'pointer',
+         backgroundColor: '#4f46e5',
+         color: 'white',
+         border: 'none',
+         borderRadius: 6
+       }}
+     >
+       분석
+     </button>
    </div>
 
   </div>

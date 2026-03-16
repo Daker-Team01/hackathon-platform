@@ -7,6 +7,7 @@ export default function Navbar() {
       <Link to="/hackathons">Hackathons</Link>
       <Link to="/camp">Camp</Link>
       <Link to="/rankings">Rankings</Link>
+      <Link to="/analytics">Analytics</Link>
     </nav>
   )
 }
