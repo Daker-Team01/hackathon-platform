@@ -1,18 +1,9 @@
-import { useUser } from '../../contexts/UserContext'
-
 type Props = {
   onClick: () => void
   open: boolean
 }
 
 export default function ChatButton({ onClick, open }: Props) {
-  const { isLoggedIn } = useUser()
-
-  // 로그인하지 않았으면 버튼을 표시하지 않음
-  if (!isLoggedIn) {
-    return null
-  }
-
   // 채팅창이 열려있으면 버튼 숨김
   if (open) {
     return null

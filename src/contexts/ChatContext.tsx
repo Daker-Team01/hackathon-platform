@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState, type ReactNode, useEffect } from 'react'
 
 export type ChatMessage = {
   id: string
@@ -79,6 +79,13 @@ const saveChatDataToSession = (username: string, chatData: UserChatData) => {
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [chatData, setChatData] = useState<UserChatData | null>(null)
   const [currentUsername, setCurrentUsername] = useState<string>('')
+
+  // 게스트 채팅 데이터 자동 초기화
+  useEffect(() => {
+    if (!chatData) {
+      setChatData(createUserChatData('게스트'))
+    }
+  }, [chatData])
 
   const initializeChatData = (username: string) => {
     setCurrentUsername(username)
