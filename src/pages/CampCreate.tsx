@@ -1,14 +1,29 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { useCreateTeam } from "../hooks/useTeams"
 import { useUser } from "../contexts/UserContext"
+import type { Hackathon } from "../types/hackathon"
+
+const HACKATHONS_STORAGE_KEY = "hackathons"
+
+function getHackathonsFromStorage(): Hackathon[] {
+  const raw = localStorage.getItem(HACKATHONS_STORAGE_KEY)
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as Hackathon[]) : []
+  } catch {
+    return []
+  }
+}
 
 export default function CampCreate() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const hackathonSlug = params.get("hackathon") || undefined
+  const initialHackathonSlug = params.get("hackathon") || ""
   const { user, isLoggedIn } = useUser()
   const mutation = useCreateTeam()
+  const hackathons = useMemo(() => getHackathonsFromStorage(), [])
   const hasAlerted = useRef(false)
 
   const [name, setName] = useState("")
@@ -17,6 +32,7 @@ export default function CampCreate() {
   const [memberCount, setMemberCount] = useState(1)
   const [lookingFor, setLookingFor] = useState("")
   const [contactUrl, setContactUrl] = useState("")
+  const [hackathonSlug, setHackathonSlug] = useState(initialHackathonSlug)
 
   useEffect(() => {
     if (!isLoggedIn && !hasAlerted.current) {
@@ -46,7 +62,7 @@ export default function CampCreate() {
         type: "link",
         url: contactUrl
       },
-      hackathonSlug,
+      hackathonSlug: hackathonSlug || undefined,
       authorId: user.id
     }, {
       onSuccess: () => {
@@ -60,9 +76,36 @@ export default function CampCreate() {
   return (
     <div style={{ padding: "20px" }}>
       <h1>팀 모집글 생성</h1>
-      {hackathonSlug && <p>대상 해커톤: <strong>{hackathonSlug}</strong></p>}
-
+      
       <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: "15px" }}>
+          <label>대상 해커톤 {initialHackathonSlug && "(고정)"}</label>
+          <br />
+          <select 
+            value={hackathonSlug} 
+            onChange={(e) => setHackathonSlug(e.target.value)}
+            disabled={!!initialHackathonSlug}
+            style={{ 
+              width: "100%", 
+              padding: "8px",
+              backgroundColor: initialHackathonSlug ? "#f3f4f6" : "#fff",
+              cursor: initialHackathonSlug ? "not-allowed" : "default"
+            }}
+          >
+            <option value="">해커톤 미지정 (나중에 신청하기)</option>
+            {hackathons?.map((h) => (
+              <option key={h.slug} value={h.slug}>
+                {h.title}
+              </option>
+            ))}
+          </select>
+          <p style={{ fontSize: "0.85rem", color: "#666", marginTop: "4px" }}>
+            {initialHackathonSlug 
+              ? `* ${hackathons.find(h => h.slug === initialHackathonSlug)?.title || initialHackathonSlug} 해커톤 참여를 위해 팀을 생성합니다.`
+              : "* 지금 해커톤을 고르지 않아도 팀을 먼저 생성하고 나중에 참여 신청을 할 수 있습니다."}
+          </p>
+        </div>
+
         <div>
           <label>팀명 *</label>
           <br />
@@ -125,7 +168,7 @@ export default function CampCreate() {
           <br />
           <input
             value={contactUrl}
-            onChange={(e) => setContactUrl(e.target.value)}
+            onChange={(event) => setContactUrl(event.target.value)}
             placeholder="https://..."
             style={{ width: "100%", marginBottom: "10px" }}
           />

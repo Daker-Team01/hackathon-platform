@@ -1,7 +1,7 @@
 import type { Team } from "../types/team"
 import publicTeams from "../data/public_teams.json"
 
-const LOCAL_STORAGE_KEY = "hackathon_teams"
+const LOCAL_STORAGE_KEY = "teams"
 
 const getStoredTeams = (): Team[] => {
   const stored = localStorage.getItem(LOCAL_STORAGE_KEY)
