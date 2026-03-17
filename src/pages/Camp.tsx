@@ -44,7 +44,8 @@ export default function Camp() {
 
       <div style={{ display: "grid", gap: "20px" }}>
         {teams?.map((team) => {
-          const isAuthor = user?.id === team.authorId
+          // user가 있고, team.authorId와 일치할 때만 본인으로 간주
+          const isAuthor = user && user.id === team.authorId
           
           return (
             <div key={team.teamCode} style={{ border: "1px solid #ccc", padding: "15px", borderRadius: "8px" }}>

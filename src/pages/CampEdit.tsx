@@ -149,7 +149,11 @@ export default function CampEdit() {
 
   if (isLoading) return <div style={{ padding: "20px" }}>Loading...</div>
   if (!team) return <div style={{ padding: "20px" }}>팀을 찾을 수 없습니다.</div>
-  if (user?.id !== team.authorId) return null
+  
+  // 로그인하지 않았거나, 본인의 팀이 아닌 경우 즉시 차단
+  if (!user || user.id !== team.authorId) {
+    return null
+  }
 
   return (
     <div style={{ padding: "20px" }}>
