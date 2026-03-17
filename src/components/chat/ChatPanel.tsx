@@ -17,39 +17,39 @@ export default function ChatPanel({ open, onClose }: Props) {
   const [selectedRoomId, setSelectedRoomId] = useState('1')
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false)
 
-  // 로그인하지 않았으면 아무것도 렌더링하지 않음
-  if (!isLoggedIn || !chatData) {
-    return null
-  }
+  // 채팅 데이터 없으면 아무것도 렌더링하지 않음
+  if (!chatData) return null
+
+  // 로그인 안 했을 때는 챗봇/일반방만 노출
+  const allowedRoomIds = isLoggedIn ? chatData.rooms.map(r => r.id) : ['1', '4']
+  const filteredRooms = chatData.rooms.filter(r => allowedRoomIds.includes(r.id))
+  // 선택된 방이 허용되지 않으면 일반방으로 강제
+  const safeSelectedRoomId = allowedRoomIds.includes(selectedRoomId) ? selectedRoomId : '1'
 
   const handleSendMessage = (text: string) => {
     const timestamp = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-    const uniqueId = Date.now().toString() // 고유한 ID 생성
-    
-    // 사용자 메시지 추가
+    const uniqueId = Date.now().toString()
     const userMessage = {
       id: uniqueId,
       user: 'You',
       text,
       timestamp
     }
-    addMessage(selectedRoomId, userMessage)
+    addMessage(safeSelectedRoomId, userMessage)
 
-    // 챗봇 룸일 경우 자동 응답
-    if (selectedRoomId === '4') {
+    if (safeSelectedRoomId === '4') {
       setIsWaitingForResponse(true)
-      // 실제 API 호출처럼 약간의 지연 추가 (UX 개선)
       setTimeout(() => {
         const botResponse = generateChatbotResponse(text)
         const botAction = getChatbotAction(text)
         const botMessage = {
-          id: (Date.now() + 1).toString(), // 고유한 ID 생성
+          id: (Date.now() + 1).toString(),
           user: 'Chatbot',
           text: botResponse,
           timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
           action: botAction
         }
-        addMessage(selectedRoomId, botMessage)
+        addMessage(safeSelectedRoomId, botMessage)
         setIsWaitingForResponse(false)
       }, 600)
     }
@@ -57,7 +57,6 @@ export default function ChatPanel({ open, onClose }: Props) {
 
   return (
     <>
-      {/* 오버레이 */}
       {open && (
         <div
           onClick={onClose}
@@ -72,8 +71,6 @@ export default function ChatPanel({ open, onClose }: Props) {
           }}
         />
       )}
-
-      {/* 채팅 패널 - 오른쪽 하단에 위치, 마이페이지를 가리지 않음 */}
       {open && (
         <div
           style={{
@@ -81,8 +78,8 @@ export default function ChatPanel({ open, onClose }: Props) {
             bottom: 20,
             right: 20,
             width: 500,
-            maxHeight: '925px', // 항상 고정
-            height: '925px',    // 항상 고정
+            maxHeight: '925px',
+            height: '925px',
             backgroundColor: 'white',
             borderRadius: 12,
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
@@ -92,7 +89,6 @@ export default function ChatPanel({ open, onClose }: Props) {
             animation: 'slideUp 0.3s ease-out'
           }}
         >
-          {/* 헤더 */}
           <div style={{
             padding: 16,
             borderBottom: '1px solid #eee',
@@ -118,38 +114,33 @@ export default function ChatPanel({ open, onClose }: Props) {
               ✕
             </button>
           </div>
-
-          {/* 메인 컨텐츠 */}
           <div style={{
             display: 'flex',
             flex: 1,
             overflow: 'hidden'
           }}>
-            {/* 왼쪽: 채팅방 목록 */}
             <ChatRoomList
-              rooms={chatData.rooms}
-              selectedRoomId={selectedRoomId}
-              onSelectRoom={setSelectedRoomId}
+              rooms={filteredRooms}
+              selectedRoomId={safeSelectedRoomId}
+              onSelectRoom={rid => {
+                if (allowedRoomIds.includes(rid)) setSelectedRoomId(rid)
+              }}
             />
-
-            {/* 오른쪽: 메시지 + 입력 */}
             <div style={{
               flex: 1,
               display: 'flex',
               flexDirection: 'column'
             }}>
-              <ChatMessages messages={chatData.messages[selectedRoomId] || []} />
+              <ChatMessages messages={chatData.messages[safeSelectedRoomId] || []} />
               <ChatInput 
                 onSend={handleSendMessage} 
-                isLoading={selectedRoomId === '4' && isWaitingForResponse}
-                isChatbot={selectedRoomId === '4'}
+                isLoading={safeSelectedRoomId === '4' && isWaitingForResponse}
+                isChatbot={safeSelectedRoomId === '4'}
               />
             </div>
           </div>
         </div>
       )}
-
-      {/* CSS 애니메이션 */}
       <style>{`
         @keyframes slideUp {
           from {
