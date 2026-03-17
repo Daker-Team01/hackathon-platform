@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom'
-import { useMemo, useEffect, useRef } from 'react'
+import { useMemo, useEffect, useRef, useState } from 'react'
 import Overview from '../features/Overview'
 import Eval from '../features/Eval'
 import Schedule from '../features/Schedule'
@@ -11,6 +11,14 @@ import type { Hackathon } from '../types/hackathon'
 import { useLog } from '../contexts/LogContext'
 
 const HACKATHONS_STORAGE_KEY = 'hackathons'
+type SectionKey =
+  | 'overview'
+  | 'eval'
+  | 'schedule'
+  | 'prize'
+  | 'teams'
+  | 'submit'
+  | 'leaderboard'
 
 function getHackathonsFromStorage(): Hackathon[] {
   const raw = localStorage.getItem(HACKATHONS_STORAGE_KEY)
@@ -34,6 +42,7 @@ export default function HackathonDetail() {
   const { slug } = useParams()
   const { recordEvent } = useLog()
   const hasLoggedView = useRef(false)
+  const [activeSection, setActiveSection] = useState<SectionKey>('overview')
 
   const hackathon = useMemo(() => {
     const hackathons = getHackathonsFromStorage()
@@ -64,13 +73,86 @@ export default function HackathonDetail() {
       <p>Submission Deadline: {formatDateTime(hackathon.period.submissionDeadlineAt)}</p>
       <p>End: {formatDateTime(hackathon.period.endAt)}</p>
 
-      <Overview />
-      <Eval hackathonSlug={hackathon.slug} />
-      <Schedule />
-      <Prize />
-      <Teams hackathonSlug={hackathon.slug} />
-      <Submit hackathonSlug={hackathon.slug} />
-      <Leaderboard hackathonSlug={hackathon.slug} />
+      <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+        <button
+          type="button"
+          onClick={() => setActiveSection('overview')}
+          style={{
+            backgroundColor: activeSection === 'overview' ? '#4f46e5' : '#e5e7eb',
+            color: activeSection === 'overview' ? '#fff' : '#111827',
+          }}
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection('eval')}
+          style={{
+            backgroundColor: activeSection === 'eval' ? '#4f46e5' : '#e5e7eb',
+            color: activeSection === 'eval' ? '#fff' : '#111827',
+          }}
+        >
+          Eval
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection('schedule')}
+          style={{
+            backgroundColor: activeSection === 'schedule' ? '#4f46e5' : '#e5e7eb',
+            color: activeSection === 'schedule' ? '#fff' : '#111827',
+          }}
+        >
+          Schedule
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection('prize')}
+          style={{
+            backgroundColor: activeSection === 'prize' ? '#4f46e5' : '#e5e7eb',
+            color: activeSection === 'prize' ? '#fff' : '#111827',
+          }}
+        >
+          Prize
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection('teams')}
+          style={{
+            backgroundColor: activeSection === 'teams' ? '#4f46e5' : '#e5e7eb',
+            color: activeSection === 'teams' ? '#fff' : '#111827',
+          }}
+        >
+          Teams
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection('submit')}
+          style={{
+            backgroundColor: activeSection === 'submit' ? '#4f46e5' : '#e5e7eb',
+            color: activeSection === 'submit' ? '#fff' : '#111827',
+          }}
+        >
+          Submit
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection('leaderboard')}
+          style={{
+            backgroundColor: activeSection === 'leaderboard' ? '#4f46e5' : '#e5e7eb',
+            color: activeSection === 'leaderboard' ? '#fff' : '#111827',
+          }}
+        >
+          Leaderboard
+        </button>
+      </nav>
+
+      {activeSection === 'overview' ? <Overview /> : null}
+      {activeSection === 'eval' ? <Eval hackathonSlug={hackathon.slug} /> : null}
+      {activeSection === 'schedule' ? <Schedule /> : null}
+      {activeSection === 'prize' ? <Prize /> : null}
+      {activeSection === 'teams' ? <Teams hackathonSlug={hackathon.slug} /> : null}
+      {activeSection === 'submit' ? <Submit hackathonSlug={hackathon.slug} /> : null}
+      {activeSection === 'leaderboard' ? <Leaderboard hackathonSlug={hackathon.slug} /> : null}
     </div>
   )
 }
