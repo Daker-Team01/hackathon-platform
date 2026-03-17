@@ -22,6 +22,7 @@ type UserContextType = {
   isLoggedIn: boolean
   login: (username: string, password: string) => boolean
   logout: () => void
+  updateUser: (updates: Partial<User>) => void
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
@@ -99,8 +100,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  const updateUser = (updates: Partial<User>) => {
+    if (!user) return
+    
+    const updatedUser = { ...user, ...updates }
+    setUser(updatedUser)
+    saveUserToStorage(updatedUser)
+  }
+
   return (
-    <UserContext.Provider value={{ user, isLoggedIn: !!user, login, logout }}>
+    <UserContext.Provider value={{ user, isLoggedIn: !!user, login, logout, updateUser }}>
       {children}
     </UserContext.Provider>
   )
