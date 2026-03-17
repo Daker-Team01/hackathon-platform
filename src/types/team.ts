@@ -1,6 +1,7 @@
 export interface Team {
   teamCode: string
   hackathonSlug?: string
+  authorId?: string
   name: string
   intro: string
   isOpen: boolean

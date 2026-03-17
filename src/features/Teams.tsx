@@ -1,14 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { useLog } from '../contexts/LogContext'
-
-type Team = {
-  id: string
-  hackathonSlug: string
-  name: string
-  description: string
-  lookingFor: string[]
-  contact: string
-}
+import type { Team } from '../types/team'
 
 type TeamsProps = {
   hackathonSlug: string
@@ -16,16 +8,18 @@ type TeamsProps = {
 
 type TeamFormState = {
   name: string
-  description: string
+  intro: string
   lookingFor: string
-  contact: string
+  contactUrl: string
+  memberCount: number
+  isOpen: boolean
 }
 
 type InvitationStatus = 'pending' | 'accepted' | 'declined'
 
 type Invitation = {
   id: string
-  teamId: string
+  teamCode: string
   teamName: string
   hackathonSlug: string
   invitedUser: string
@@ -51,29 +45,15 @@ function normalizeTeam(item: unknown): Team | null {
   if (typeof item !== 'object' || item === null) return null
 
   const candidate = item as Record<string, unknown>
-  const idValue = candidate.id
-  const teamCodeValue = candidate.teamCode
+  const teamCode = typeof candidate.teamCode === 'string' ? candidate.teamCode : ''
   const hackathonSlug = typeof candidate.hackathonSlug === 'string' ? candidate.hackathonSlug : ''
   const name = typeof candidate.name === 'string' ? candidate.name : ''
-  const contactValue = candidate.contact
   const intro = typeof candidate.intro === 'string' ? candidate.intro : ''
-  const id =
-    typeof idValue === 'string'
-      ? idValue
-      : typeof teamCodeValue === 'string'
-      ? teamCodeValue
-      : `${hackathonSlug}-${name}`
-
-  let contact = ''
-  if (typeof contactValue === 'string') {
-    contact = contactValue
-  } else if (typeof contactValue === 'object' && contactValue !== null) {
-    const url = (contactValue as Record<string, unknown>).url
-    contact = typeof url === 'string' ? url : ''
-  }
-
-  const description =
-    typeof candidate.description === 'string' ? candidate.description : intro
+  const isOpen = typeof candidate.isOpen === 'boolean' ? candidate.isOpen : true
+  const memberCount = typeof candidate.memberCount === 'number' ? candidate.memberCount : 1
+  const createdAt =
+    typeof candidate.createdAt === 'string' ? candidate.createdAt : new Date().toISOString()
+  const authorId = typeof candidate.authorId === 'string' ? candidate.authorId : undefined
 
   let lookingFor: string[] = []
   if (Array.isArray(candidate.lookingFor)) {
@@ -87,15 +67,28 @@ function normalizeTeam(item: unknown): Team | null {
       .filter(Boolean)
   }
 
-  if (!hackathonSlug || !name || !description || !contact) return null
+  const contactValue = candidate.contact
+  let contact: Team['contact'] = { type: 'link', url: '' }
+  if (typeof contactValue === 'object' && contactValue !== null) {
+    const contactObj = contactValue as Record<string, unknown>
+    const type = typeof contactObj.type === 'string' ? contactObj.type : 'link'
+    const url = typeof contactObj.url === 'string' ? contactObj.url : ''
+    contact = { type, url }
+  }
+
+  if (!teamCode || !hackathonSlug || !name || !intro || !contact.url) return null
 
   return {
-    id,
+    teamCode,
     hackathonSlug,
+    authorId,
     name,
-    description,
+    intro,
+    isOpen,
+    memberCount,
     lookingFor,
     contact,
+    createdAt,
   }
 }
 
@@ -104,19 +97,19 @@ function normalizeInvitation(item: unknown): Invitation | null {
   const candidate = item as Record<string, unknown>
 
   const id = typeof candidate.id === 'string' ? candidate.id : ''
-  const teamId = typeof candidate.teamId === 'string' ? candidate.teamId : ''
+  const teamCode = typeof candidate.teamCode === 'string' ? candidate.teamCode : ''
   const teamName = typeof candidate.teamName === 'string' ? candidate.teamName : ''
   const hackathonSlug = typeof candidate.hackathonSlug === 'string' ? candidate.hackathonSlug : ''
   const invitedUser = typeof candidate.invitedUser === 'string' ? candidate.invitedUser : ''
   const status = candidate.status
   const createdAt = typeof candidate.createdAt === 'string' ? candidate.createdAt : ''
 
-  if (!id || !teamId || !teamName || !hackathonSlug || !invitedUser || !createdAt) return null
+  if (!id || !teamCode || !teamName || !hackathonSlug || !invitedUser || !createdAt) return null
   if (status !== 'pending' && status !== 'accepted' && status !== 'declined') return null
 
   return {
     id,
-    teamId,
+    teamCode,
     teamName,
     hackathonSlug,
     invitedUser,
@@ -163,6 +156,10 @@ function generateId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`
 }
 
+function generateTeamCode(): string {
+  return `T-${Date.now().toString().slice(-6)}`
+}
+
 export default function Teams({ hackathonSlug }: TeamsProps) {
   const { recordEvent } = useLog()
   const [teams, setTeams] = useState<Team[]>(() => getTeamsFromStorage())
@@ -172,9 +169,11 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
   )
   const [form, setForm] = useState<TeamFormState>({
     name: '',
-    description: '',
+    intro: '',
     lookingFor: '',
-    contact: '',
+    contactUrl: '',
+    memberCount: 1,
+    isOpen: true,
   })
   const [noticeOpen, setNoticeOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<NoticeAction | null>(null)
@@ -207,38 +206,47 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
 
   function createTeam(payload: TeamFormState) {
     const name = payload.name.trim()
-    const description = payload.description.trim()
-    const contact = payload.contact.trim()
+    const intro = payload.intro.trim()
+    const contactUrl = payload.contactUrl.trim()
     const lookingFor = payload.lookingFor
       .split(',')
       .map((value) => value.trim())
       .filter(Boolean)
 
-    if (!name || !description || !contact) return
+    if (!name || !intro || !contactUrl) return
 
     const newTeam: Team = {
-      id: generateId('team'),
+      teamCode: generateTeamCode(),
       hackathonSlug,
+      authorId: currentUser,
       name,
-      description,
+      intro,
+      isOpen: payload.isOpen,
+      memberCount: payload.memberCount,
       lookingFor,
-      contact,
+      contact: {
+        type: 'link',
+        url: contactUrl,
+      },
+      createdAt: new Date().toISOString(),
     }
 
     const updatedTeams = [...teams, newTeam]
     persistTeams(updatedTeams)
 
     recordEvent('team_create', 'hackathon', hackathonSlug, {
-      teamId: newTeam.id,
+      teamCode: newTeam.teamCode,
       teamName: newTeam.name,
     })
     recordEvent('hackathon_join', 'hackathon', hackathonSlug)
 
     setForm({
       name: '',
-      description: '',
+      intro: '',
       lookingFor: '',
-      contact: '',
+      contactUrl: '',
+      memberCount: 1,
+      isOpen: true,
     })
   }
 
@@ -251,7 +259,7 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
     if (status === 'accepted') {
       const invitation = invitations.find((i) => i.id === invitationId)
       if (invitation) {
-        recordEvent('team_join', 'team', invitation.teamId, {
+        recordEvent('team_join', 'team', invitation.teamCode, {
           teamName: invitation.teamName,
           hackathonSlug: invitation.hackathonSlug,
         })
@@ -275,7 +283,7 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
 
     const newInvitation: Invitation = {
       id: generateId('invite'),
-      teamId: team.id,
+      teamCode: team.teamCode,
       teamName: team.name,
       hackathonSlug,
       invitedUser: invitedUser.trim(),
@@ -337,13 +345,15 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
       ) : (
         hackathonTeams.map((team) => (
           <article
-            key={team.id}
+            key={team.teamCode}
             style={{ border: '1px solid #ccc', padding: 12, marginBottom: 8 }}
           >
             <h3>{team.name}</h3>
-            <p>{team.description}</p>
+            <p>{team.intro}</p>
+            <p>Members: {team.memberCount}명</p>
+            <p>Status: {team.isOpen ? '모집중' : '모집마감'}</p>
             <p>Looking For: {team.lookingFor.join(', ') || '-'}</p>
-            <p>Contact: {team.contact}</p>
+            <p>Contact: {team.contact.url}</p>
             <button type="button" onClick={() => handleInvite(team)}>
               Invite
             </button>
@@ -387,11 +397,30 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
         />
         <br />
         <textarea
-          value={form.description}
-          onChange={(event) => setForm({ ...form, description: event.target.value })}
-          placeholder="description"
+          value={form.intro}
+          onChange={(event) => setForm({ ...form, intro: event.target.value })}
+          placeholder="intro"
           required
         />
+        <br />
+        <input
+          type="number"
+          min={1}
+          value={form.memberCount}
+          onChange={(event) =>
+            setForm({ ...form, memberCount: Math.max(1, Number(event.target.value) || 1) })
+          }
+          placeholder="member count"
+        />
+        <br />
+        <label>
+          <input
+            type="checkbox"
+            checked={form.isOpen}
+            onChange={(event) => setForm({ ...form, isOpen: event.target.checked })}
+          />
+          모집 중
+        </label>
         <br />
         <input
           value={form.lookingFor}
@@ -400,9 +429,9 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
         />
         <br />
         <input
-          value={form.contact}
-          onChange={(event) => setForm({ ...form, contact: event.target.value })}
-          placeholder="contact"
+          value={form.contactUrl}
+          onChange={(event) => setForm({ ...form, contactUrl: event.target.value })}
+          placeholder="contact url"
           required
         />
         <br />

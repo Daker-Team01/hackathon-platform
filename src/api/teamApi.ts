@@ -1,21 +1,46 @@
 import type { Team } from "../types/team"
 import publicTeams from "../data/public_teams.json"
 
-const LOCAL_STORAGE_KEY = "hackathon_teams"
+const LOCAL_STORAGE_KEY = "teams"
+
+function parseTeamArray(raw: string): Team[] | null {
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as Team[]) : null
+  } catch {
+    return null
+  }
+}
+
+function mergeSeedTeams(existing: Team[], seed: Team[]): Team[] {
+  const merged = [...existing]
+  const existingCodes = new Set(
+    existing
+      .map((team) => team.teamCode)
+      .filter((teamCode): teamCode is string => typeof teamCode === "string")
+  )
+
+  for (const seedTeam of seed) {
+    if (!existingCodes.has(seedTeam.teamCode)) {
+      merged.push(seedTeam)
+    }
+  }
+
+  return merged
+}
 
 const getStoredTeams = (): Team[] => {
   const stored = localStorage.getItem(LOCAL_STORAGE_KEY)
   if (stored) {
-    return JSON.parse(stored)
+    const parsed = parseTeamArray(stored)
+    if (parsed) {
+      const merged = mergeSeedTeams(parsed, publicTeams as Team[])
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged))
+      return merged
+    }
   }
-  
-  // 초기 데이터가 없는 경우 public_teams.json에서 가져오기
-  // authorId가 없는 초기 데이터들에 대해 기본값 '1'(Alice) 부여
-  const initialTeams = (publicTeams as any[]).map(team => ({
-    ...team,
-    authorId: team.authorId || "1"
-  })) as Team[]
-  
+
+  const initialTeams = publicTeams as Team[]
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialTeams))
   return initialTeams
 }
