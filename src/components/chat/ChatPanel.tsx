@@ -68,80 +68,100 @@ export default function ChatPanel({ open, onClose }: Props) {
             right: 0,
             bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.3)',
-            zIndex: 998
+            zIndex: 997
           }}
         />
       )}
 
-      {/* 채팅 패널 */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: open ? 0 : -600,
-          width: 600,
-          height: '100vh',
-          backgroundColor: 'white',
-          boxShadow: '-2px 0 10px rgba(0,0,0,0.1)',
-          transition: 'right 0.3s ease',
-          display: 'flex',
-          flexDirection: 'column',
-          zIndex: 999
-        }}
-      >
-        {/* 헤더 */}
-        <div style={{
-          padding: 16,
-          borderBottom: '1px solid #eee',
-          backgroundColor: '#4f46e5',
-          color: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <b>Hackathon Chat</b>
-          <button
-            onClick={onClose}
-            style={{
-              border: 'none',
-              background: 'none',
-              color: 'white',
-              fontSize: 24,
-              cursor: 'pointer'
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* 메인 컨텐츠 */}
-        <div style={{
-          display: 'flex',
-          flex: 1,
-          overflow: 'hidden'
-        }}>
-          {/* 왼쪽: 채팅방 목록 */}
-          <ChatRoomList
-            rooms={chatData.rooms}
-            selectedRoomId={selectedRoomId}
-            onSelectRoom={setSelectedRoomId}
-          />
-
-          {/* 오른쪽: 메시지 + 입력 */}
-          <div style={{
-            flex: 1,
+      {/* 채팅 패널 - 오른쪽 하단에 위치, 마이페이지를 가리지 않음 */}
+      {open && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 20,
+            right: 20,
+            width: 500,
+            maxHeight: '925px', // 항상 고정
+            height: '925px',    // 항상 고정
+            backgroundColor: 'white',
+            borderRadius: 12,
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            zIndex: 998,
+            animation: 'slideUp 0.3s ease-out'
+          }}
+        >
+          {/* 헤더 */}
+          <div style={{
+            padding: 16,
+            borderBottom: '1px solid #eee',
+            backgroundColor: '#4f46e5',
+            color: 'white',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderTopLeftRadius: 12,
+            borderTopRightRadius: 12
           }}>
-            <ChatMessages messages={chatData.messages[selectedRoomId] || []} />
-            <ChatInput 
-              onSend={handleSendMessage} 
-              isLoading={selectedRoomId === '4' && isWaitingForResponse}
-              isChatbot={selectedRoomId === '4'}
+            <b>Hackathon Chat</b>
+            <button
+              onClick={onClose}
+              style={{
+                border: 'none',
+                background: 'none',
+                color: 'white',
+                fontSize: 24,
+                cursor: 'pointer'
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* 메인 컨텐츠 */}
+          <div style={{
+            display: 'flex',
+            flex: 1,
+            overflow: 'hidden'
+          }}>
+            {/* 왼쪽: 채팅방 목록 */}
+            <ChatRoomList
+              rooms={chatData.rooms}
+              selectedRoomId={selectedRoomId}
+              onSelectRoom={setSelectedRoomId}
             />
+
+            {/* 오른쪽: 메시지 + 입력 */}
+            <div style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <ChatMessages messages={chatData.messages[selectedRoomId] || []} />
+              <ChatInput 
+                onSend={handleSendMessage} 
+                isLoading={selectedRoomId === '4' && isWaitingForResponse}
+                isChatbot={selectedRoomId === '4'}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* CSS 애니메이션 */}
+      <style>{`
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </>
   )
 }
