@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useMemo, useEffect, useRef } from 'react'
 import Overview from '../features/Overview'
+import Eval from '../features/Eval'
 import Schedule from '../features/Schedule'
 import Prize from '../features/Prize'
 import Teams from '../features/Teams'
@@ -64,6 +65,7 @@ export default function HackathonDetail() {
       <p>End: {formatDateTime(hackathon.period.endAt)}</p>
 
       <Overview />
+      <Eval hackathonSlug={hackathon.slug} />
       <Schedule />
       <Prize />
       <Teams hackathonSlug={hackathon.slug} />
