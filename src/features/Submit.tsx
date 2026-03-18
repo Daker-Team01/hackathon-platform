@@ -42,12 +42,8 @@ type TeamOption = {
 }
 
 function getSubmitSectionBySlug(slug: string): SubmitSection | null {
-  const root = hackathonDetailData as HackathonDetailItem & {
-    extraDetails?: HackathonDetailItem[]
-  }
-
-  if (root.slug === slug) return root.sections?.submit ?? null
-  const detail = root.extraDetails?.find((item) => item.slug === slug)
+  const details = hackathonDetailData as HackathonDetailItem[]
+  const detail = details.find((item) => item.slug === slug)
   return detail?.sections?.submit ?? null
 }
 
