@@ -34,7 +34,7 @@ type UserWithPassword = User & {
 const USER_STORAGE_KEY = 'logged_in_user'
 
 // 모든 유저 데이터를 하나의 배열로 관리
-const allUsers: UserWithPassword[] = [userAlice, userBob, userCharlie, userDiana, userEvan]
+export const allUsers: UserWithPassword[] = [userAlice, userBob, userCharlie, userDiana, userEvan]
 
 const loadUserFromStorage = (): User | null => {
   const raw = localStorage.getItem(USER_STORAGE_KEY)
