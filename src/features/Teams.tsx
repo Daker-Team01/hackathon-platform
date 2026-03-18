@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTeams, useUpdateTeam } from '../hooks/useTeams'
+import { useTeams, useUpdateTeam, useUserInvites, useRespondToInvite } from '../hooks/useTeams'
 import { useUser } from '../contexts/UserContext'
 
 type TeamsProps = {
@@ -12,6 +12,8 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
   const { user } = useUser()
   const { data: teams, isLoading } = useTeams(hackathonSlug)
   const { data: allTeams } = useTeams() // 내 팀을 찾기 위해 전체 목록 가져오기
+  const { data: userInvites } = useUserInvites(user?.id || '')
+  const respondMutation = useRespondToInvite()
   const updateMutation = useUpdateTeam()
   
   const [noticeOpen, setNoticeOpen] = useState(false)
@@ -49,6 +51,12 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
     }
   }
 
+  const handleRespond = (inviteId: string, status: 'ACCEPTED' | 'REJECTED') => {
+    if (window.confirm(`초대를 ${status === 'ACCEPTED' ? '수락' : '거절'}하시겠습니까? 한번 선택하면 변경할 수 없습니다.`)) {
+      respondMutation.mutate({ inviteId, status });
+    }
+  };
+
   return (
     <section>
       <h2>Teams</h2>
@@ -73,19 +81,74 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
       ) : !teams || teams.length === 0 ? (
         <p>등록된 팀이 없습니다.</p>
       ) : (
-        teams.map((team) => (
-          <article
-            key={team.teamCode}
-            style={{ border: '1px solid #ccc', padding: 12, marginBottom: 8 }}
-          >
-            <h3>{team.name}</h3>
-            <p>{team.intro}</p>
-            <p>Members: {team.memberCount}명</p>
-            <p>Status: {team.isOpen ? '모집중' : '모집마감'}</p>
-            <p>Looking For: {team.lookingFor.join(', ') || '-'}</p>
-            <p>Contact: {team.contact.url}</p>
-          </article>
-        ))
+        teams.map((team) => {
+          // 해당 팀에서 온 초대 중 PENDING인 것을 먼저 찾고, 없으면 가장 최근의 것을 찾음
+          const teamInvites = userInvites?.filter(inv => inv.teamId === team.teamCode) || [];
+          const invite = teamInvites.find(inv => inv.status === 'PENDING') || 
+                         (teamInvites.length > 0 ? [...teamInvites].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] : null);
+          
+          const isLeader = team.authorId === user?.id;
+          
+          return (
+            <article
+              key={team.teamCode}
+              style={{ border: '1px solid #ccc', padding: 12, marginBottom: 8, borderRadius: 8 }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                <div>
+                  <h3>{team.name}</h3>
+                  <p>{team.intro}</p>
+                  <p>Members: {team.memberCount}명</p>
+                  <p>Status: {team.isOpen ? '모집중' : '모집마감'}</p>
+                  <p>Looking For: {team.lookingFor.join(', ') || '-'}</p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {isLeader && (
+                    <button 
+                      onClick={() => navigate(`/team/${team.teamCode}/manage`)}
+                      style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '8px 12px', borderRadius: 4, cursor: 'pointer' }}
+                    >
+                      관리
+                    </button>
+                  )}
+                  
+                  {invite && (
+                    <div style={{ border: '1px solid #eee', padding: 8, borderRadius: 4, backgroundColor: '#f9fafb' }}>
+                      <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 'bold' }}>팀 초대</p>
+                      {invite.status === 'PENDING' ? (
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <button 
+                            onClick={() => handleRespond(invite.id, 'ACCEPTED')}
+                            disabled={respondMutation.isPending}
+                            style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '4px 8px', borderRadius: 4, fontSize: '0.8rem', cursor: 'pointer' }}
+                          >
+                            수락
+                          </button>
+                          <button 
+                            onClick={() => handleRespond(invite.id, 'REJECTED')}
+                            disabled={respondMutation.isPending}
+                            style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '4px 8px', borderRadius: 4, fontSize: '0.8rem', cursor: 'pointer' }}
+                          >
+                            거절
+                          </button>
+                        </div>
+                      ) : (
+                        <span style={{ 
+                          fontSize: '0.85rem', 
+                          fontWeight: 'bold',
+                          color: invite.status === 'ACCEPTED' ? '#10b981' : '#ef4444' 
+                        }}>
+                          {invite.status === 'ACCEPTED' ? '초대 수락됨' : '초대 거절됨'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p style={{ marginTop: 10, fontSize: '0.9rem', color: '#666' }}>Contact: {team.contact.url}</p>
+            </article>
+          );
+        })
       )}
 
       {/* 팀 생성 안내 모달 */}

@@ -95,6 +95,12 @@ export default function Camp() {
                         수정
                       </button>
                     </Link>
+
+                    <Link to={`/team/${team.teamCode}/manage`}>
+                      <button style={{ backgroundColor: "#3b82f6", color: "white" }}>
+                        팀 관리
+                      </button>
+                    </Link>
                   </>
                 )}
               </div>

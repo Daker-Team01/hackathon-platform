@@ -63,7 +63,8 @@ export default function CampCreate() {
         url: contactUrl
       },
       hackathonSlug: hackathonSlug || undefined,
-      authorId: user.id
+      authorId: user.id,
+      leaderName: user.nickname
     }, {
       onSuccess: () => {
         navigate(hackathonSlug ? `/camp?hackathon=${hackathonSlug}` : "/camp")

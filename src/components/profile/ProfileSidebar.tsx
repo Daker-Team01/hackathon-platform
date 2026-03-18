@@ -1,6 +1,7 @@
 import { useUser } from '../../contexts/UserContext'
 import LoginForm from './LoginForm'
 import UserProfile from './UserProfile'
+import NotificationPanel from './NotificationPanel'
 import { useEffect, useRef, useState } from 'react'
 
 type Props = {
@@ -71,7 +72,12 @@ export default function ProfileSidebar({ chatOpen }: Props) {
         {isLoggedIn ? '마이페이지' : '로그인'}
       </h2>
 
-      {isLoggedIn ? <UserProfile /> : <LoginForm />}
+      {isLoggedIn ? (
+        <>
+          <UserProfile />
+          <NotificationPanel />
+        </>
+      ) : <LoginForm />}
     </div>
   )
 }
