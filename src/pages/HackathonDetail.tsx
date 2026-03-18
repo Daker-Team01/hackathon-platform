@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useMemo, useEffect, useRef, useState } from 'react'
 import Overview from '../features/Overview'
 import Eval from '../features/Eval'
@@ -40,6 +40,7 @@ function formatDateTime(value: string): string {
 
 export default function HackathonDetail() {
   const { slug } = useParams()
+  const navigate = useNavigate()
   const { recordEvent } = useLog()
   const hasLoggedView = useRef(false)
   const [activeSection, setActiveSection] = useState<SectionKey>('overview')
@@ -62,6 +63,36 @@ export default function HackathonDetail() {
 
   return (
     <div>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            padding: 10,
+            backgroundColor: '#6c757d',
+            color: 'white',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontSize: 14,
+          }}
+        >
+          ← 뒤로가기
+        </button>
+        <button
+          onClick={() => navigate('/')}
+          style={{
+            padding: 10,
+            backgroundColor: '#6c757d',
+            color: 'white',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontSize: 14,
+          }}
+        >
+          ← 메인으로
+        </button>
+      </div>
       <h1>{hackathon.title}</h1>
       <img
         src={hackathon.thumbnailUrl}
