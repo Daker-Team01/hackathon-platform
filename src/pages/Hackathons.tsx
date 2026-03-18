@@ -44,21 +44,7 @@ export default function Hackathons() {
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            padding: 10,
-            backgroundColor: '#6c757d',
-            color: 'white',
-            border: 'none',
-            borderRadius: 4,
-            cursor: 'pointer',
-            fontSize: 14,
-          }}
-        >
-          ← 뒤로가기
-        </button>
+      <div style={{ marginBottom: 20 }}>
         <button
           onClick={() => navigate('/')}
           style={{
