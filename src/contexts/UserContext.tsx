@@ -36,14 +36,64 @@ const USER_STORAGE_KEY = 'logged_in_user'
 // 모든 유저 데이터를 하나의 배열로 관리
 export const allUsers: UserWithPassword[] = [userAlice, userBob, userCharlie, userDiana, userEvan]
 
+const normalizeStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  return []
+}
+
+const normalizeUser = (value: unknown): User | null => {
+  if (typeof value !== 'object' || value === null) {
+    return null
+  }
+
+  const candidate = value as Record<string, unknown>
+  const id = typeof candidate.id === 'string' ? candidate.id : ''
+  const username = typeof candidate.username === 'string' ? candidate.username : ''
+
+  if (!id || !username) {
+    return null
+  }
+
+  return {
+    id,
+    username,
+    nickname: typeof candidate.nickname === 'string' ? candidate.nickname : username,
+    profileImage: typeof candidate.profileImage === 'string' ? candidate.profileImage : '',
+    ranking:
+      typeof candidate.ranking === 'number' && Number.isFinite(candidate.ranking)
+        ? candidate.ranking
+        : 0,
+    points:
+      typeof candidate.points === 'number' && Number.isFinite(candidate.points)
+        ? candidate.points
+        : 0,
+    techStack: normalizeStringArray(candidate.techStack),
+    personalityTags: normalizeStringArray(candidate.personalityTags)
+  }
+}
+
 const loadUserFromStorage = (): User | null => {
   const raw = localStorage.getItem(USER_STORAGE_KEY)
   if (!raw) return null
 
   try {
-    const parsed = JSON.parse(raw) as User
-    if (parsed && typeof parsed.username === 'string') {
-      return parsed
+    const parsed = JSON.parse(raw) as unknown
+    const normalized = normalizeUser(parsed)
+    if (normalized) {
+      return normalized
     }
   } catch (error) {
     console.error('Failed to parse user data from localStorage:', error)
@@ -54,7 +104,14 @@ const loadUserFromStorage = (): User | null => {
 }
 
 const saveUserToStorage = (nextUser: User) => {
-  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(nextUser))
+  localStorage.setItem(
+    USER_STORAGE_KEY,
+    JSON.stringify({
+      ...nextUser,
+      techStack: normalizeStringArray(nextUser.techStack),
+      personalityTags: normalizeStringArray(nextUser.personalityTags)
+    })
+  )
 }
 
 const clearUserFromStorage = () => {
@@ -81,10 +138,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
     )
 
     if (foundUser) {
-      // 비밀번호 제거하고 사용자 정보 저장
-      const { password: _password, ...userWithoutPassword } = foundUser
-      setUser(userWithoutPassword)
-      saveUserToStorage(userWithoutPassword)
+      const normalizedUser: User = {
+        id: foundUser.id,
+        username: foundUser.username,
+        nickname: foundUser.nickname,
+        profileImage: foundUser.profileImage,
+        ranking: foundUser.ranking,
+        points: foundUser.points,
+        techStack: normalizeStringArray(foundUser.techStack),
+        personalityTags: normalizeStringArray(foundUser.personalityTags)
+      }
+
+      setUser(normalizedUser)
+      saveUserToStorage(normalizedUser)
       
       // 채팅 데이터 초기화
       initializeChatData(username)
@@ -103,7 +169,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const updateUser = (updates: Partial<User>) => {
     if (!user) return
     
-    const updatedUser = { ...user, ...updates }
+    const updatedUser = {
+      ...user,
+      ...updates,
+      techStack: normalizeStringArray(updates.techStack ?? user.techStack),
+      personalityTags: normalizeStringArray(updates.personalityTags ?? user.personalityTags)
+    }
     setUser(updatedUser)
     saveUserToStorage(updatedUser)
   }
