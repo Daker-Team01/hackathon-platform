@@ -1,8 +1,131 @@
 import type { Team, TeamInvite, TeamMember } from "../types/team"
 import publicTeams from "../data/public_teams.json"
+import { allUsers } from "../contexts/UserContext"
+import {
+  GENERAL_ROOM_ID,
+  createChatTimestamp,
+  createTeamRoom,
+  mutateUserChatData,
+  upsertMessageInChatData,
+  upsertRoomInChatData,
+  type ChatMessage
+} from "../utils/chatStorage"
 
 const LOCAL_STORAGE_KEY = "teams"
 const INVITES_STORAGE_KEY = "team_invites"
+const TEAM_BOT_NAME = "Team Bot"
+
+const getUsernameByUserId = (userId: string) => {
+  return allUsers.find((user) => user.id === userId)?.username
+}
+
+const getUniqueUsernames = (userIds: string[]) => {
+  return Array.from(
+    new Set(
+      userIds
+        .map((userId) => getUsernameByUserId(userId))
+        .filter((username): username is string => Boolean(username))
+    )
+  )
+}
+
+const createInviteChatMessage = (invite: TeamInvite): ChatMessage => ({
+  id: `team-invite:${invite.id}`,
+  user: TEAM_BOT_NAME,
+  text: `${invite.teamName} 팀에서 초대가 도착했습니다.\n수락하면 ${invite.teamName} 팀 채팅방에 바로 참여합니다.`,
+  timestamp: createChatTimestamp(new Date(invite.createdAt)),
+  invite: {
+    inviteId: invite.id,
+    teamId: invite.teamId,
+    teamName: invite.teamName,
+    status: invite.status
+  }
+})
+
+const createInviteResponseMessage = (invite: TeamInvite): ChatMessage => ({
+  id: `team-invite-response:${invite.id}`,
+  user: TEAM_BOT_NAME,
+  text:
+    invite.status === 'ACCEPTED'
+      ? `${invite.teamName} 팀 초대를 수락했습니다.\n${invite.teamName} 팀 채팅방이 생성되었고 바로 참여되었습니다.`
+      : `${invite.teamName} 팀 초대를 거절했습니다.`,
+  timestamp: createChatTimestamp()
+})
+
+const createTeamWelcomeMessage = (team: Team): ChatMessage => ({
+  id: `team-room-welcome:${team.teamCode}`,
+  user: TEAM_BOT_NAME,
+  text: `${team.name} 팀 채팅방이 생성되었습니다.\n참여자: ${team.members.map((member) => member.userName).join(', ') || '팀원 확인 중'}`,
+  timestamp: createChatTimestamp(new Date(team.createdAt))
+})
+
+const createTeamJoinMessage = (team: Team, member: TeamMember): ChatMessage => ({
+  id: `team-room-joined:${team.teamCode}:${member.userId}`,
+  user: TEAM_BOT_NAME,
+  text: `${member.userName}님이 ${team.name} 팀 채팅방에 참여했습니다.`,
+  timestamp: createChatTimestamp()
+})
+
+const syncInviteToGeneralChat = (invite: TeamInvite) => {
+  const username = getUsernameByUserId(invite.invitedUserId)
+
+  if (!username) {
+    return
+  }
+
+  mutateUserChatData(username, (chatData) => {
+    return upsertMessageInChatData(chatData, GENERAL_ROOM_ID, createInviteChatMessage(invite))
+  })
+}
+
+const appendInviteResponseToGeneralChat = (invite: TeamInvite) => {
+  const username = getUsernameByUserId(invite.invitedUserId)
+
+  if (!username) {
+    return
+  }
+
+  mutateUserChatData(username, (chatData) => {
+    const nextChatData = upsertMessageInChatData(
+      chatData,
+      GENERAL_ROOM_ID,
+      createInviteChatMessage(invite)
+    )
+
+    return upsertMessageInChatData(nextChatData, GENERAL_ROOM_ID, createInviteResponseMessage(invite))
+  })
+}
+
+const syncTeamChatRoom = (team: Team, joinedMember?: TeamMember) => {
+  const usernames = getUniqueUsernames([
+    team.authorId,
+    ...team.members.map((member) => member.userId)
+  ])
+
+  if (usernames.length === 0) {
+    return
+  }
+
+  const room = createTeamRoom(team.teamCode, team.name)
+  const welcomeMessage = createTeamWelcomeMessage(team)
+
+  usernames.forEach((username) => {
+    mutateUserChatData(username, (chatData) => {
+      let nextChatData = upsertRoomInChatData(chatData, room)
+      nextChatData = upsertMessageInChatData(nextChatData, room.id, welcomeMessage)
+
+      if (joinedMember) {
+        nextChatData = upsertMessageInChatData(
+          nextChatData,
+          room.id,
+          createTeamJoinMessage(team, joinedMember)
+        )
+      }
+
+      return nextChatData
+    })
+  })
+}
 
 const normalizeTeam = (team: Team): Team => {
   const authorId = typeof team.authorId === 'string' ? team.authorId : ''
@@ -91,6 +214,7 @@ export const createTeam = async (
 
   const updatedTeams = [newTeam, ...teams]
   saveTeams(updatedTeams)
+  syncTeamChatRoom(newTeam)
   return newTeam
 }
 
@@ -124,6 +248,7 @@ export const inviteUser = async (invite: Omit<TeamInvite, "id" | "status" | "cre
     ...invite
   }
   saveInvites([...invites, newInvite])
+  syncInviteToGeneralChat(newInvite)
   return newInvite
 }
 
@@ -152,17 +277,27 @@ export const respondToInvite = async (inviteId: string, status: 'ACCEPTED' | 'RE
     const teamIndex = teams.findIndex(t => t.teamCode === updatedInvite.teamId)
     if (teamIndex !== -1) {
       const team = teams[teamIndex]
-      const newMember: TeamMember = {
-        userId: updatedInvite.invitedUserId,
-        userName: updatedInvite.invitedUserName,
-        role: 'MEMBER',
-        joinedAt: new Date().toISOString()
+      const existingMember = team.members.some((member) => member.userId === updatedInvite.invitedUserId)
+
+      if (!existingMember) {
+        const newMember: TeamMember = {
+          userId: updatedInvite.invitedUserId,
+          userName: updatedInvite.invitedUserName,
+          role: 'MEMBER',
+          joinedAt: new Date().toISOString()
+        }
+
+        team.members = [...(team.members || []), newMember]
+        team.memberCount = team.members.length
+        saveTeams(teams)
+        syncTeamChatRoom(team, newMember)
+      } else {
+        syncTeamChatRoom(team)
       }
-      team.members = [...(team.members || []), newMember]
-      team.memberCount = team.members.length
-      saveTeams(teams)
     }
   }
+
+  appendInviteResponseToGeneralChat(updatedInvite)
 
   return updatedInvite
 }
