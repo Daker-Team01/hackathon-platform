@@ -36,22 +36,43 @@ const TECH_STACK_OPTIONS = [
   'DevOps'
 ]
 
+const normalizeStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  return []
+}
+
 export default function UserProfile() {
   const { user, logout, updateUser } = useUser()
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState({
     nickname: user?.nickname || '',
-    personalityTags: user?.personalityTags || [],
-    techStack: user?.techStack || []
+    personalityTags: normalizeStringArray(user?.personalityTags),
+    techStack: normalizeStringArray(user?.techStack)
   })
 
   if (!user) return null
 
+  const personalityTags = normalizeStringArray(user.personalityTags)
+  const techStack = normalizeStringArray(user.techStack)
+
   const handleSave = () => {
     updateUser({
       nickname: editData.nickname,
-      personalityTags: editData.personalityTags,
-      techStack: editData.techStack
+      personalityTags: normalizeStringArray(editData.personalityTags),
+      techStack: normalizeStringArray(editData.techStack)
     })
     setIsEditing(false)
   }
@@ -59,8 +80,8 @@ export default function UserProfile() {
   const handleCancel = () => {
     setEditData({
       nickname: user.nickname,
-      personalityTags: user.personalityTags,
-      techStack: user.techStack
+      personalityTags,
+      techStack
     })
     setIsEditing(false)
   }
@@ -237,7 +258,7 @@ export default function UserProfile() {
           </div>
         ) : (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {user.personalityTags.map(tag => (
+            {personalityTags.map(tag => (
               <span
                 key={tag}
                 style={{
@@ -291,7 +312,7 @@ export default function UserProfile() {
           </div>
         ) : (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {user.techStack.map(tech => (
+            {techStack.map(tech => (
               <span
                 key={tech}
                 style={{
