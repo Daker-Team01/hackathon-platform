@@ -257,6 +257,18 @@ export const getInvitesForUser = async (userId: string): Promise<TeamInvite[]> =
   return invites.filter(inv => inv.invitedUserId === userId)
 }
 
+export const clearResolvedInvitesForUser = async (userId: string): Promise<number> => {
+  const invites = getStoredInvites()
+  const nextInvites = invites.filter((inv) => inv.invitedUserId !== userId || inv.status === 'PENDING')
+  const removedCount = invites.length - nextInvites.length
+
+  if (removedCount > 0) {
+    saveInvites(nextInvites)
+  }
+
+  return removedCount
+}
+
 export const getInvitesByTeam = async (teamId: string): Promise<TeamInvite[]> => {
   const invites = getStoredInvites()
   return invites.filter(inv => inv.teamId === teamId)
