@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useUser } from '../../contexts/UserContext'
+import { router } from '../../router/router'
+import ParticipationSummary from './ParticipationSummary'
 
 // 수정 가능한 스택 선택지
 const PERSONALITY_TAGS_OPTIONS = [
@@ -99,6 +101,11 @@ export default function UserProfile() {
         }
       }
     })
+  }
+
+  const handleLogout = () => {
+    logout()
+    router.navigate('/')
   }
 
   return (
@@ -303,6 +310,8 @@ export default function UserProfile() {
         )}
       </div>
 
+      <ParticipationSummary />
+
       {/* 버튼들 */}
       <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
         {isEditing ? (
@@ -346,7 +355,7 @@ export default function UserProfile() {
           </>
         ) : (
           <button
-            onClick={logout}
+            onClick={handleLogout}
             style={{
               padding: '8px 12px',
               backgroundColor: '#ef4444',

@@ -1,25 +1,43 @@
-import type { Team, TeamInvite, InviteStatus, TeamMember } from "../types/team"
+import type { Team, TeamInvite, TeamMember } from "../types/team"
 import publicTeams from "../data/public_teams.json"
 
 const LOCAL_STORAGE_KEY = "teams"
 const INVITES_STORAGE_KEY = "team_invites"
 
+const normalizeTeam = (team: Team): Team => {
+  const authorId = typeof team.authorId === 'string' ? team.authorId : ''
+  const members = Array.isArray(team.members) ? team.members : []
+  const hasSyntheticSeedLeader =
+    authorId === '1' &&
+    members.length === 1 &&
+    members[0].userId === '1' &&
+    members[0].userName === 'Alice'
+
+  return {
+    ...team,
+    authorId: hasSyntheticSeedLeader ? '' : authorId,
+    members: hasSyntheticSeedLeader ? [] : members
+  }
+}
+
 const getStoredTeams = (): Team[] => {
   const stored = localStorage.getItem(LOCAL_STORAGE_KEY)
   if (stored) {
-    return JSON.parse(stored)
+    const parsedTeams = JSON.parse(stored) as Team[]
+    const normalizedTeams = parsedTeams.map(normalizeTeam)
+
+    if (JSON.stringify(parsedTeams) !== JSON.stringify(normalizedTeams)) {
+      saveTeams(normalizedTeams)
+    }
+
+    return normalizedTeams
   }
   
   // 초기 데이터가 없는 경우 public_teams.json에서 가져오기
   const initialTeams = (publicTeams as any[]).map(team => ({
     ...team,
-    authorId: team.authorId || "1",
-    members: team.members || [{
-      userId: team.authorId || "1",
-      userName: "Alice", // Default for initial data if unknown
-      role: 'LEADER',
-      joinedAt: team.createdAt || new Date().toISOString()
-    }]
+    authorId: typeof team.authorId === 'string' ? team.authorId : '',
+    members: Array.isArray(team.members) ? team.members : []
   })) as Team[]
   
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialTeams))
