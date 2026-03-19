@@ -9,6 +9,8 @@ import Submit from '../features/Submit'
 import Leaderboard from '../features/Leaderboard'
 import type { Hackathon } from '../types/hackathon'
 import { useLog } from '../contexts/LogContext'
+import { useUser } from '../contexts/UserContext'
+import { isHackathonInterested, toggleHackathonInterest } from '../utils/interestStorage'
 
 const HACKATHONS_STORAGE_KEY = 'hackathons'
 type SectionKey =
@@ -42,8 +44,10 @@ export default function HackathonDetail() {
   const { slug } = useParams()
   const navigate = useNavigate()
   const { recordEvent } = useLog()
+  const { user } = useUser()
   const hasLoggedView = useRef(false)
   const [activeSection, setActiveSection] = useState<SectionKey>('overview')
+  const [isInterested, setIsInterested] = useState(false)
 
   const hackathon = useMemo(() => {
     const hackathons = getHackathonsFromStorage()
@@ -56,6 +60,15 @@ export default function HackathonDetail() {
       hasLoggedView.current = true
     }
   }, [hackathon, recordEvent])
+
+  useEffect(() => {
+    if (!user || !hackathon) {
+      setIsInterested(false)
+      return
+    }
+
+    setIsInterested(isHackathonInterested(user.id, hackathon.slug))
+  }, [hackathon, user])
 
   if (!slug || !hackathon) {
     return <div>해당 해커톤을 찾을 수 없습니다.</div>
@@ -93,7 +106,42 @@ export default function HackathonDetail() {
           ← 메인으로
         </button>
       </div>
-      <h1>{hackathon.title}</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <h1 style={{ margin: 0 }}>{hackathon.title}</h1>
+        <button
+          type="button"
+          onClick={() => {
+            if (!user) {
+              alert('로그인 후 관심 등록할 수 있습니다.')
+              return
+            }
+
+            const next = toggleHackathonInterest(user.id, hackathon.slug)
+            setIsInterested(next)
+          }}
+          aria-label={isInterested ? '관심 해제' : '관심 등록'}
+          title={isInterested ? '관심 해제' : '관심 등록'}
+          style={{
+            height: 36,
+            padding: '0 14px',
+            borderRadius: 9999,
+            border: `1px solid ${isInterested ? '#fda4af' : '#d1d5db'}`,
+            backgroundColor: isInterested ? '#fff1f2' : '#ffffff',
+            color: isInterested ? '#be123c' : '#374151',
+            cursor: 'pointer',
+            fontSize: 13,
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <span aria-hidden="true" style={{ fontSize: 14 }}>
+            {isInterested ? '♥' : '♡'}
+          </span>
+          <span>{isInterested ? '관심 있는 해커톤' : '관심 등록'}</span>
+        </button>
+      </div>
       <img
         src={hackathon.thumbnailUrl}
         alt={hackathon.title}
