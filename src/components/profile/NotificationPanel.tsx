@@ -1,18 +1,28 @@
+import { useEffect } from 'react';
 import { useUser } from '../../contexts/UserContext';
-import { useUserInvites, useRespondToInvite } from '../../hooks/useTeams';
+import { useUserInvites, useRespondToInvite, useClearResolvedInvitesForUser } from '../../hooks/useTeams';
 
 export default function NotificationPanel() {
   const { user } = useUser();
   const { data: invites, isLoading } = useUserInvites(user?.id || '');
   const respondMutation = useRespondToInvite();
+  const clearResolvedMutation = useClearResolvedInvitesForUser();
+
+  // 아직 결정하지 않은(PENDING) 알림만 유지
+  const pendingInvites = invites?.filter(inv => inv.status === 'PENDING') || [];
+  const hasResolvedInvites = invites?.some((inv) => inv.status !== 'PENDING') || false;
+
+  useEffect(() => {
+    if (!user?.id || !hasResolvedInvites || clearResolvedMutation.isPending) return;
+
+    if (hasResolvedInvites) {
+      clearResolvedMutation.mutate(user.id);
+    }
+  }, [clearResolvedMutation, hasResolvedInvites, user?.id]);
 
   if (!user || isLoading) return null;
 
-  // 보낸 초대 중 처리되지 않은(PENDING) 것과 최근 처리된 것들을 표시
-  const pendingInvites = invites?.filter(inv => inv.status === 'PENDING') || [];
-  const processedInvites = invites?.filter(inv => inv.status !== 'PENDING').slice(-2) || []; // 최근 처리된 2개만 표시
-
-  if (pendingInvites.length === 0 && processedInvites.length === 0) return null;
+  if (pendingInvites.length === 0) return null;
 
   const handleRespond = (inviteId: string, status: 'ACCEPTED' | 'REJECTED') => {
     if (window.confirm(`초대를 ${status === 'ACCEPTED' ? '수락' : '거절'}하시겠습니까?`)) {
@@ -32,7 +42,7 @@ export default function NotificationPanel() {
       </h3>
       
       <div style={{ display: 'grid', gap: 10 }}>
-        {/* 대기 중인 초대 */}
+        {/* 결정 대기 중인 초대 */}
         {pendingInvites.map((inv) => (
           <div key={inv.id} style={{ backgroundColor: '#f0f9ff', padding: 12, borderRadius: 8, border: '1px solid #bae6fd' }}>
             <p style={{ margin: '0 0 8px 0', fontSize: 14 }}>
@@ -54,18 +64,6 @@ export default function NotificationPanel() {
                 거절
               </button>
             </div>
-          </div>
-        ))}
-
-        {/* 최근 처리된 초대 (읽기 전용) */}
-        {processedInvites.map((inv) => (
-          <div key={inv.id} style={{ backgroundColor: '#f9fafb', padding: 10, borderRadius: 8, border: '1px solid #e5e7eb', opacity: 0.8 }}>
-            <p style={{ margin: 0, fontSize: 13, color: '#666' }}>
-              <strong>{inv.teamName}</strong> 팀 초대: 
-              <span style={{ marginLeft: 5, fontWeight: 'bold', color: inv.status === 'ACCEPTED' ? '#059669' : '#dc2626' }}>
-                {inv.status === 'ACCEPTED' ? '수락됨' : '거절됨'}
-              </span>
-            </p>
           </div>
         ))}
       </div>

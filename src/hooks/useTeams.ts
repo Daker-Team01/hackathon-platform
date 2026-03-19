@@ -8,6 +8,7 @@ import {
   inviteUser, 
   getInvitesForUser, 
   getInvitesByTeam, 
+  clearResolvedInvitesForUser,
   respondToInvite, 
   kickMember 
 } from "../api/teamApi"
@@ -83,6 +84,16 @@ export const useTeamInvites = (teamId: string) => {
     queryKey: ["invites", "team", teamId],
     queryFn: () => getInvitesByTeam(teamId),
     enabled: !!teamId
+  })
+}
+
+export const useClearResolvedInvitesForUser = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (userId: string) => clearResolvedInvitesForUser(userId),
+    onSuccess: (_, userId) => {
+      queryClient.invalidateQueries({ queryKey: ["invites", "user", userId] })
+    }
   })
 }
 
