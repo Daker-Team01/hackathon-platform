@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import HackathonCard from '../components/HackathonCard'
 import type { Hackathon } from '../types/hackathon'
+import { useUser } from '../contexts/UserContext'
+import { isHackathonInterested, toggleHackathonInterest } from '../utils/interestStorage'
 
 const HACKATHONS_STORAGE_KEY = 'hackathons'
 
@@ -19,8 +21,10 @@ function getHackathonsFromStorage(): Hackathon[] {
 
 export default function Hackathons() {
   const navigate = useNavigate()
+  const { user } = useUser()
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [tagFilter, setTagFilter] = useState<string>('all')
+  const [, setInterestVersion] = useState(0)
   const hackathons = useMemo(() => getHackathonsFromStorage(), [])
   const statusOptions = useMemo(
     () => Array.from(new Set(hackathons.map((hackathon) => hackathon.status))),
@@ -125,6 +129,20 @@ export default function Hackathons() {
             thumbnailUrl={hackathon.thumbnailUrl}
             deadline={hackathon.period.submissionDeadlineAt}
             onClick={() => navigate(`/hackathons/${hackathon.slug}`)}
+            isInterested={
+              user
+                ? isHackathonInterested(user.id, hackathon.slug)
+                : false
+            }
+            onToggleInterest={() => {
+              if (!user) {
+                alert('로그인 후 관심 등록할 수 있습니다.')
+                return
+              }
+
+              toggleHackathonInterest(user.id, hackathon.slug)
+              setInterestVersion((prev) => prev + 1)
+            }}
           />
         ))
       )}
