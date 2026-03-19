@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useUser } from '../../contexts/UserContext'
 import { router } from '../../router/router'
+import ParticipationSummary from './ParticipationSummary'
 
 // 수정 가능한 스택 선택지
 const PERSONALITY_TAGS_OPTIONS = [
@@ -308,6 +309,8 @@ export default function UserProfile() {
           </div>
         )}
       </div>
+
+      <ParticipationSummary />
 
       {/* 버튼들 */}
       <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
