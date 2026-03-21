@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useUser } from '../../contexts/UserContext'
 import { useChat } from '../../contexts/ChatContext'
 import { generateChatbotResponse, getChatbotAction } from '../../api/chatbotApi'
@@ -19,6 +19,46 @@ export default function ChatPanel({ open, onClose }: Props) {
   const respondMutation = useRespondToInvite()
   const [selectedRoomId, setSelectedRoomId] = useState(GENERAL_ROOM_ID)
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false)
+  const [panelWidth, setPanelWidth] = useState(500)
+  const [panelHeight, setPanelHeight] = useState(760)
+  const [panelRight, setPanelRight] = useState(20)
+  const [panelBottom, setPanelBottom] = useState(20)
+
+  useEffect(() => {
+    const updateLayout = () => {
+      const vv = window.visualViewport
+      const vw = vv?.width ?? window.innerWidth
+      const vh = vv?.height ?? window.innerHeight
+
+      const isMobile = vw < 768
+      const horizontalMargin = isMobile ? 12 : 20
+      const verticalMargin = isMobile ? 12 : 20
+
+      const nextWidth = Math.max(320, Math.min(500, Math.floor(vw - horizontalMargin * 2)))
+      const nextHeight = Math.max(420, Math.min(900, Math.floor(vh - verticalMargin * 2)))
+
+      const safeBottomInset = vv
+        ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop))
+        : 0
+
+      setPanelWidth(nextWidth)
+      setPanelHeight(nextHeight)
+      setPanelBottom(verticalMargin + safeBottomInset)
+      setPanelRight(isMobile ? Math.max(12, Math.floor((vw - nextWidth) / 2)) : 20)
+    }
+
+    updateLayout()
+
+    window.addEventListener('resize', updateLayout)
+    window.visualViewport?.addEventListener('resize', updateLayout)
+    window.visualViewport?.addEventListener('scroll', updateLayout)
+
+    return () => {
+      window.removeEventListener('resize', updateLayout)
+      window.visualViewport?.removeEventListener('resize', updateLayout)
+      window.visualViewport?.removeEventListener('scroll', updateLayout)
+    }
+  }, [])
 
   // 채팅 데이터 없으면 아무것도 렌더링하지 않음
   if (!chatData) return null
@@ -86,14 +126,14 @@ export default function ChatPanel({ open, onClose }: Props) {
         <div
           style={{
             position: 'fixed',
-            bottom: 20,
-            right: 20,
-            width: 500,
-            maxHeight: '925px',
-            height: '925px',
-            backgroundColor: 'white',
+            bottom: panelBottom,
+            right: panelRight,
+            width: panelWidth,
+            maxHeight: `${panelHeight}px`,
+            height: `${panelHeight}px`,
+            backgroundColor: '#FFFFFF',
             borderRadius: 12,
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+            boxShadow: '0 16px 40px rgba(15, 23, 42, 0.22)',
             display: 'flex',
             flexDirection: 'column',
             zIndex: 998,
@@ -102,9 +142,9 @@ export default function ChatPanel({ open, onClose }: Props) {
         >
           <div style={{
             padding: 16,
-            borderBottom: '1px solid #eee',
-            backgroundColor: '#4f46e5',
-            color: 'white',
+            borderBottom: '1px solid #dbeafe',
+            background: 'linear-gradient(135deg, #3B82F6 0%, #0EA5E9 100%)',
+            color: '#FFFFFF',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -117,7 +157,7 @@ export default function ChatPanel({ open, onClose }: Props) {
               style={{
                 border: 'none',
                 background: 'none',
-                color: 'white',
+                color: '#FFFFFF',
                 fontSize: 24,
                 cursor: 'pointer'
               }}
@@ -128,7 +168,8 @@ export default function ChatPanel({ open, onClose }: Props) {
           <div style={{
             display: 'flex',
             flex: 1,
-            overflow: 'hidden'
+            overflow: 'hidden',
+            backgroundColor: '#FFFFFF'
           }}>
             <ChatRoomList
               rooms={filteredRooms}
@@ -140,7 +181,8 @@ export default function ChatPanel({ open, onClose }: Props) {
             <div style={{
               flex: 1,
               display: 'flex',
-              flexDirection: 'column'
+              flexDirection: 'column',
+              backgroundColor: '#FFFFFF'
             }}>
               <ChatMessages
                 messages={chatData.messages[safeSelectedRoomId] || []}

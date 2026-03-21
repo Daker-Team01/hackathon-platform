@@ -40,7 +40,7 @@ export default function ChatMessages({ messages, onInviteResponse, respondingInv
         flex: 1,
         overflow: "auto",
         padding: 16,
-        backgroundColor: "#fafafa",
+        backgroundColor: "#FFFFFF",
         display: "flex",
         flexDirection: "column",
         gap: 12
@@ -52,7 +52,7 @@ export default function ChatMessages({ messages, onInviteResponse, respondingInv
           alignItems: "center",
           justifyContent: "center",
           height: "100%",
-          color: "#999",
+          color: "#94a3b8",
           fontSize: 14
         }}>
           💬 메시지를 입력하세요
@@ -71,15 +71,18 @@ export default function ChatMessages({ messages, onInviteResponse, respondingInv
               maxWidth: "75%",
               padding: "12px 14px",
               borderRadius: 12,
-              backgroundColor: msg.user === "You" ? "#4f46e5" : msg.invite ? "#eff6ff" : "#e5e7eb",
-              color: msg.user === "You" ? "white" : "#1f2937",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+              background: msg.user === "You"
+                ? "linear-gradient(135deg, #3B82F6 0%, #0EA5E9 100%)"
+                : (msg.invite ? "#EFF6FF" : "#F1F5F9"),
+              color: msg.user === "You" ? "#FFFFFF" : "#0f172a",
+              border: msg.user === "You" ? "none" : "1px solid #E2E8F0",
+              boxShadow: "0 2px 8px rgba(15, 23, 42, 0.08)",
               wordWrap: "break-word"
             }}>
               <div style={{
                 fontSize: 12,
                 marginBottom: 6,
-                opacity: msg.user === "You" ? 0.8 : 0.6,
+                opacity: msg.user === "You" ? 0.9 : 0.65,
                 fontWeight: 500
               }}>
                 {msg.user} · {msg.timestamp}
@@ -163,10 +166,10 @@ export default function ChatMessages({ messages, onInviteResponse, respondingInv
                     padding: '8px 10px',
                     borderRadius: 8,
                     border: 'none',
-                    backgroundColor: '#4f46e5',
-                    color: 'white',
+                    background: 'linear-gradient(135deg, #3B82F6 0%, #0EA5E9 100%)',
+                    color: '#FFFFFF',
                     fontSize: 12,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     cursor: 'pointer'
                   }}
                 >
