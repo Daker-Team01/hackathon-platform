@@ -5,10 +5,15 @@ import Navbar from './components/Navbar'
 
 export default function App({ children }: { children: React.ReactNode }) {
   const [chatOpen, setChatOpen] = useState(false)
+  const [authCardOpen, setAuthCardOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <Navbar
+        chatOpen={chatOpen}
+        authCardOpen={authCardOpen}
+        onAuthCardOpenChange={setAuthCardOpen}
+      />
 
       <main className="relative min-h-[calc(100vh-84px)]">
         <div className="container mx-auto py-8">

@@ -10,6 +10,7 @@ export default function ChatButton({ onClick, open }: Props) {
   return (
     <button
       onClick={onClick}
+      data-preserve-auth-card="true"
       aria-label="채팅 열기"
       style={{
         position: "fixed",

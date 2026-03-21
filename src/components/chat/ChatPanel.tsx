@@ -35,11 +35,23 @@ export default function ChatPanel({ open, onClose }: Props) {
       const verticalMargin = isMobile ? 12 : 20
 
       const nextWidth = Math.max(320, Math.min(500, Math.floor(vw - horizontalMargin * 2)))
-      const nextHeight = Math.max(420, Math.min(900, Math.floor(vh - verticalMargin * 2)))
 
       const safeBottomInset = vv
         ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop))
         : 0
+
+      const navbar = document.querySelector('[data-app-navbar="true"]') as HTMLElement | null
+      const navbarBottom = navbar?.getBoundingClientRect().bottom ?? 0
+      const topClearance = Math.max(verticalMargin, Math.ceil(navbarBottom) + 12)
+      const availableHeight = Math.max(
+        280,
+        Math.floor(vh - topClearance - (verticalMargin + safeBottomInset))
+      )
+
+      const nextHeight = Math.max(
+        Math.min(availableHeight, 900),
+        Math.min(420, availableHeight)
+      )
 
       setPanelWidth(nextWidth)
       setPanelHeight(nextHeight)
@@ -111,6 +123,7 @@ export default function ChatPanel({ open, onClose }: Props) {
       {open && (
         <div
           onClick={onClose}
+          data-preserve-auth-card="true"
           style={{
             position: 'fixed',
             top: 0,
@@ -154,6 +167,7 @@ export default function ChatPanel({ open, onClose }: Props) {
             <b>Hackathon Chat</b>
             <button
               onClick={onClose}
+              data-preserve-auth-card="true"
               style={{
                 border: 'none',
                 background: 'none',
