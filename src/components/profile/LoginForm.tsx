@@ -63,17 +63,23 @@ export default function LoginForm() {
         type="submit"
         style={{
           padding: '10px 12px',
-          backgroundColor: '#4f46e5',
-          color: 'white',
+          background: 'linear-gradient(135deg, #3B82F6 0%, #0EA5E9 100%)',
+          color: '#FFFFFF',
           border: 'none',
           borderRadius: 6,
           fontSize: 14,
           fontWeight: 500,
           cursor: 'pointer',
-          transition: 'background-color 0.2s'
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
         }}
-        onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#4338ca')}
-        onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#4f46e5')}
+        onMouseOver={(e) => {
+          e.currentTarget.style.transform = 'translateY(-1px)'
+          e.currentTarget.style.boxShadow = '0 8px 16px rgba(14, 165, 233, 0.3)'
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = 'none'
+        }}
       >
         로그인
       </button>
