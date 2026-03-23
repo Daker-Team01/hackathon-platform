@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Search, Users, Trophy, BarChart3 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
+import insighthonLogo from '../assets/insighthon_logo.png'
 
 export default function Home() {
   const features = [
@@ -38,12 +39,12 @@ export default function Home() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Hero Section */}
       <div className="text-center mb-16 pt-12">
-        <h1 className="text-6xl font-bold text-gray-900 mb-6 leading-tight">
-          해커톤의 모든 것, <br />
-          <span className="bg-gradient-to-r from-[#3B82F6] to-[#0EA5E9] bg-clip-text text-transparent">
-            HackHub
-          </span>
+        <h1 className="text-6xl font-bold mb-6 leading-tight bg-gradient-to-r from-[#3B82F6] to-[#0EA5E9] bg-clip-text text-transparent">
+          해커톤의 인사이트를 켜다,
         </h1>
+        <div className="flex justify-center mb-6">
+          <img src={insighthonLogo} alt="Insighthon" className="h-28 w-auto object-contain" />
+        </div>
         <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
           전 세계의 해커톤을 탐색하고, 팀을 구성하고, 경쟁하세요
         </p>
