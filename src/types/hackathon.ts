@@ -1,6 +1,7 @@
 export type Hackathon = {
   slug: string
   title: string
+  location?: string
   status: string
   tags: string[]
   thumbnailUrl: string
