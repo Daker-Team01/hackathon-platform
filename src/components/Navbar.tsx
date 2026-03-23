@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LogIn, User, X } from 'lucide-react'
+import insighthonLogo from '../assets/insighthon_logo.png'
 import { useUser } from '../contexts/UserContext'
 import LoginForm from './profile/LoginForm'
 import UserProfile from './profile/UserProfile'
@@ -126,30 +127,14 @@ export default function Navbar({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 10,
-              textDecoration: 'none',
-              color: '#0f172a',
-              fontWeight: 800,
-              fontSize: 36
+              textDecoration: 'none'
             }}
           >
-            <span
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: '50%',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'linear-gradient(135deg, #3B82F6 0%, #0EA5E9 100%)',
-                color: '#FFFFFF',
-                fontSize: 22,
-                boxShadow: '0 8px 20px rgba(14, 165, 233, 0.32)'
-              }}
-            >
-              🚀
-            </span>
-            HackHub
+            <img
+              src={insighthonLogo}
+              alt="Insighthon"
+              style={{ height: 36, width: 'auto', objectFit: 'contain' }}
+            />
           </Link>
 
           <nav style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
