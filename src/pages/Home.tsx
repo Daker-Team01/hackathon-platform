@@ -43,7 +43,7 @@ export default function Home() {
           해커톤의 인사이트를 켜다,
         </h1>
         <div className="flex justify-center mb-6">
-          <img src={insighthonLogo} alt="Insighthon" className="h-20 w-auto object-contain" />
+          <img src={insighthonLogo} alt="Insighthon" className="h-28 w-auto object-contain" />
         </div>
         <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
           전 세계의 해커톤을 탐색하고, 팀을 구성하고, 경쟁하세요
