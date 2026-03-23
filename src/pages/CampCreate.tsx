@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { useCreateTeam } from "../hooks/useTeams"
 import { useUser } from "../contexts/UserContext"
 import type { Hackathon } from "../types/hackathon"
+import { Button } from "../components/ui/button"
+import { Label } from "../components/ui/label"
 
 const HACKATHONS_STORAGE_KEY = "hackathons"
 
@@ -62,126 +64,127 @@ export default function CampCreate() {
         type: "link",
         url: contactUrl
       },
-      hackathonSlug: hackathonSlug || undefined,
+      hackathonSlug: (hackathonSlug && hackathonSlug !== "none") ? hackathonSlug : undefined,
       authorId: user.id,
       leaderName: user.nickname
     }, {
       onSuccess: () => {
-        navigate(hackathonSlug ? `/camp?hackathon=${hackathonSlug}` : "/camp")
+        const finalSlug = (hackathonSlug && hackathonSlug !== "none") ? hackathonSlug : ""
+        navigate(finalSlug ? `/camp?hackathon=${finalSlug}` : "/camp")
       }
     })
   }
 
   if (!isLoggedIn) return null
 
+  // Common input classes for visibility and styling
+  const inputClasses = "flex h-9 w-full rounded-md border border-input bg-input-background px-3 py-1 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+  const textareaClasses = "flex min-h-[80px] w-full rounded-md border border-input bg-input-background px-3 py-2 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>팀 모집글 생성</h1>
+    <div className="p-8 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">팀 모집글 생성</h1>
       
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "15px" }}>
-          <label>대상 해커톤 {initialHackathonSlug && "(고정)"}</label>
-          <br />
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-2">
+          <Label>대상 해커톤 {initialHackathonSlug && "(고정)"}</Label>
           <select 
-            value={hackathonSlug} 
+            value={hackathonSlug || "none"} 
             onChange={(e) => setHackathonSlug(e.target.value)}
             disabled={!!initialHackathonSlug}
-            style={{ 
-              width: "100%", 
-              padding: "8px",
-              backgroundColor: initialHackathonSlug ? "#f3f4f6" : "#fff",
-              cursor: initialHackathonSlug ? "not-allowed" : "default"
-            }}
+            className={`${inputClasses} ${initialHackathonSlug ? "bg-muted cursor-not-allowed" : ""}`}
           >
-            <option value="">해커톤 미지정 (나중에 신청하기)</option>
+            <option value="none">해커톤 미지정 (나중에 신청하기)</option>
             {hackathons?.map((h) => (
               <option key={h.slug} value={h.slug}>
                 {h.title}
               </option>
             ))}
           </select>
-          <p style={{ fontSize: "0.85rem", color: "#666", marginTop: "4px" }}>
+          <p className="text-sm text-muted-foreground">
             {initialHackathonSlug 
               ? `* ${hackathons.find(h => h.slug === initialHackathonSlug)?.title || initialHackathonSlug} 해커톤 참여를 위해 팀을 생성합니다.`
               : "* 지금 해커톤을 고르지 않아도 팀을 먼저 생성하고 나중에 참여 신청을 할 수 있습니다."}
           </p>
         </div>
 
-        <div>
-          <label>팀명 *</label>
-          <br />
+        <div className="space-y-2">
+          <Label htmlFor="name">팀명 *</Label>
           <input
+            id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            style={{ width: "100%", marginBottom: "10px" }}
+            placeholder="팀명을 입력하세요"
+            className={inputClasses}
           />
         </div>
 
-        <div>
-          <label>소개 *</label>
-          <br />
+        <div className="space-y-2">
+          <Label htmlFor="intro">소개 *</Label>
           <textarea
+            id="intro"
             value={intro}
             onChange={(e) => setIntro(e.target.value)}
             required
             rows={5}
-            style={{ width: "100%", marginBottom: "10px" }}
+            placeholder="팀과 프로젝트에 대해 소개해 주세요"
+            className={textareaClasses}
           />
         </div>
 
-        <div>
-          <label>팀원 수</label>
-          <br />
+        <div className="space-y-2">
+          <Label htmlFor="memberCount">팀원 수</Label>
           <input
+            id="memberCount"
             type="number"
             value={memberCount}
             onChange={(e) => setMemberCount(Number(e.target.value))}
             min={1}
-            style={{ marginBottom: "10px" }}
+            className={`${inputClasses} w-32`}
           />
         </div>
 
-        <div>
-          <label>
-            <input
-              type="checkbox"
-              checked={isOpen}
-              onChange={(e) => setIsOpen(e.target.checked)}
-            />
-            모집 중
-          </label>
+        <div className="flex items-center space-x-2">
+          <input
+            id="isOpen"
+            type="checkbox"
+            checked={isOpen}
+            onChange={(e) => setIsOpen(e.target.checked)}
+            className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+          />
+          <Label htmlFor="isOpen">모집 중</Label>
         </div>
 
-        <div style={{ marginTop: "10px" }}>
-          <label>모집 포지션 (쉼표로 구분)</label>
-          <br />
+        <div className="space-y-2">
+          <Label htmlFor="lookingFor">모집 포지션 (쉼표로 구분)</Label>
           <input
+            id="lookingFor"
             value={lookingFor}
             onChange={(e) => setLookingFor(e.target.value)}
             placeholder="Frontend, Backend"
-            style={{ width: "100%", marginBottom: "10px" }}
+            className={inputClasses}
           />
         </div>
 
-        <div>
-          <label>연락 링크 (오픈카톡/구글폼 등)</label>
-          <br />
+        <div className="space-y-2">
+          <Label htmlFor="contactUrl">연락 링크 (오픈카톡/구글폼 등)</Label>
           <input
+            id="contactUrl"
             value={contactUrl}
-            onChange={(event) => setContactUrl(event.target.value)}
+            onChange={(e) => setContactUrl(e.target.value)}
             placeholder="https://..."
-            style={{ width: "100%", marginBottom: "10px" }}
+            className={inputClasses}
           />
         </div>
 
-        <div style={{ marginTop: "20px" }}>
-          <button type="submit" disabled={mutation.isPending}>
+        <div className="flex gap-4 pt-4">
+          <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? "생성 중..." : "생성"}
-          </button>
-          <button type="button" onClick={() => navigate(-1)} style={{ marginLeft: "10px", backgroundColor: "#eee", color: "#333" }}>
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
             취소
-          </button>
+          </Button>
         </div>
       </form>
     </div>

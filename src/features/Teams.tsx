@@ -62,7 +62,19 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
       <h2>Teams</h2>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-        <button type="button" onClick={handleOpenCreateNotice}>
+        <button 
+          type="button" 
+          onClick={handleOpenCreateNotice}
+          style={{ 
+            backgroundColor: '#ebf8ff', 
+            color: '#2b6cb0', 
+            border: '1px solid #bee3f8', 
+            padding: '8px 16px', 
+            borderRadius: '4px', 
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
           새 팀 생성하기
         </button>
         {user && myAvailableTeams && myAvailableTeams.length > 0 && (
@@ -174,10 +186,35 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
               <li>팀원 간 연락과 역할 분담은 팀 내부에서 명확히 합의해야 합니다.</li>
               <li>운영 정책 위반 시 팀 참여가 제한될 수 있습니다.</li>
             </ul>
-            <button type="button" onClick={handleConfirmNotice}>
+            <button 
+              type="button" 
+              onClick={handleConfirmNotice}
+              style={{ 
+                backgroundColor: '#3b82f6', 
+                color: 'white', 
+                border: 'none', 
+                padding: '8px 16px', 
+                borderRadius: '4px', 
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
               Confirm
             </button>
-            <button type="button" onClick={handleCloseNotice} style={{ marginLeft: 8, backgroundColor: '#eee', color: '#333' }}>
+            <button 
+              type="button" 
+              onClick={handleCloseNotice} 
+              style={{ 
+                marginLeft: 8, 
+                backgroundColor: '#f3f4f6', 
+                color: '#4b5563', 
+                border: '1px solid #d1d5db', 
+                padding: '8px 16px', 
+                borderRadius: '4px', 
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
               Cancel
             </button>
           </div>

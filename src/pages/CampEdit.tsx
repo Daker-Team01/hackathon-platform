@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom"
 import { useTeam, useUpdateTeam, useDeleteTeam } from "../hooks/useTeams"
 import { useUser } from "../contexts/UserContext"
 import type { Hackathon } from "../types/hackathon"
+import { Button } from "../components/ui/button"
+import { Label } from "../components/ui/label"
 
 const HACKATHONS_STORAGE_KEY = "hackathons"
 const SUBMISSIONS_STORAGE_KEY = "submissions"
@@ -125,7 +127,7 @@ export default function CampEdit() {
           type: "link",
           url: contactUrl
         },
-        hackathonSlug: hackathonSlug || undefined
+        hackathonSlug: (hackathonSlug && hackathonSlug !== "none") ? hackathonSlug : undefined
       }
     }, {
       onSuccess: () => {
@@ -147,186 +149,194 @@ export default function CampEdit() {
     }
   }
 
-  if (isLoading) return <div style={{ padding: "20px" }}>Loading...</div>
-  if (!team) return <div style={{ padding: "20px" }}>팀을 찾을 수 없습니다.</div>
+  if (isLoading) return <div className="p-8">Loading...</div>
+  if (!team) return <div className="p-8">팀을 찾을 수 없습니다.</div>
   
   // 로그인하지 않았거나, 본인의 팀이 아닌 경우 즉시 차단
   if (!user || user.id !== team.authorId) {
     return null
   }
 
+  // Common input classes for visibility and styling
+  const inputClasses = "flex h-9 w-full rounded-md border border-input bg-input-background px-3 py-1 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+  const textareaClasses = "flex min-h-[80px] w-full rounded-md border border-input bg-input-background px-3 py-2 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+
   return (
-    <div style={{ padding: "20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>팀 모집글 수정</h1>
-        <button 
+    <div className="p-8 max-w-2xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">팀 모집글 수정</h1>
+        <Button 
+          variant="destructive"
           onClick={handleDelete}
-          style={{ backgroundColor: "#feb2b2", color: "#c53030", border: "none", padding: "8px 16px", borderRadius: "4px", cursor: "pointer" }}
           disabled={deleteMutation.isPending}
         >
           {deleteMutation.isPending ? "삭제 중..." : "글 삭제"}
-        </button>
+        </Button>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "20px", padding: "15px", border: "1px solid #e2e8f0", borderRadius: "8px", backgroundColor: "#f8fafc" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <label style={{ fontWeight: "bold" }}>참여 해커톤 관리</label>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="p-4 border rounded-lg bg-background space-y-4">
+          <div className="flex justify-between items-center">
+            <Label className="font-bold">참여 해커톤 관리</Label>
             {hackathonSlug !== (team.hackathonSlug || "") && (
-              <span style={{ fontSize: "0.75rem", color: "#e53e3e", backgroundColor: "#fff5f5", padding: "2px 6px", borderRadius: "4px", border: "1px solid #feb2b2" }}>
+              <span className="text-xs text-destructive bg-destructive/10 px-2 py-1 rounded border border-destructive/20">
                 변경됨 (저장 필요)
               </span>
             )}
           </div>
           
-          <div style={{ marginTop: "10px" }}>
+          <div className="mt-2">
             {hackathonSlug && !isChangingHackathon ? (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div className="flex items-center justify-between">
                 <span>현재 참여 중: <strong>{hackathons.find(h => h.slug === hackathonSlug)?.title || hackathonSlug}</strong></span>
-                <div>
-                  <button 
+                <div className="space-x-2">
+                  <Button 
                     type="button" 
+                    variant="outline"
+                    size="sm"
                     onClick={() => setIsChangingHackathon(true)}
-                    style={{ fontSize: "0.85rem", padding: "5px 10px", backgroundColor: "#edf2f7", color: "#4a5568" }}
                   >
                     변경
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
                     type="button" 
+                    variant="destructive"
+                    size="sm"
                     onClick={handleUnlinkHackathon}
-                    style={{ fontSize: "0.85rem", padding: "5px 10px", backgroundColor: "#fff5f5", color: "#c53030", marginLeft: "5px" }}
                   >
                     연결 해제
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : !hackathonSlug && !isChangingHackathon ? (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ color: "#a0aec0" }}>연결된 해커톤이 없습니다 (미지정)</span>
-                <button 
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">연결된 해커톤이 없습니다 (미지정)</span>
+                <Button 
                   type="button" 
+                  variant="outline"
+                  size="sm"
                   onClick={() => setIsChangingHackathon(true)}
-                  style={{ fontSize: "0.85rem", padding: "5px 10px", backgroundColor: "#ebf8ff", color: "#2b6cb0" }}
                 >
                   해커톤 연결하기
-                </button>
+                </Button>
               </div>
             ) : (
-              <div>
+              <div className="space-y-2">
                 <select 
-                  value={hackathonSlug} 
+                  value={hackathonSlug || "none"} 
                   onChange={(e) => setHackathonSlug(e.target.value)}
-                  style={{ width: "100%", padding: "8px", marginBottom: "5px" }}
+                  className={inputClasses}
                 >
-                  <option value="">해커톤 미지정</option>
+                  <option value="none">해커톤 미지정</option>
                   {hackathons?.map((h) => (
                     <option key={h.slug} value={h.slug}>
                       {h.title}
                     </option>
                   ))}
                 </select>
-                <div style={{ display: "flex", gap: "5px" }}>
-                  <button 
+                <div className="flex gap-2">
+                  <Button 
                     type="button" 
+                    size="sm"
                     onClick={() => setIsChangingHackathon(false)}
-                    style={{ fontSize: "0.85rem", padding: "5px 10px", backgroundColor: "#4a5568", color: "white" }}
                   >
                     확인
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
                     type="button" 
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setIsChangingHackathon(false)
                       setHackathonSlug(team.hackathonSlug || "")
                     }}
-                    style={{ fontSize: "0.85rem", padding: "5px 10px", backgroundColor: "#eee", color: "#333" }}
                   >
                     취소 (되돌리기)
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
           </div>
-          <p style={{ fontSize: "0.85rem", color: "#666", marginTop: "8px", marginBottom: 0 }}>
+          <p className="text-sm text-muted-foreground">
             * 해커톤을 변경하거나 해제한 후 하단의 <strong>[수정 완료]</strong> 버튼을 눌러야 최종 저장됩니다.
           </p>
         </div>
 
-        <div>
-          <label>팀명 *</label>
-          <br />
+        <div className="space-y-2">
+          <Label htmlFor="name">팀명 *</Label>
           <input
+            id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            style={{ width: "100%", marginBottom: "10px" }}
+            className={inputClasses}
           />
         </div>
 
-        <div>
-          <label>소개 *</label>
-          <br />
+        <div className="space-y-2">
+          <Label htmlFor="intro">소개 *</Label>
           <textarea
+            id="intro"
             value={intro}
             onChange={(e) => setIntro(e.target.value)}
             required
             rows={5}
-            style={{ width: "100%", marginBottom: "10px" }}
+            className={textareaClasses}
           />
         </div>
 
-        <div>
-          <label>팀원 수</label>
-          <br />
+        <div className="space-y-2">
+          <Label htmlFor="memberCount">팀원 수</Label>
           <input
+            id="memberCount"
             type="number"
             value={memberCount}
             onChange={(e) => setMemberCount(Number(e.target.value))}
             min={1}
-            style={{ marginBottom: "10px" }}
+            className={`${inputClasses} w-32`}
           />
         </div>
 
-        <div>
-          <label>
-            <input
-              type="checkbox"
-              checked={isOpen}
-              onChange={(e) => setIsOpen(e.target.checked)}
-            />
-            모집 중
-          </label>
+        <div className="flex items-center space-x-2">
+          <input
+            id="isOpen"
+            type="checkbox"
+            checked={isOpen}
+            onChange={(e) => setIsOpen(e.target.checked)}
+            className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+          />
+          <Label htmlFor="isOpen">모집 중</Label>
         </div>
 
-        <div style={{ marginTop: "10px" }}>
-          <label>모집 포지션 (쉼표로 구분)</label>
-          <br />
+        <div className="space-y-2">
+          <Label htmlFor="lookingFor">모집 포지션 (쉼표로 구분)</Label>
           <input
+            id="lookingFor"
             value={lookingFor}
             onChange={(e) => setLookingFor(e.target.value)}
             placeholder="Frontend, Backend"
-            style={{ width: "100%", marginBottom: "10px" }}
+            className={inputClasses}
           />
         </div>
 
-        <div>
-          <label>연락 링크</label>
-          <br />
+        <div className="space-y-2">
+          <Label htmlFor="contactUrl">연락 링크</Label>
           <input
+            id="contactUrl"
             value={contactUrl}
             onChange={(e) => setContactUrl(e.target.value)}
             placeholder="https://..."
-            style={{ width: "100%", marginBottom: "10px" }}
+            className={inputClasses}
           />
         </div>
 
-        <div style={{ marginTop: "20px" }}>
-          <button type="submit" disabled={updateMutation.isPending}>
+        <div className="flex gap-4 pt-4">
+          <Button type="submit" disabled={updateMutation.isPending}>
             {updateMutation.isPending ? "저장 중..." : "수정 완료"}
-          </button>
-          <button type="button" onClick={() => navigate(-1)} style={{ marginLeft: "10px", backgroundColor: "#eee", color: "#333" }}>
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
             취소
-          </button>
+          </Button>
         </div>
       </form>
     </div>

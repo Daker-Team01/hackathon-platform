@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTeam, useKickMember, useInviteUser, useTeamInvites } from '../hooks/useTeams';
 import { useUser, allUsers } from '../contexts/UserContext';
 import { useState } from 'react';
+import { Button } from '../components/ui/button';
 
 export default function TeamManagement() {
   const { teamCode } = useParams<{ teamCode: string }>();
@@ -14,8 +15,8 @@ export default function TeamManagement() {
 
   const [inviteUserName, setInviteUserName] = useState('');
 
-  if (isLoading) return <div style={{ padding: 20 }}>Loading...</div>;
-  if (!team) return <div style={{ padding: 20 }}>Team not found.</div>;
+  if (isLoading) return <div className="p-8">Loading...</div>;
+  if (!team) return <div className="p-8 text-center text-muted-foreground">Team not found.</div>;
 
   const isLeader = team.authorId === user?.id;
 
@@ -56,31 +57,43 @@ export default function TeamManagement() {
     });
   };
 
-  return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: 20 }}>
-      <button onClick={() => navigate(-1)} style={{ marginBottom: 20 }}>&larr; 뒤로가기</button>
-      
-      <h1>팀 관리: {team.name}</h1>
-      <p>{team.intro}</p>
+  const inputClasses = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
 
-      <section style={{ marginTop: 30 }}>
-        <h2>팀원 목록 ({team.memberCount}명)</h2>
-        <div style={{ display: 'grid', gap: 10 }}>
+  return (
+    <div className="max-w-3xl mx-auto p-8 space-y-8">
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          &larr; 뒤로가기
+        </Button>
+      </div>
+      
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold">팀 관리: {team.name}</h1>
+        <p className="text-muted-foreground">{team.intro}</p>
+      </div>
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">팀원 목록 ({team.memberCount}명)</h2>
+        <div className="grid gap-3">
           {team.members?.map((member) => (
-            <div key={member.userId} style={{ border: '1px solid #ddd', padding: 12, borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div key={member.userId} className="border p-4 rounded-lg flex justify-between items-center bg-background">
               <div>
-                <strong>{member.userName}</strong> ({member.userId})
-                <span style={{ marginLeft: 10, fontSize: '0.8rem', color: '#666' }}>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold">{member.userName}</span>
+                  <span className="text-xs text-muted-foreground">({member.userId})</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
                   {member.role === 'LEADER' ? '👑 팀장' : '멤버'} | 합류일: {new Date(member.joinedAt).toLocaleDateString()}
-                </span>
+                </div>
               </div>
               {isLeader && member.role !== 'LEADER' && (
-                <button 
+                <Button 
+                  variant="destructive"
+                  size="sm"
                   onClick={() => handleKick(member.userId)}
-                  style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }}
                 >
                   내보내기
-                </button>
+                </Button>
               )}
             </div>
           ))}
@@ -88,55 +101,62 @@ export default function TeamManagement() {
       </section>
 
       {isLeader && (
-        <section style={{ marginTop: 40, padding: 20, backgroundColor: '#f9f9f9', borderRadius: 8 }}>
-          <h2>새 팀원 초대</h2>
-          <form onSubmit={handleInvite} style={{ display: 'flex', gap: 10 }}>
+        <section className="p-6 border rounded-xl bg-background space-y-6">
+          <h2 className="text-xl font-semibold">새 팀원 초대</h2>
+          <form onSubmit={handleInvite} className="flex gap-2">
             <input 
               type="text" 
               placeholder="초대할 유저의 닉네임 입력" 
               value={inviteUserName}
               onChange={(e) => setInviteUserName(e.target.value)}
-              style={{ padding: 8, flex: 1 }}
+              className={inputClasses}
             />
-            <button type="submit" style={{ padding: '8px 16px' }}>초대 보내기</button>
+            <Button type="submit">초대 보내기</Button>
           </form>
 
-          <div style={{ marginTop: 20 }}>
-            <h3>보낸 초대 현황</h3>
+          <div className="space-y-3 pt-4 border-t">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">보낸 초대 현황</h3>
             {invites && invites.length > 0 ? (
-              <ul style={{ listStyle: 'none', padding: 0 }}>
+              <ul className="divide-y border rounded-md">
                 {[...invites].reverse().map((inv) => (
-                  <li key={inv.id} style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>
-                    {inv.invitedUserName} ({inv.invitedUserId}) - 
-                    <span style={{ 
-                      marginLeft: 8, 
-                      fontWeight: 'bold',
-                      color: inv.status === 'PENDING' ? '#f59e0b' : inv.status === 'ACCEPTED' ? '#10b981' : '#ef4444' 
-                    }}>
-                      {inv.status}
-                    </span>
-                    <span style={{ marginLeft: 10, fontSize: '0.75rem', color: '#999' }}>
-                      {new Date(inv.createdAt).toLocaleString()}
-                    </span>
+                  <li key={inv.id} className="p-3 flex justify-between items-center bg-background">
+                    <div>
+                      <span className="font-medium">{inv.invitedUserName}</span>
+                      <span className="text-xs text-muted-foreground ml-2">({inv.invitedUserId})</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                        inv.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 
+                        inv.status === 'ACCEPTED' ? 'bg-emerald-100 text-emerald-700' : 
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {inv.status}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(inv.createdAt).toLocaleString()}
+                      </span>
+                    </div>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p style={{ color: '#666', fontSize: '0.9rem' }}>보낸 초대가 없습니다.</p>
+              <p className="text-sm text-muted-foreground">보낸 초대가 없습니다.</p>
             )}
           </div>
         </section>
       )}
 
-      <section style={{ marginTop: 40 }}>
-        <h2>참가한 해커톤</h2>
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">참가한 해커톤</h2>
         {team.hackathonSlug ? (
-          <div style={{ border: '1px solid #10b981', padding: 15, borderRadius: 8, backgroundColor: '#ecfdf5' }}>
-            <h3 style={{ margin: 0 }}>{team.hackathonSlug}</h3>
-            <p style={{ marginBottom: 0 }}>현재 이 해커톤에 참여 중입니다.</p>
+          <div className="border border-emerald-200 p-4 rounded-lg bg-emerald-50/50">
+            <h3 className="font-bold text-emerald-900">{team.hackathonSlug}</h3>
+            <p className="text-sm text-emerald-700">현재 이 해커톤에 참여 중입니다.</p>
           </div>
         ) : (
-          <p>현재 참여 중인 해커톤이 없습니다.</p>
+          <div className="border p-4 rounded-lg border-dashed text-center text-muted-foreground">
+            현재 참여 중인 해커톤이 없습니다.
+          </div>
         )}
       </section>
     </div>
