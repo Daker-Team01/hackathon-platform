@@ -55,7 +55,7 @@ export default function Home() {
             </button>
           </Link>
           <Link to="/analytics">
-            <button className="px-8 py-4 bg-white border-2 border-gray-100 text-gray-900 font-semibold rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300">
+            <button className="px-8 py-4 bg-white/90 border-2 border-[#3B82F6]/15 text-gray-900 font-semibold rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300">
               더 알아보기
             </button>
           </Link>
@@ -66,7 +66,7 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
         {features.map((feature) => (
           <Link key={feature.title} to={feature.link} className="block">
-            <Card className="p-8 bg-white/80 backdrop-blur-md border-0 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 cursor-pointer group h-full">
+            <Card className="p-8 bg-white/85 backdrop-blur-md border border-[#3B82F6]/10 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 cursor-pointer group h-full">
               <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform duration-300`}>
                 <feature.icon className="w-8 h-8 text-white" />
               </div>
@@ -79,15 +79,15 @@ export default function Home() {
 
       {/* Stats Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
-        <Card className="p-8 bg-white/60 backdrop-blur-sm border-0 shadow-lg text-center">
+        <Card className="p-8 bg-white/75 backdrop-blur-sm border border-[#3B82F6]/10 shadow-lg text-center">
           <div className="text-4xl font-extrabold text-[#3B82F6] mb-2">250+</div>
           <div className="text-gray-600 font-medium">진행중인 해커톤</div>
         </Card>
-        <Card className="p-8 bg-white/60 backdrop-blur-sm border-0 shadow-lg text-center">
+        <Card className="p-8 bg-white/75 backdrop-blur-sm border border-[#3B82F6]/10 shadow-lg text-center">
           <div className="text-4xl font-extrabold text-[#3B82F6] mb-2">15,000+</div>
           <div className="text-gray-600 font-medium">활성 사용자</div>
         </Card>
-        <Card className="p-8 bg-white/60 backdrop-blur-sm border-0 shadow-lg text-center">
+        <Card className="p-8 bg-white/75 backdrop-blur-sm border border-[#3B82F6]/10 shadow-lg text-center">
           <div className="text-4xl font-extrabold text-[#3B82F6] mb-2">500+</div>
           <div className="text-gray-600 font-medium">형성된 팀</div>
         </Card>
