@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Calendar, MapPin, Users, Trophy, Heart, ArrowLeft } from 'lucide-react'
+import { Calendar, MapPin,Search, Users, Trophy, Heart, ArrowLeft } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

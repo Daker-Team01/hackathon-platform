@@ -198,7 +198,7 @@ export default function HackathonDetail() {
             <TabsTrigger value="prize" className="rounded-xl py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-sm">Prize</TabsTrigger>
             <TabsTrigger value="teams" className="rounded-xl py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-sm">Teams</TabsTrigger>
             <TabsTrigger value="submit" className="rounded-xl py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-sm">Submit</TabsTrigger>
-            <TabsTrigger value="leaderboard" className="rounded-xl py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-sm">Ranking</TabsTrigger>
+            <TabsTrigger value="leaderboard" className="rounded-xl py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-sm">Leaderboard</TabsTrigger>
           </TabsList>
         </div>
 
