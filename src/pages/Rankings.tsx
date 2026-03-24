@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { allUsers } from '../contexts/UserContext'
-import hackathonData from '../data/hackathon_dummy_data.json'
+import { normalizedHackathons as hackathonData } from '../lib/hackathonData'
 
 interface RankingUser {
   rank: number

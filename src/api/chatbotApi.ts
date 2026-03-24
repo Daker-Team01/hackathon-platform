@@ -1,9 +1,10 @@
 // 챗봇 RAG (Retrieval Augmented Generation) API
 // 내부 데이터만 사용하여 챗봇 응답 생성
 
-import hackathons from '../data/hackathon_dummy_data.json'
+import { normalizedHackathons as hackathons } from '../lib/hackathonData'
 import teams from '../data/team_dummy_data.json'
 import { allUsers } from '../contexts/UserContext'
+
 
 type HackathonData = (typeof hackathons)[0]
 type TeamData = (typeof teams)[0]
