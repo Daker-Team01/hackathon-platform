@@ -21,12 +21,23 @@ export type ChatbotAction = {
 }
 
 // 개인 사용자 데이터
+<<<<<<< HEAD
 const users: UserData[] = allUsers.map((user) => ({
   id: user.id,
   nickname: user.nickname,
   points: user.points,
   ranking: user.ranking
 }))
+=======
+const users: UserData[] = [
+  ...allUsers.map((user) => ({
+    id: user.id,
+    nickname: user.nickname,
+    points: user.points,
+    ranking: user.ranking
+  }))
+]
+>>>>>>> 9720d75422682c5ada2690ac5c6d0502729d8b5c
 
 // 포인트 기준 정렬
 const usersByPoints = [...users].sort((a, b) => b.points - a.points)
