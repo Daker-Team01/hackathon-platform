@@ -46,6 +46,7 @@ export default function CampEdit() {
   const [intro, setIntro] = useState("")
   const [isOpen, setIsOpen] = useState(true)
   const [memberCount, setMemberCount] = useState(1)
+  const [maxMembers, setMaxMembers] = useState(5)
   const [lookingFor, setLookingFor] = useState("")
   const [contactUrl, setContactUrl] = useState("")
   const [hackathonSlug, setHackathonSlug] = useState("")
@@ -62,7 +63,7 @@ export default function CampEdit() {
         return
       }
       
-      if (user.id !== team.authorId) {
+      if (user.id !== team.leaderId) {
         if (!hasAlerted.current) {
           hasAlerted.current = true
           alert("작성자만 수정할 수 있습니다.")
@@ -75,6 +76,7 @@ export default function CampEdit() {
       setIntro(team.intro)
       setIsOpen(team.isOpen)
       setMemberCount(team.memberCount)
+      setMaxMembers(team.maxMembers || 5)
       setLookingFor(team.lookingFor.join(", "))
       setContactUrl(team.contact.url)
       setHackathonSlug(team.hackathonSlug || "")
@@ -122,6 +124,7 @@ export default function CampEdit() {
         intro,
         isOpen,
         memberCount,
+        maxMembers,
         lookingFor: lookingFor ? lookingFor.split(",").map((v) => v.trim()) : [],
         contact: {
           type: "link",
@@ -153,7 +156,7 @@ export default function CampEdit() {
   if (!team) return <div className="p-8">팀을 찾을 수 없습니다.</div>
   
   // 로그인하지 않았거나, 본인의 팀이 아닌 경우 즉시 차단
-  if (!user || user.id !== team.authorId) {
+  if (!user || user.id !== team.leaderId) {
     return null
   }
 
@@ -285,16 +288,29 @@ export default function CampEdit() {
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="memberCount">팀원 수</Label>
-          <input
-            id="memberCount"
-            type="number"
-            value={memberCount}
-            onChange={(e) => setMemberCount(Number(e.target.value))}
-            min={1}
-            className={`${inputClasses} w-32`}
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="memberCount">현재 인원</Label>
+            <input
+              id="memberCount"
+              type="number"
+              value={memberCount}
+              onChange={(e) => setMemberCount(Number(e.target.value))}
+              min={1}
+              className={inputClasses}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="maxMembers">모집 정원</Label>
+            <input
+              id="maxMembers"
+              type="number"
+              value={maxMembers}
+              onChange={(e) => setMaxMembers(Number(e.target.value))}
+              min={1}
+              className={inputClasses}
+            />
+          </div>
         </div>
 
         <div className="flex items-center space-x-2">

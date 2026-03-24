@@ -32,6 +32,7 @@ export default function CampCreate() {
   const [intro, setIntro] = useState("")
   const [isOpen, setIsOpen] = useState(true)
   const [memberCount, setMemberCount] = useState(1)
+  const [maxMembers, setMaxMembers] = useState(5)
   const [lookingFor, setLookingFor] = useState("")
   const [contactUrl, setContactUrl] = useState("")
   const [hackathonSlug, setHackathonSlug] = useState(initialHackathonSlug)
@@ -59,13 +60,14 @@ export default function CampCreate() {
       intro,
       isOpen,
       memberCount,
+      maxMembers,
       lookingFor: lookingFor ? lookingFor.split(",").map((v) => v.trim()) : [],
       contact: {
         type: "link",
         url: contactUrl
       },
       hackathonSlug: (hackathonSlug && hackathonSlug !== "none") ? hackathonSlug : undefined,
-      authorId: user.id,
+      leaderId: user.id,
       leaderName: user.nickname
     }, {
       onSuccess: () => {
@@ -133,16 +135,29 @@ export default function CampCreate() {
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="memberCount">팀원 수</Label>
-          <input
-            id="memberCount"
-            type="number"
-            value={memberCount}
-            onChange={(e) => setMemberCount(Number(e.target.value))}
-            min={1}
-            className={`${inputClasses} w-32`}
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="memberCount">현재 인원</Label>
+            <input
+              id="memberCount"
+              type="number"
+              value={memberCount}
+              onChange={(e) => setMemberCount(Number(e.target.value))}
+              min={1}
+              className={inputClasses}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="maxMembers">모집 정원</Label>
+            <input
+              id="maxMembers"
+              type="number"
+              value={maxMembers}
+              onChange={(e) => setMaxMembers(Number(e.target.value))}
+              min={1}
+              className={inputClasses}
+            />
+          </div>
         </div>
 
         <div className="flex items-center space-x-2">

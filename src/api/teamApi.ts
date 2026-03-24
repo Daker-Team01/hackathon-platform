@@ -1,6 +1,6 @@
 import type { Team, TeamInvite, TeamMember } from "../types/team"
-import publicTeams from "../data/public_teams.json"
-import { allUsers } from "../contexts/UserContext"
+import teamDummyData from "../data/team_dummy_data.json"
+import userDummyData from "../data/user_dummy_data.json"
 import {
   GENERAL_ROOM_ID,
   createChatTimestamp,
@@ -15,16 +15,15 @@ const LOCAL_STORAGE_KEY = "teams"
 const INVITES_STORAGE_KEY = "team_invites"
 const TEAM_BOT_NAME = "Team Bot"
 
-const getUsernameByUserId = (userId: string) => {
-  return allUsers.find((user) => user.id === userId)?.username
+const getNicknameByUserId = (userId: string) => {
+  return userDummyData.find((user) => user.userId === userId)?.nickname || "Unknown User"
 }
 
 const getUniqueUsernames = (userIds: string[]) => {
   return Array.from(
     new Set(
       userIds
-        .map((userId) => getUsernameByUserId(userId))
-        .filter((username): username is string => Boolean(username))
+        .map((userId) => getNicknameByUserId(userId))
     )
   )
 }
@@ -67,25 +66,17 @@ const createTeamJoinMessage = (team: Team, member: TeamMember): ChatMessage => (
 })
 
 const syncInviteToGeneralChat = (invite: TeamInvite) => {
-  const username = getUsernameByUserId(invite.invitedUserId)
+  const nickname = getNicknameByUserId(invite.invitedUserId)
 
-  if (!username) {
-    return
-  }
-
-  mutateUserChatData(username, (chatData) => {
+  mutateUserChatData(nickname, (chatData) => {
     return upsertMessageInChatData(chatData, GENERAL_ROOM_ID, createInviteChatMessage(invite))
   })
 }
 
 const appendInviteResponseToGeneralChat = (invite: TeamInvite) => {
-  const username = getUsernameByUserId(invite.invitedUserId)
+  const nickname = getNicknameByUserId(invite.invitedUserId)
 
-  if (!username) {
-    return
-  }
-
-  mutateUserChatData(username, (chatData) => {
+  mutateUserChatData(nickname, (chatData) => {
     const nextChatData = upsertMessageInChatData(
       chatData,
       GENERAL_ROOM_ID,
@@ -97,20 +88,16 @@ const appendInviteResponseToGeneralChat = (invite: TeamInvite) => {
 }
 
 const syncTeamChatRoom = (team: Team, joinedMember?: TeamMember) => {
-  const usernames = getUniqueUsernames([
-    team.authorId,
+  const nicknames = getUniqueUsernames([
+    team.leaderId,
     ...team.members.map((member) => member.userId)
   ])
-
-  if (usernames.length === 0) {
-    return
-  }
 
   const room = createTeamRoom(team.teamCode, team.name)
   const welcomeMessage = createTeamWelcomeMessage(team)
 
-  usernames.forEach((username) => {
-    mutateUserChatData(username, (chatData) => {
+  nicknames.forEach((nickname) => {
+    mutateUserChatData(nickname, (chatData) => {
       let nextChatData = upsertRoomInChatData(chatData, room)
       nextChatData = upsertMessageInChatData(nextChatData, room.id, welcomeMessage)
 
@@ -127,42 +114,38 @@ const syncTeamChatRoom = (team: Team, joinedMember?: TeamMember) => {
   })
 }
 
-const normalizeTeam = (team: Team): Team => {
-  const authorId = typeof team.authorId === 'string' ? team.authorId : ''
-  const members = Array.isArray(team.members) ? team.members : []
-  const hasSyntheticSeedLeader =
-    authorId === '1' &&
-    members.length === 1 &&
-    members[0].userId === '1' &&
-    members[0].userName === 'Alice'
+const normalizeTeam = (team: any): Team => {
+  const leaderId = team.leaderId || team.authorId || ''
+  const rawMembers = Array.isArray(team.members) ? team.members : []
+  
+  const members: TeamMember[] = rawMembers.map((m: any) => ({
+    userId: m.userId,
+    userName: m.userName || getNicknameByUserId(m.userId),
+    role: m.role || (m.userId === leaderId ? 'LEADER' : 'MEMBER'),
+    joinedAt: m.joinedAt || team.createdAt || new Date().toISOString()
+  }))
 
   return {
     ...team,
-    authorId: hasSyntheticSeedLeader ? '' : authorId,
-    members: hasSyntheticSeedLeader ? [] : members
+    leaderId,
+    members,
+    maxMembers: team.maxMembers || 5,
+    memberCount: members.length
   }
 }
 
 const getStoredTeams = (): Team[] => {
   const stored = localStorage.getItem(LOCAL_STORAGE_KEY)
   if (stored) {
-    const parsedTeams = JSON.parse(stored) as Team[]
-    const normalizedTeams = parsedTeams.map(normalizeTeam)
-
-    if (JSON.stringify(parsedTeams) !== JSON.stringify(normalizedTeams)) {
-      saveTeams(normalizedTeams)
+    try {
+      const parsed = JSON.parse(stored) as any[]
+      return parsed.map(normalizeTeam)
+    } catch (e) {
+      console.error("Failed to parse stored teams", e)
     }
-
-    return normalizedTeams
   }
   
-  // 초기 데이터가 없는 경우 public_teams.json에서 가져오기
-  const initialTeams = (publicTeams as any[]).map(team => ({
-    ...team,
-    authorId: typeof team.authorId === 'string' ? team.authorId : '',
-    members: Array.isArray(team.members) ? team.members : []
-  })) as Team[]
-  
+  const initialTeams = (teamDummyData as any[]).map(normalizeTeam)
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialTeams))
   return initialTeams
 }
@@ -204,8 +187,8 @@ export const createTeam = async (
     teamCode: `T-${Date.now().toString().slice(-6)}`,
     createdAt: new Date().toISOString(),
     members: [{
-      userId: team.authorId,
-      userName: leaderName || "Leader",
+      userId: team.leaderId,
+      userName: leaderName || getNicknameByUserId(team.leaderId),
       role: 'LEADER',
       joinedAt: new Date().toISOString()
     }],

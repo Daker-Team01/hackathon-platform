@@ -76,7 +76,7 @@ export default function Camp() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {teams?.map((team) => {
-            const isAuthor = user && user.id === team.authorId
+            const isAuthor = user && user.id === team.leaderId
             
             return (
               <Card 
@@ -105,7 +105,7 @@ export default function Camp() {
                   </div>
                   <h3 className="text-2xl font-black text-gray-900 group-hover:text-blue-600 transition-colors flex items-center gap-3 mb-4">
                     {team.name}
-                    <span className="text-lg font-bold text-gray-400">({team.memberCount}명)</span>
+                    <span className="text-lg font-bold text-gray-400">({team.memberCount}/{team.maxMembers}명)</span>
                   </h3>
                   <p className="text-gray-600 leading-relaxed min-h-[3rem] line-clamp-2">
                     {team.intro}
