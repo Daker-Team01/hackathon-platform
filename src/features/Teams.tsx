@@ -21,7 +21,7 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
 
   // 내가 만든 팀 중 이 해커톤에 참여하지 않은 팀들 필터링
   const myAvailableTeams = (allTeams || []).filter(
-    (team) => team.authorId === user?.id && team.hackathonSlug !== hackathonSlug
+    (team) => team.leaderId === user?.id && team.hackathonSlug !== hackathonSlug
   )
 
   function handleOpenCreateNotice() {
@@ -99,7 +99,7 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
           const invite = teamInvites.find(inv => inv.status === 'PENDING') || 
                          (teamInvites.length > 0 ? [...teamInvites].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] : null);
           
-          const isLeader = team.authorId === user?.id;
+          const isLeader = team.leaderId === user?.id;
           
           return (
             <article
@@ -110,7 +110,7 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
                 <div>
                   <h3>{team.name}</h3>
                   <p>{team.intro}</p>
-                  <p>Members: {team.memberCount}명</p>
+                  <p>Members: {team.memberCount}/{team.maxMembers}명</p>
                   <p>Status: {team.isOpen ? '모집중' : '모집마감'}</p>
                   <p>Looking For: {team.lookingFor.join(', ') || '-'}</p>
                 </div>

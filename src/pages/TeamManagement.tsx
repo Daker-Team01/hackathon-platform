@@ -18,7 +18,7 @@ export default function TeamManagement() {
   if (isLoading) return <div className="p-8">Loading...</div>;
   if (!team) return <div className="p-8 text-center text-muted-foreground">Team not found.</div>;
 
-  const isLeader = team.authorId === user?.id;
+  const isLeader = team.leaderId === user?.id;
 
   const handleKick = (userId: string) => {
     if (window.confirm('정말 이 팀원을 내보내시겠습니까?')) {

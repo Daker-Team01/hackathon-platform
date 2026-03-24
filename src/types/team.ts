@@ -19,12 +19,13 @@ export interface TeamInvite {
 
 export interface Team {
   teamCode: string
-  authorId: string
+  leaderId: string
   hackathonSlug?: string
   name: string
   intro: string
   isOpen: boolean
   memberCount: number
+  maxMembers: number
   members: TeamMember[]
   lookingFor: string[]
   contact: {
