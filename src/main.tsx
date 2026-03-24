@@ -11,17 +11,19 @@ import { router } from "./router/router"
 import { ChatProvider } from "./contexts/ChatContext"
 import { UserProvider } from "./contexts/UserContext"
 import { LogProvider } from "./contexts/LogContext"
-import hackathonsData from "./data/public_hackathons.json"
-import teamsData from "./data/public_teams.json"
+import teamsData from "./data/team_dummy_data.json"
+import { HACKATHON_DATA_VERSION, normalizedHackathons } from "./lib/hackathonData"
 
 const queryClient = new QueryClient()
 
 const HACKATHONS_STORAGE_KEY = "hackathons"
+const HACKATHONS_VERSION_KEY = "hackathons_data_version"
 const TEAMS_STORAGE_KEY = "teams"
 
-const storedHackathons = localStorage.getItem(HACKATHONS_STORAGE_KEY)
-if (storedHackathons === null) {
-  localStorage.setItem(HACKATHONS_STORAGE_KEY, JSON.stringify(hackathonsData))
+const storedHackathonsVersion = localStorage.getItem(HACKATHONS_VERSION_KEY)
+if (storedHackathonsVersion !== HACKATHON_DATA_VERSION) {
+  localStorage.setItem(HACKATHONS_STORAGE_KEY, JSON.stringify(normalizedHackathons))
+  localStorage.setItem(HACKATHONS_VERSION_KEY, HACKATHON_DATA_VERSION)
 }
 
 const storedTeams = localStorage.getItem(TEAMS_STORAGE_KEY)

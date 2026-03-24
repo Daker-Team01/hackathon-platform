@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import hackathonDetailData from '../data/public_hackathon_detail.json'
+import { getHackathonDetailBySlug } from '../lib/hackathonDetailData'
 import { useLog } from '../contexts/LogContext'
 
 type SubmitProps = {
@@ -14,18 +14,6 @@ type SubmitSection = {
 type EvalBreakdownItem = {
   key: string
   weightPercent: number
-}
-
-type HackathonDetailItem = {
-  slug: string
-  sections?: {
-    submit?: SubmitSection
-    eval?: {
-      scoreDisplay?: {
-        breakdown?: EvalBreakdownItem[]
-      }
-    }
-  }
 }
 
 type Submission = {
@@ -61,14 +49,12 @@ type TeamOption = {
 }
 
 function getSubmitSectionBySlug(slug: string): SubmitSection | null {
-  const details = hackathonDetailData as HackathonDetailItem[]
-  const detail = details.find((item) => item.slug === slug)
+  const detail = getHackathonDetailBySlug(slug)
   return detail?.sections?.submit ?? null
 }
 
 function getEvalBreakdownBySlug(slug: string): EvalBreakdownItem[] | undefined {
-  const details = hackathonDetailData as HackathonDetailItem[]
-  const detail = details.find((item) => item.slug === slug)
+  const detail = getHackathonDetailBySlug(slug)
   return detail?.sections?.eval?.scoreDisplay?.breakdown
 }
 

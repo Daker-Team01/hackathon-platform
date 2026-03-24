@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import hackathonDetailData from '../data/public_hackathon_detail.json'
+import { getHackathonDetailBySlug } from '../lib/hackathonDetailData'
 
 type EvalProps = {
   hackathonSlug: string
@@ -25,16 +25,8 @@ type EvalSection = {
   }
 }
 
-type HackathonDetailItem = {
-  slug: string
-  sections?: {
-    eval?: EvalSection
-  }
-}
-
 function getEvalSectionBySlug(slug: string): EvalSection | null {
-  const details = hackathonDetailData as HackathonDetailItem[]
-  const detail = details.find((item) => item.slug === slug)
+  const detail = getHackathonDetailBySlug(slug)
   return detail?.sections?.eval ?? null
 }
 
