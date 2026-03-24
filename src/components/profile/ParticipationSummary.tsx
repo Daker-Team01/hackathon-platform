@@ -1,9 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useUser } from '../../contexts/UserContext'
-import { useTeams } from '../../hooks/useTeams'
-import type { Hackathon } from '../../types/hackathon'
-
-const HACKATHONS_STORAGE_KEY = 'hackathons'
 
 const HACKATHON_STATUS_META: Record<string, { label: string; backgroundColor: string; color: string }> = {
   ongoing: {
@@ -23,52 +19,27 @@ const HACKATHON_STATUS_META: Record<string, { label: string; backgroundColor: st
   }
 }
 
-function loadHackathonsFromStorage(): Hackathon[] {
-  const raw = localStorage.getItem(HACKATHONS_STORAGE_KEY)
-
-  if (!raw) return []
-
-  try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as Hackathon[]) : []
-  } catch {
-    return []
-  }
-}
-
 export default function ParticipationSummary() {
   const { user } = useUser()
-  const { data: teams, isLoading } = useTeams()
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const hackathons = useMemo(() => loadHackathonsFromStorage(), [])
 
-  const participatingTeams = useMemo(() => {
-    if (!user || !teams) return []
+  const participations = useMemo(() => {
+    if (!user) return []
 
-    return teams
-      .filter((team) => {
-        if (!team.hackathonSlug) return false
+    return [...user.participations].sort((left, right) => {
+      if (left.status === 'ongoing' && right.status !== 'ongoing') {
+        return -1
+      }
 
-        if (team.authorId === user.id) {
-          return true
-        }
+      if (left.status !== 'ongoing' && right.status === 'ongoing') {
+        return 1
+      }
 
-        return team.members?.some((member) => member.userId === user.id)
-      })
-      .map((team) => {
-        const hackathon = hackathons.find((item) => item.slug === team.hackathonSlug)
-        const member = team.members?.find((item) => item.userId === user.id)
-        const roleLabel = team.authorId === user.id || member?.role === 'LEADER' ? '팀장' : '팀원'
+      return right.contributionScore - left.contributionScore
+    })
+  }, [user])
 
-        return {
-          team,
-          hackathon,
-          roleLabel
-        }
-      })
-  }, [hackathons, teams, user])
-
-  if (!user || isLoading || participatingTeams.length === 0) {
+  if (!user || participations.length === 0) {
     return null
   }
 
@@ -99,18 +70,16 @@ export default function ParticipationSummary() {
 
       {!isCollapsed && (
         <div style={{ display: 'grid', gap: 10 }}>
-          {participatingTeams.map(({ team, hackathon, roleLabel }) => {
-            const statusMeta = hackathon
-              ? HACKATHON_STATUS_META[hackathon.status] || {
-                  label: hackathon.status,
-                  backgroundColor: '#f3f4f6',
-                  color: '#4b5563'
-                }
-              : null
+          {participations.map((participation) => {
+            const statusMeta = HACKATHON_STATUS_META[participation.status] || {
+              label: participation.status,
+              backgroundColor: '#f3f4f6',
+              color: '#4b5563'
+            }
 
             return (
               <div
-                key={team.teamCode}
+                key={`${participation.hackathonSlug}-${participation.teamCode}`}
                 style={{
                   border: '1px solid #dbeafe',
                   backgroundColor: '#f8fbff',
@@ -121,10 +90,10 @@ export default function ParticipationSummary() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
                   <div>
                     <p style={{ margin: '0 0 4px 0', fontSize: 13, fontWeight: 700, color: '#1f2937' }}>
-                      {hackathon?.title || team.hackathonSlug}
+                      {participation.hackathonSlug}
                     </p>
                     <p style={{ margin: 0, fontSize: 12, color: '#4b5563' }}>
-                      팀 {team.name}
+                      팀 코드 {participation.teamCode}
                     </p>
                   </div>
 
@@ -146,13 +115,11 @@ export default function ParticipationSummary() {
                 </div>
 
                 <div style={{ marginTop: 10, display: 'grid', gap: 4 }}>
-                  <p style={{ margin: 0, fontSize: 12, color: '#4b5563' }}>내 역할: {roleLabel}</p>
-                  <p style={{ margin: 0, fontSize: 12, color: '#4b5563' }}>팀원 수: {team.memberCount}명</p>
-                  {hackathon?.period.submissionDeadlineAt && (
-                    <p style={{ margin: 0, fontSize: 12, color: '#4b5563' }}>
-                      제출 마감: {new Date(hackathon.period.submissionDeadlineAt).toLocaleDateString('ko-KR')}
-                    </p>
-                  )}
+                  <p style={{ margin: 0, fontSize: 12, color: '#4b5563' }}>내 역할: {participation.role}</p>
+                  <p style={{ margin: 0, fontSize: 12, color: '#4b5563' }}>리더 여부: {participation.isLeader ? '팀장' : '팀원'}</p>
+                  <p style={{ margin: 0, fontSize: 12, color: '#4b5563' }}>
+                    기여도: {Math.round(participation.contributionScore * 100)}점
+                  </p>
                 </div>
               </div>
             )

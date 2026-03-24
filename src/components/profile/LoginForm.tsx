@@ -1,27 +1,28 @@
 import { useState } from 'react'
-import { useUser } from '../../contexts/UserContext'
+import { allUsers, useUser } from '../../contexts/UserContext'
 
 export default function LoginForm() {
   const { login } = useUser()
-  const [username, setUsername] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const demoAccounts = allUsers.slice(0, 4)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!username.trim() || !password.trim()) {
-      setError('아이디와 비밀번호를 입력해주세요.')
+    if (!identifier.trim() || !password.trim()) {
+      setError('이메일 또는 닉네임과 비밀번호를 입력해주세요.')
       return
     }
 
-    const success = login(username, password)
+    const success = login(identifier, password)
     if (!success) {
-      setError('아이디 또는 비밀번호가 올바르지 않습니다.')
+      setError('이메일, 닉네임 또는 비밀번호가 올바르지 않습니다.')
       setPassword('')
     } else {
-      setUsername('')
+      setIdentifier('')
       setPassword('')
     }
   }
@@ -30,9 +31,9 @@ export default function LoginForm() {
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <input
         type="text"
-        placeholder="아이디"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        placeholder="이메일 또는 닉네임"
+        value={identifier}
+        onChange={(e) => setIdentifier(e.target.value)}
         style={{
           padding: '10px 12px',
           border: error ? '1px solid #ef4444' : '1px solid #e5e7eb',
@@ -85,9 +86,11 @@ export default function LoginForm() {
       </button>
       <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
         <p style={{ margin: '4px 0' }}>테스트 계정:</p>
-        <p style={{ margin: '2px 0' }}>• alice / alice1234</p>
-        <p style={{ margin: '2px 0' }}>• bob / bob1234</p>
-        <p style={{ margin: '2px 0' }}>• charlie / charlie1234</p>
+        {demoAccounts.map((account) => (
+          <p key={account.id} style={{ margin: '2px 0' }}>
+            • {account.nickname} / {account.email} / {account.password}
+          </p>
+        ))}
       </div>
     </form>
   )

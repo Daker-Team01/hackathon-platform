@@ -3,16 +3,14 @@ import { useUser } from '../../contexts/UserContext'
 import { router } from '../../router/router'
 import ParticipationSummary from './ParticipationSummary'
 
-// 수정 가능한 스택 선택지
 const PERSONALITY_TAGS_OPTIONS = [
-  'creative',
-  'analytical',
-  'collaborative',
-  'detail-oriented',
-  'innovative',
-  'organized',
-  'adaptable',
-  'communicative'
+  '실행빠름',
+  '분석적',
+  '집중형',
+  '소통형',
+  '열정적',
+  '독립적',
+  '협력적'
 ]
 
 const TECH_STACK_OPTIONS = [
@@ -25,16 +23,25 @@ const TECH_STACK_OPTIONS = [
   'Node.js',
   'Django',
   'FastAPI',
+  'PyTorch',
+  'NLP',
   'PostgreSQL',
   'MongoDB',
   'GraphQL',
   'Docker',
   'AWS',
   'GCP',
+  'Kubernetes',
   'UI/UX',
   'Mobile',
   'DevOps'
 ]
+
+const WORK_STYLE_LABELS: Record<string, string> = {
+  low: '낮음',
+  medium: '보통',
+  high: '높음'
+}
 
 const normalizeStringArray = (value: unknown): string[] => {
   if (Array.isArray(value)) {
@@ -67,6 +74,25 @@ export default function UserProfile() {
 
   const personalityTags = normalizeStringArray(user.personalityTags)
   const techStack = normalizeStringArray(user.techStack)
+  const participationCount = user.participations.length
+  const ongoingParticipationCount = user.participations.filter((item) => item.status === 'ongoing').length
+  const activityPercent = Math.round(user.activityScore * 100)
+
+  const formatDate = (value: string) => {
+    if (!value) return '-'
+
+    const date = new Date(value)
+
+    if (Number.isNaN(date.getTime())) {
+      return '-'
+    }
+
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
 
   const handleSave = () => {
     updateUser({
@@ -131,7 +157,6 @@ export default function UserProfile() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* 프로필 헤더 (톱니바퀴 버튼) */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ textAlign: 'center', flex: 1 }}>
           <img
@@ -162,8 +187,11 @@ export default function UserProfile() {
               user.nickname
             )}
           </h3>
-          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
-            @{user.username}
+          <p style={{ margin: '0 0 4px 0', fontSize: 12, color: '#6b7280' }}>
+            {user.email}
+          </p>
+          <p style={{ margin: 0, fontSize: 11, color: '#94a3b8' }}>
+            {user.userId} · 최근 로그인 {formatDate(user.lastLoginAt)}
           </p>
         </div>
         
@@ -187,7 +215,6 @@ export default function UserProfile() {
         )}
       </div>
 
-      {/* 랭킹, 포인트 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <div
           style={{
@@ -197,9 +224,9 @@ export default function UserProfile() {
             textAlign: 'center'
           }}
         >
-          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>랭킹</p>
-          <p style={{ margin: '4px 0 0 0', fontSize: 16, fontWeight: 700, color: '#4f46e5' }}>
-            #{user.ranking}
+          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>총 포인트</p>
+          <p style={{ margin: '4px 0 0 0', fontSize: 16, fontWeight: 700, color: '#f59e0b' }}>
+            {user.points.toLocaleString()}
           </p>
         </div>
         <div
@@ -210,14 +237,83 @@ export default function UserProfile() {
             textAlign: 'center'
           }}
         >
-          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>포인트</p>
-          <p style={{ margin: '4px 0 0 0', fontSize: 16, fontWeight: 700, color: '#f59e0b' }}>
-            {user.points}
+          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>평판</p>
+          <p style={{ margin: '4px 0 0 0', fontSize: 16, fontWeight: 700, color: '#4f46e5' }}>
+            {user.reputation.toFixed(1)} / 5.0
+          </p>
+        </div>
+        <div
+          style={{
+            padding: 8,
+            backgroundColor: '#f3f4f6',
+            borderRadius: 6,
+            textAlign: 'center'
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>활동 점수</p>
+          <p style={{ margin: '4px 0 0 0', fontSize: 16, fontWeight: 700, color: '#0f766e' }}>
+            {activityPercent}점
+          </p>
+        </div>
+        <div
+          style={{
+            padding: 8,
+            backgroundColor: '#f3f4f6',
+            borderRadius: 6,
+            textAlign: 'center'
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>참여 이력</p>
+          <p style={{ margin: '4px 0 0 0', fontSize: 16, fontWeight: 700, color: '#1d4ed8' }}>
+            {participationCount}회
           </p>
         </div>
       </div>
 
-      {/* 성격 태그 */}
+      <div style={{ padding: 12, backgroundColor: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <p style={{ margin: '0 0 8px 0', fontSize: 12, fontWeight: 600, color: '#1f2937' }}>선호 역할</p>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+          {user.preferredRoles.map((role) => (
+            <span
+              key={role}
+              style={{
+                padding: '4px 8px',
+                backgroundColor: '#ecfeff',
+                color: '#155e75',
+                borderRadius: 12,
+                fontSize: 12,
+                fontWeight: 500
+              }}
+            >
+              {role}
+            </span>
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          <div style={{ padding: 8, borderRadius: 8, backgroundColor: '#ffffff' }}>
+            <p style={{ margin: 0, fontSize: 11, color: '#64748b' }}>소통</p>
+            <p style={{ margin: '4px 0 0 0', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+              {WORK_STYLE_LABELS[user.workStyle.communication] ?? user.workStyle.communication}
+            </p>
+          </div>
+          <div style={{ padding: 8, borderRadius: 8, backgroundColor: '#ffffff' }}>
+            <p style={{ margin: 0, fontSize: 11, color: '#64748b' }}>리더십</p>
+            <p style={{ margin: '4px 0 0 0', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+              {WORK_STYLE_LABELS[user.workStyle.leadership] ?? user.workStyle.leadership}
+            </p>
+          </div>
+          <div style={{ padding: 8, borderRadius: 8, backgroundColor: '#ffffff' }}>
+            <p style={{ margin: 0, fontSize: 11, color: '#64748b' }}>실행력</p>
+            <p style={{ margin: '4px 0 0 0', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+              {WORK_STYLE_LABELS[user.workStyle.execution] ?? user.workStyle.execution}
+            </p>
+          </div>
+        </div>
+        <p style={{ margin: '10px 0 0 0', fontSize: 11, color: '#64748b' }}>
+          현재 진행 중인 해커톤 {ongoingParticipationCount}개 · 가입일 {formatDate(user.createdAt)}
+        </p>
+      </div>
+
       <div>
         <p style={{ margin: '0 0 8px 0', fontSize: 12, fontWeight: 600, color: '#1f2937' }}>
           성격 태그 {isEditing && <span style={{fontSize: 11, color: '#6b7280'}}>({editData.personalityTags.length}/5)</span>}
@@ -277,7 +373,6 @@ export default function UserProfile() {
         )}
       </div>
 
-      {/* 기술 스택 */}
       <div>
         <p style={{ margin: '0 0 8px 0', fontSize: 12, fontWeight: 600, color: '#1f2937' }}>
           기술 스택
@@ -333,7 +428,6 @@ export default function UserProfile() {
 
       <ParticipationSummary />
 
-      {/* 버튼들 */}
       <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
         {isEditing ? (
           <>

@@ -1,20 +1,40 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import userAlice from '../data/UserData/user_alice.json'
-import userBob from '../data/UserData/user_bob.json'
-import userCharlie from '../data/UserData/user_charlie.json'
-import userDiana from '../data/UserData/user_diana.json'
-import userEvan from '../data/UserData/user_evan.json'
+import userDummyData from '../data/user_dummy_data.json'
 import { useChat } from './ChatContext'
+
+export type UserParticipation = {
+  hackathonSlug: string
+  teamCode: string
+  role: string
+  isLeader: boolean
+  contributionScore: number
+  status: string
+}
+
+export type UserWorkStyle = {
+  communication: string
+  leadership: string
+  execution: string
+}
 
 export type User = {
   id: string
+  userId: string
   username: string
+  email: string
   nickname: string
   profileImage: string
   ranking: number
   points: number
   techStack: string[]
   personalityTags: string[]
+  preferredRoles: string[]
+  workStyle: UserWorkStyle
+  activityScore: number
+  reputation: number
+  participations: UserParticipation[]
+  createdAt: string
+  lastLoginAt: string
 }
 
 type UserContextType = {
@@ -31,10 +51,25 @@ type UserWithPassword = User & {
   password: string
 }
 
-const USER_STORAGE_KEY = 'logged_in_user'
+type RawUser = {
+  userId?: unknown
+  nickname?: unknown
+  email?: unknown
+  password?: unknown
+  profileImage?: unknown
+  createdAt?: unknown
+  lastLoginAt?: unknown
+  skills?: unknown
+  preferredRoles?: unknown
+  personalityTags?: unknown
+  workStyle?: unknown
+  activityScore?: unknown
+  reputation?: unknown
+  points?: unknown
+  participations?: unknown
+}
 
-// 모든 유저 데이터를 하나의 배열로 관리
-export const allUsers: UserWithPassword[] = [userAlice, userBob, userCharlie, userDiana, userEvan]
+const USER_STORAGE_KEY = 'logged_in_user'
 
 const normalizeStringArray = (value: unknown): string[] => {
   if (Array.isArray(value)) {
@@ -54,36 +89,161 @@ const normalizeStringArray = (value: unknown): string[] => {
   return []
 }
 
+const toFiniteNumber = (value: unknown, fallback = 0): number => {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+const normalizeWorkStyle = (value: unknown): UserWorkStyle => {
+  if (typeof value !== 'object' || value === null) {
+    return {
+      communication: 'medium',
+      leadership: 'medium',
+      execution: 'medium'
+    }
+  }
+
+  const candidate = value as Record<string, unknown>
+
+  return {
+    communication: typeof candidate.communication === 'string' ? candidate.communication : 'medium',
+    leadership: typeof candidate.leadership === 'string' ? candidate.leadership : 'medium',
+    execution: typeof candidate.execution === 'string' ? candidate.execution : 'medium'
+  }
+}
+
+const normalizeParticipations = (value: unknown): UserParticipation[] => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .map((item) => ({
+      hackathonSlug: typeof item.hackathonSlug === 'string' ? item.hackathonSlug : '',
+      teamCode: typeof item.teamCode === 'string' ? item.teamCode : '',
+      role: typeof item.role === 'string' ? item.role : '팀원',
+      isLeader: Boolean(item.isLeader),
+      contributionScore: toFiniteNumber(item.contributionScore),
+      status: typeof item.status === 'string' ? item.status : 'unknown'
+    }))
+    .filter((item) => item.hackathonSlug && item.teamCode)
+}
+
+const normalizePointValue = (value: unknown): { total: number } => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return { total: value }
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const candidate = value as Record<string, unknown>
+    return {
+      total: toFiniteNumber(candidate.total)
+    }
+  }
+
+  return { total: 0 }
+}
+
+const createFallbackProfileImage = (nickname: string) => {
+  const initial = nickname.trim().charAt(0) || 'U'
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+      <rect width="120" height="120" rx="60" fill="#dbeafe" />
+      <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="700" fill="#1d4ed8">${initial}</text>
+    </svg>
+  `
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+}
+
+const resolveProfileImage = (profileImage: unknown, nickname: string) => {
+  if (typeof profileImage === 'string' && profileImage && !profileImage.includes('example.com')) {
+    return profileImage
+  }
+
+  return createFallbackProfileImage(nickname)
+}
+
+const rawUsers = Array.isArray(userDummyData) ? (userDummyData as RawUser[]) : []
+
+const rankingByUserId = new Map(
+  [...rawUsers]
+    .sort((left, right) => {
+      const leftPoints = normalizePointValue(left.points).total
+      const rightPoints = normalizePointValue(right.points).total
+
+      if (rightPoints !== leftPoints) {
+        return rightPoints - leftPoints
+      }
+
+      return toFiniteNumber(right.reputation) - toFiniteNumber(left.reputation)
+    })
+    .map((user, index) => [typeof user.userId === 'string' ? user.userId : '', index + 1] as const)
+)
+
 const normalizeUser = (value: unknown): User | null => {
   if (typeof value !== 'object' || value === null) {
     return null
   }
 
   const candidate = value as Record<string, unknown>
-  const id = typeof candidate.id === 'string' ? candidate.id : ''
-  const username = typeof candidate.username === 'string' ? candidate.username : ''
+  const id = typeof candidate.id === 'string'
+    ? candidate.id
+    : typeof candidate.userId === 'string'
+      ? candidate.userId
+      : ''
+  const email = typeof candidate.email === 'string'
+    ? candidate.email
+    : typeof candidate.username === 'string'
+      ? candidate.username
+      : ''
+  const nickname = typeof candidate.nickname === 'string' ? candidate.nickname : email
 
-  if (!id || !username) {
+  if (!id || !email || !nickname) {
     return null
   }
 
+  const normalizedPoints = normalizePointValue(candidate.points)
+
   return {
     id,
-    username,
-    nickname: typeof candidate.nickname === 'string' ? candidate.nickname : username,
-    profileImage: typeof candidate.profileImage === 'string' ? candidate.profileImage : '',
+    userId: typeof candidate.userId === 'string' ? candidate.userId : id,
+    username: typeof candidate.username === 'string' ? candidate.username : email,
+    email,
+    nickname,
+    profileImage: resolveProfileImage(candidate.profileImage, nickname),
     ranking:
       typeof candidate.ranking === 'number' && Number.isFinite(candidate.ranking)
         ? candidate.ranking
-        : 0,
-    points:
-      typeof candidate.points === 'number' && Number.isFinite(candidate.points)
-        ? candidate.points
-        : 0,
-    techStack: normalizeStringArray(candidate.techStack),
-    personalityTags: normalizeStringArray(candidate.personalityTags)
+        : rankingByUserId.get(id) ?? 0,
+    points: normalizedPoints.total,
+    techStack: normalizeStringArray(candidate.techStack ?? candidate.skills),
+    personalityTags: normalizeStringArray(candidate.personalityTags),
+    preferredRoles: normalizeStringArray(candidate.preferredRoles),
+    workStyle: normalizeWorkStyle(candidate.workStyle),
+    activityScore: toFiniteNumber(candidate.activityScore),
+    reputation: toFiniteNumber(candidate.reputation),
+    participations: normalizeParticipations(candidate.participations),
+    createdAt: typeof candidate.createdAt === 'string' ? candidate.createdAt : '',
+    lastLoginAt: typeof candidate.lastLoginAt === 'string' ? candidate.lastLoginAt : ''
   }
 }
+
+export const allUsers: UserWithPassword[] = rawUsers
+  .map((value) => {
+    const normalized = normalizeUser(value)
+    const password = typeof value.password === 'string' ? value.password : ''
+
+    if (!normalized || !password) {
+      return null
+    }
+
+    return {
+      ...normalized,
+      password
+    }
+  })
+  .filter((user): user is UserWithPassword => user !== null)
 
 const loadUserFromStorage = (): User | null => {
   const raw = localStorage.getItem(USER_STORAGE_KEY)
@@ -108,8 +268,11 @@ const saveUserToStorage = (nextUser: User) => {
     USER_STORAGE_KEY,
     JSON.stringify({
       ...nextUser,
+      username: nextUser.email,
       techStack: normalizeStringArray(nextUser.techStack),
-      personalityTags: normalizeStringArray(nextUser.personalityTags)
+      personalityTags: normalizeStringArray(nextUser.personalityTags),
+      preferredRoles: normalizeStringArray(nextUser.preferredRoles),
+      participations: normalizeParticipations(nextUser.participations)
     })
   )
 }
@@ -132,21 +295,34 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = (username: string, password: string): boolean => {
-    // 아이디와 비밀번호로 사용자 찾기
+    const identifier = username.trim().toLowerCase()
+
     const foundUser = allUsers.find(
-      (u) => u.username === username && u.password === password
+      (u) => {
+        const candidates = [u.email, u.userId, u.nickname, u.username].map((value) => value.trim().toLowerCase())
+        return candidates.includes(identifier) && u.password === password
+      }
     )
 
     if (foundUser) {
       const normalizedUser: User = {
         id: foundUser.id,
+        userId: foundUser.userId,
         username: foundUser.username,
+        email: foundUser.email,
         nickname: foundUser.nickname,
         profileImage: foundUser.profileImage,
         ranking: foundUser.ranking,
         points: foundUser.points,
         techStack: normalizeStringArray(foundUser.techStack),
-        personalityTags: normalizeStringArray(foundUser.personalityTags)
+        personalityTags: normalizeStringArray(foundUser.personalityTags),
+        preferredRoles: normalizeStringArray(foundUser.preferredRoles),
+        workStyle: normalizeWorkStyle(foundUser.workStyle),
+        activityScore: foundUser.activityScore,
+        reputation: foundUser.reputation,
+        participations: normalizeParticipations(foundUser.participations),
+        createdAt: foundUser.createdAt,
+        lastLoginAt: foundUser.lastLoginAt
       }
 
       setUser(normalizedUser)
@@ -172,8 +348,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const updatedUser = {
       ...user,
       ...updates,
+      username: updates.email ?? user.email,
       techStack: normalizeStringArray(updates.techStack ?? user.techStack),
-      personalityTags: normalizeStringArray(updates.personalityTags ?? user.personalityTags)
+      personalityTags: normalizeStringArray(updates.personalityTags ?? user.personalityTags),
+      preferredRoles: normalizeStringArray(updates.preferredRoles ?? user.preferredRoles),
+      participations: normalizeParticipations(updates.participations ?? user.participations),
+      workStyle: normalizeWorkStyle(updates.workStyle ?? user.workStyle)
     }
     setUser(updatedUser)
     saveUserToStorage(updatedUser)
