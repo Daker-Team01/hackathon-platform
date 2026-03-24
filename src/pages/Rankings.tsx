@@ -1,22 +1,20 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from 'react-router-dom'
-import { Trophy, Medal, Award, TrendingUp, Star, Crown, ArrowLeft, Users, Globe } from "lucide-react"
+import { Trophy, Medal, Award, TrendingUp, Star, Crown, ArrowLeft, Users, Zap } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-
-import userAlice from '../data/UserData/user_alice.json'
-import userBob from '../data/UserData/user_bob.json'
-import userCharlie from '../data/UserData/user_charlie.json'
-import userDiana from '../data/UserData/user_diana.json'
-import userEvan from '../data/UserData/user_evan.json'
+import { allUsers } from '../contexts/UserContext'
+import hackathonData from '../data/hackathon_dummy_data.json'
 
 interface RankingUser {
   rank: number
   nickname: string
   points: number
+  reputation: number
+  activityScore: number
+  primaryRole: string
   avatar?: string
-  country?: string
 }
 
 interface RankingData {
@@ -25,63 +23,49 @@ interface RankingData {
   days7: RankingUser[]
 }
 
-interface UserData {
-  ranking: number
-  nickname: string
-  points: number
-}
+const AVATARS = ["👑", "🧙", "🥷", "🤖", "🦸", "🎯", "🚀", "💡", "⚡", "🔥"]
+
+const PAGE_SIZE = 10
 
 export default function Rankings() {
   const navigate = useNavigate()
 
-  // 상태 관리
   const [filter, setFilter] = useState<keyof RankingData>("all")
   const [rankingData, setRankingData] = useState<RankingData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
-  // 랭킹 데이터 로드
+  // 통계 수치 (더미 데이터 기반)
+  const totalParticipations = allUsers.reduce((sum, u) => sum + u.participations.length, 0)
+  const totalHackathons = hackathonData.length
+
   useEffect(() => {
     try {
       setError(null)
-      
-      const users: UserData[] = [
-        userAlice,
-        userBob,
-        userCharlie,
-        userDiana,
-        userEvan
-      ]
 
-      const sortedByRanking = users.sort((a, b) => a.ranking - b.ranking)
+      const sorted = [...allUsers].sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points
+        return b.reputation - a.reputation
+      })
 
-      const avatars = ["👑", "🧙", "🥷", "🤖", "🦸"]
-      const countries = ["대한민국", "미국", "일본", "캐나다", "독일"]
+      const toEntry = (user: typeof sorted[0], index: number, pointMultiplier: number): RankingUser => ({
+        rank: index + 1,
+        nickname: user.nickname,
+        points: Math.floor(user.points * pointMultiplier),
+        reputation: user.reputation,
+        activityScore: user.activityScore,
+        primaryRole: user.preferredRoles[0] ?? user.techStack[0] ?? '참여자',
+        avatar: AVATARS[index % AVATARS.length]
+      })
 
       const data: RankingData = {
-        all: sortedByRanking.map((user, index) => ({
-          rank: index + 1,
-          nickname: user.nickname,
-          points: user.points,
-          avatar: avatars[index % avatars.length],
-          country: countries[index % countries.length]
-        })),
-        days30: sortedByRanking.map((user, index) => ({
-          rank: index + 1,
-          nickname: user.nickname,
-          points: Math.floor(user.points * 0.6),
-          avatar: avatars[index % avatars.length],
-          country: countries[index % countries.length]
-        })),
-        days7: sortedByRanking.map((user, index) => ({
-          rank: index + 1,
-          nickname: user.nickname,
-          points: Math.floor(user.points * 0.3),
-          avatar: avatars[index % avatars.length],
-          country: countries[index % countries.length]
-        }))
+        all:    sorted.map((u, i) => toEntry(u, i, 1)),
+        days30: sorted.map((u, i) => toEntry(u, i, 0.6)),
+        days7:  sorted.map((u, i) => toEntry(u, i, 0.3)),
       }
 
       setRankingData(data)
+      setVisibleCount(PAGE_SIZE)
     } catch (err) {
       setError(err instanceof Error ? err.message : '랭킹 데이터를 불러오는 중 오류가 발생했습니다.')
     }
@@ -101,6 +85,11 @@ export default function Rankings() {
     if (rank === 2) return "bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200"
     if (rank === 3) return "bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200"
     return "bg-white border-gray-100"
+  }
+
+  const handleFilterChange = (next: keyof RankingData) => {
+    setFilter(next)
+    setVisibleCount(PAGE_SIZE)
   }
 
   return (
@@ -141,18 +130,18 @@ export default function Rankings() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100 shadow-sm text-center">
               <Users className="w-8 h-8 text-blue-500 mx-auto mb-3" />
-              <div className="text-2xl font-bold text-gray-900 mb-1">1,240</div>
+              <div className="text-2xl font-bold text-gray-900 mb-1">{allUsers.length.toLocaleString()}</div>
               <div className="text-sm text-gray-600 font-medium tracking-wide uppercase">총 활성 유저</div>
             </Card>
             <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 border-purple-100 shadow-sm text-center">
-              <Star className="w-8 h-8 text-purple-500 mx-auto mb-3" />
-              <div className="text-2xl font-bold text-gray-900 mb-1">456</div>
-              <div className="text-sm text-gray-600 font-medium tracking-wide uppercase">누적 해커톤</div>
+              <Zap className="w-8 h-8 text-purple-500 mx-auto mb-3" />
+              <div className="text-2xl font-bold text-gray-900 mb-1">{totalParticipations.toLocaleString()}</div>
+              <div className="text-sm text-gray-600 font-medium tracking-wide uppercase">누적 참여 이력</div>
             </Card>
             <Card className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100 shadow-sm text-center">
-              <Globe className="w-8 h-8 text-emerald-500 mx-auto mb-3" />
-              <div className="text-2xl font-bold text-gray-900 mb-1">12</div>
-              <div className="text-sm text-gray-600 font-medium tracking-wide uppercase">참여 국가</div>
+              <Trophy className="w-8 h-8 text-emerald-500 mx-auto mb-3" />
+              <div className="text-2xl font-bold text-gray-900 mb-1">{totalHackathons.toLocaleString()}</div>
+              <div className="text-sm text-gray-600 font-medium tracking-wide uppercase">누적 해커톤</div>
             </Card>
           </div>
 
@@ -160,7 +149,7 @@ export default function Rankings() {
           <div className="flex gap-2 mb-8 bg-gray-100/50 p-1.5 rounded-xl w-fit">
             <Button 
               variant={filter === "all" ? "default" : "ghost"}
-              onClick={() => setFilter("all")}
+              onClick={() => handleFilterChange("all")}
               className={filter === "all" ? "bg-white text-gray-900 shadow-sm hover:bg-white" : "text-gray-500"}
               size="sm"
             >
@@ -168,7 +157,7 @@ export default function Rankings() {
             </Button>
             <Button 
               variant={filter === "days30" ? "default" : "ghost"}
-              onClick={() => setFilter("days30")}
+              onClick={() => handleFilterChange("days30")}
               className={filter === "days30" ? "bg-white text-gray-900 shadow-sm hover:bg-white" : "text-gray-500"}
               size="sm"
             >
@@ -176,7 +165,7 @@ export default function Rankings() {
             </Button>
             <Button 
               variant={filter === "days7" ? "default" : "ghost"}
-              onClick={() => setFilter("days7")}
+              onClick={() => handleFilterChange("days7")}
               className={filter === "days7" ? "bg-white text-gray-900 shadow-sm hover:bg-white" : "text-gray-500"}
               size="sm"
             >
@@ -185,48 +174,98 @@ export default function Rankings() {
           </div>
 
           {/* Rankings List */}
-          <div className="space-y-4">
-            {rankingData[filter].map((user) => (
-              <Card 
-                key={user.rank}
-                className={`flex items-center gap-4 p-5 transition-all hover:shadow-lg hover:scale-[1.01] ${getRankBg(user.rank)} border-0 shadow-sm`}
-              >
-                {/* Rank Icon */}
-                <div className="w-12 flex items-center justify-center">
-                  {getRankIcon(user.rank)}
-                </div>
+          {/* Top 3 - 가로 포디움 */}
+          {(() => {
+            const top = rankingData[filter].slice(0, 3)
+            // 포디움 순서: 1위(왼), 2위(가운데), 3위(오른) → 배열 인덱스 그대로 사용
+            const podiumOrder = [top[0], top[1], top[2]].filter(Boolean)
+            return (
+              <div className="grid grid-cols-3 gap-3 mb-2 items-end">
+                {podiumOrder.map((user) => {
+                  const isFirst = user.rank === 1
+                  return (
+                    <Card
+                      key={user.rank}
+                      className={`flex flex-col items-center text-center gap-2 transition-all hover:shadow-lg hover:scale-[1.02] ${getRankBg(user.rank)} border shadow-sm ${
+                        isFirst ? 'p-5' : 'p-4'
+                      }`}
+                    >
+                      <div className={isFirst ? 'mb-1' : ''}>
+                        {getRankIcon(user.rank)}
+                      </div>
+                      <div
+                        className={`bg-white rounded-2xl flex items-center justify-center shadow-inner border border-gray-100 ${
+                          isFirst ? 'text-4xl w-16 h-16' : 'text-3xl w-12 h-12'
+                        }`}
+                      >
+                        {user.avatar}
+                      </div>
+                      <div className="w-full min-w-0">
+                        <p className={`font-bold text-gray-900 truncate ${isFirst ? 'text-base' : 'text-sm'}`}>
+                          {user.nickname}
+                        </p>
+                        <Badge variant="outline" className="text-xs bg-white/60 border-gray-200 text-gray-500 mt-1">
+                          {user.primaryRole}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 w-full">
+                        <span className={`font-black text-gray-900 ${isFirst ? 'text-xl' : 'text-base'}`}>
+                          {user.points.toLocaleString()}
+                          <span className="text-xs font-normal text-gray-400 ml-1">pts</span>
+                        </span>
+                        <div className="flex gap-2 text-xs text-gray-400 justify-center">
+                          <span className="flex items-center gap-0.5">
+                            <Star className="w-3 h-3 text-yellow-400" />{user.reputation.toFixed(1)}
+                          </span>
+                          <span className="flex items-center gap-0.5">
+                            <TrendingUp className="w-3 h-3 text-green-500" />{Math.round(user.activityScore * 100)}점
+                          </span>
+                        </div>
+                      </div>
+                    </Card>
+                  )
+                })}
+              </div>
+            )
+          })()}
 
-                {/* Avatar */}
-                <div className="text-4xl bg-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner border border-gray-100">
-                  {user.avatar}
+          {/* 4위 이하 - 컴팩트 테이블 */}
+          {rankingData[filter].length > 3 && (
+            <div className="border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+              {rankingData[filter].slice(3, visibleCount).map((user, idx) => (
+                <div
+                  key={user.rank}
+                  className={`flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors ${
+                    idx !== 0 ? 'border-t border-gray-100' : ''
+                  }`}
+                >
+                  <span className="w-8 text-sm font-bold text-gray-400 text-center flex-shrink-0">#{user.rank}</span>
+                  <span className="text-lg w-7 text-center flex-shrink-0">{user.avatar}</span>
+                  <span className="flex-1 font-semibold text-gray-800 text-sm truncate">{user.nickname}</span>
+                  <Badge variant="outline" className="text-xs text-gray-400 border-gray-200 hidden sm:inline-flex flex-shrink-0">
+                    {user.primaryRole}
+                  </Badge>
+                  <span className="flex items-center gap-0.5 text-xs text-gray-400 flex-shrink-0">
+                    <Star className="w-3 h-3 text-yellow-400" />{user.reputation.toFixed(1)}
+                  </span>
+                  <span className="text-sm font-bold text-gray-700 w-20 text-right flex-shrink-0">
+                    {user.points.toLocaleString()} <span className="text-xs font-normal text-gray-400">pts</span>
+                  </span>
                 </div>
+              ))}
 
-                {/* User Info */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-xl font-bold text-gray-900">{user.nickname}</h3>
-                    <Badge variant="outline" className="bg-white/50 border-gray-200 font-medium text-gray-600">
-                      {user.country}
-                    </Badge>
-                  </div>
-                  <div className="flex gap-4 text-sm text-gray-500 font-medium">
-                    <span className="flex items-center gap-1">
-                      <TrendingUp className="w-3.5 h-3.5 text-green-500" />
-                      순위 상승 중
-                    </span>
-                  </div>
+              {visibleCount < rankingData[filter].length && (
+                <div className="border-t border-gray-100 px-4 py-3 text-center">
+                  <button
+                    onClick={() => setVisibleCount((v) => v + PAGE_SIZE)}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-semibold hover:underline"
+                  >
+                    더보기 ({rankingData[filter].length - visibleCount}명 남음)
+                  </button>
                 </div>
-
-                {/* Points */}
-                <div className="text-right pr-4">
-                  <div className="text-2xl font-black text-gray-900 leading-none mb-1">
-                    {user.points.toLocaleString()}
-                  </div>
-                  <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">Points</div>
-                </div>
-              </Card>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
         </>
       ) : (
         <div className="text-center py-20">
