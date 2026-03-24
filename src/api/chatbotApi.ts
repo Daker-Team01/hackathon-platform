@@ -1,13 +1,9 @@
 // 챗봇 RAG (Retrieval Augmented Generation) API
 // 내부 데이터만 사용하여 챗봇 응답 생성
 
-import hackathons from '../data/public_hackathons.json'
-import teams from '../data/public_teams.json'
-import userAlice from '../data/UserData/user_alice.json'
-import userBob from '../data/UserData/user_bob.json'
-import userCharlie from '../data/UserData/user_charlie.json'
-import userDiana from '../data/UserData/user_diana.json'
-import userEvan from '../data/UserData/user_evan.json'
+import hackathons from '../data/hackathon_dummy_data.json'
+import teams from '../data/team_dummy_data.json'
+import { allUsers } from '../contexts/UserContext'
 
 type HackathonData = (typeof hackathons)[0]
 type TeamData = (typeof teams)[0]
@@ -25,13 +21,12 @@ export type ChatbotAction = {
 }
 
 // 개인 사용자 데이터
-const users: UserData[] = [
-  { id: userAlice.id, nickname: userAlice.nickname, points: userAlice.points, ranking: userAlice.ranking },
-  { id: userBob.id, nickname: userBob.nickname, points: userBob.points, ranking: userBob.ranking },
-  { id: userCharlie.id, nickname: userCharlie.nickname, points: userCharlie.points, ranking: userCharlie.ranking },
-  { id: userDiana.id, nickname: userDiana.nickname, points: userDiana.points, ranking: userDiana.ranking },
-  { id: userEvan.id, nickname: userEvan.nickname, points: userEvan.points, ranking: userEvan.ranking }
-]
+const users: UserData[] = allUsers.map((user) => ({
+  id: user.id,
+  nickname: user.nickname,
+  points: user.points,
+  ranking: user.ranking
+}))
 
 // 포인트 기준 정렬
 const usersByPoints = [...users].sort((a, b) => b.points - a.points)
@@ -86,11 +81,12 @@ const getHackathonsByStatus = (status: 'ongoing' | 'upcoming' | 'ended'): Hackat
 // 질문 의도 파악
 const detectIntent = (query: string): string => {
   const queryLower = query.toLowerCase()
+  const compactQuery = queryLower.replace(/\s+/g, '')
   
-  if (queryLower.includes('진행중') || queryLower.includes('현재') || queryLower.includes('ongoing')) {
+  if (compactQuery.includes('진행중') || queryLower.includes('현재') || queryLower.includes('ongoing')) {
     return 'ongoing_hackathons'
   }
-  if (queryLower.includes('앞으로') || queryLower.includes('예정') || queryLower.includes('upcoming')) {
+  if (compactQuery.includes('앞으로') || compactQuery.includes('예정') || queryLower.includes('upcoming')) {
     return 'upcoming_hackathons'
   }
   if ((queryLower.includes('팀') && queryLower.includes('랭킹')) || queryLower.includes('팀 순위')) {
