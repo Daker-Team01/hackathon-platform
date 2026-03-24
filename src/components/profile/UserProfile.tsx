@@ -78,6 +78,15 @@ export default function UserProfile() {
   const ongoingParticipationCount = user.participations.filter((item) => item.status === 'ongoing').length
   const activityPercent = Math.round(user.activityScore * 100)
 
+  const actionButtonStyle = {
+    padding: '8px 12px',
+    border: 'none',
+    borderRadius: 8,
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer'
+  } as const
+
   const formatDate = (value: string) => {
     if (!value) return '-'
 
@@ -195,22 +204,47 @@ export default function UserProfile() {
           </p>
         </div>
         
-        {!isEditing && (
+        {isEditing ? (
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button
+              onClick={handleSave}
+              style={{
+                ...actionButtonStyle,
+                backgroundColor: '#10b981',
+                color: '#ffffff'
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#059669')}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#10b981')}
+            >
+              적용
+            </button>
+            <button
+              onClick={handleCancel}
+              style={{
+                ...actionButtonStyle,
+                backgroundColor: '#e5e7eb',
+                color: '#374151'
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#d1d5db')}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#e5e7eb')}
+            >
+              취소
+            </button>
+          </div>
+        ) : (
           <button
             onClick={() => setIsEditing(true)}
             style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0
+              ...actionButtonStyle,
+              backgroundColor: '#eff6ff',
+              color: '#1d4ed8',
+              flexShrink: 0
             }}
+            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#dbeafe')}
+            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#eff6ff')}
             title="Edit Profile"
           >
-            <img
-              src="/assets/icons/edit-icon.png"
-              alt="Edit"
-              style={{ width: 24, height: 24 }}
-            />
+            Edit
           </button>
         )}
       </div>
@@ -429,65 +463,24 @@ export default function UserProfile() {
       <ParticipationSummary />
 
       <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
-        {isEditing ? (
-          <>
-            <button
-              onClick={handleSave}
-              style={{
-                padding: '8px 12px',
-                backgroundColor: '#10b981',
-                color: 'white',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#059669')}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#10b981')}
-            >
-              저장
-            </button>
-            <button
-              onClick={handleCancel}
-              style={{
-                padding: '8px 12px',
-                backgroundColor: '#6b7280',
-                color: 'white',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#4b5563')}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#6b7280')}
-            >
-              취소
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: 6,
-              fontSize: 12,
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#dc2626')}
-            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#ef4444')}
-          >
-            로그아웃
-          </button>
-        )}
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: '8px 12px',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#dc2626')}
+          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#ef4444')}
+        >
+          로그아웃
+        </button>
       </div>
     </div>
   )
