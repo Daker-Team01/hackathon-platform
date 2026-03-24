@@ -52,7 +52,7 @@ export const createTeamRoom = (teamCode: string, name: string): ChatRoom => ({
   unreadCount: 0
 })
 
-export const createUserChatData = (username: string): UserChatData => ({
+export const createUserChatData = (username: string, displayName = username): UserChatData => ({
   rooms: [
     { id: GENERAL_ROOM_ID, name: '일반', unreadCount: 0 },
     { id: NOTICE_ROOM_ID, name: '공지', unreadCount: 0 },
@@ -61,7 +61,7 @@ export const createUserChatData = (username: string): UserChatData => ({
   ],
   messages: {
     [GENERAL_ROOM_ID]: [
-      { id: '1', user: 'Admin', text: `안녕하세요! ${username}님 환영합니다.`, timestamp: '10:00' }
+      { id: '1', user: 'Admin', text: `안녕하세요! ${displayName}님 환영합니다.`, timestamp: '10:00' }
     ],
     [NOTICE_ROOM_ID]: [
       { id: '1', user: 'Admin', text: '[공지] 해커톤이 시작되었습니다!', timestamp: '09:00' }
@@ -90,8 +90,8 @@ export const loadChatDataFromSession = (username: string): UserChatData | null =
   }
 }
 
-export const loadOrCreateChatData = (username: string): UserChatData => {
-  return loadChatDataFromSession(username) ?? createUserChatData(username)
+export const loadOrCreateChatData = (username: string, displayName = username): UserChatData => {
+  return loadChatDataFromSession(username) ?? createUserChatData(username, displayName)
 }
 
 export const saveChatDataToSession = (username: string, chatData: UserChatData, shouldNotify = true) => {

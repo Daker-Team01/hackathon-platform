@@ -14,7 +14,7 @@ export type { ChatMessage, ChatRoom, UserChatData } from '../utils/chatStorage'
 type ChatContextType = {
   chatData: UserChatData | null
   addMessage: (roomId: string, message: ChatMessage) => void
-  initializeChatData: (username: string) => void
+  initializeChatData: (username: string, displayName?: string) => void
   clearChatData: () => void
 }
 
@@ -23,6 +23,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined)
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [chatData, setChatData] = useState<UserChatData | null>(null)
   const [currentUsername, setCurrentUsername] = useState<string>('')
+  const [currentDisplayName, setCurrentDisplayName] = useState<string>('')
 
   // 게스트 채팅 데이터 자동 초기화
   useEffect(() => {
@@ -41,17 +42,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      setChatData(loadOrCreateChatData(currentUsername))
+      setChatData(loadOrCreateChatData(currentUsername, currentDisplayName || currentUsername))
     }
 
     window.addEventListener(CHAT_SYNC_EVENT, handleChatSync as EventListener)
     return () => window.removeEventListener(CHAT_SYNC_EVENT, handleChatSync as EventListener)
-  }, [currentUsername])
+  }, [currentDisplayName, currentUsername])
 
-  const initializeChatData = (username: string) => {
+  const initializeChatData = (username: string, displayName = username) => {
     setCurrentUsername(username)
+    setCurrentDisplayName(displayName)
     const savedData = loadChatDataFromSession(username)
-    setChatData(savedData ?? createUserChatData(username))
+    setChatData(savedData ?? createUserChatData(username, displayName))
   }
 
   const clearChatData = () => {
@@ -60,6 +62,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
     setChatData(null)
     setCurrentUsername('')
+    setCurrentDisplayName('')
   }
 
   const addMessage = (roomId: string, message: ChatMessage) => {
