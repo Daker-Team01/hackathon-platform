@@ -25,7 +25,8 @@ export default function CampCreate() {
   const initialHackathonSlug = params.get("hackathon") || ""
   const { user, isLoggedIn } = useUser()
   const mutation = useCreateTeam()
-  const hackathons = useMemo(() => getHackathonsFromStorage(), [])
+  const allHackathons = useMemo(() => getHackathonsFromStorage(), [])
+  const hackathons = useMemo(() => allHackathons.filter(h => h.status !== "ended"), [allHackathons])
   const hasAlerted = useRef(false)
 
   const [name, setName] = useState("")
