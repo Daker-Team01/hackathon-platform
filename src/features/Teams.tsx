@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, CheckCircle2, Info, Users } from 'lucide-react'
 import { useTeams, useUpdateTeam, useUserInvites, useRespondToInvite } from '../hooks/useTeams'
@@ -17,6 +17,20 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
   const { data: teams, isLoading } = useTeams(hackathonSlug)
   const { data: allTeams } = useTeams() // 내 팀을 찾기 위해 전체 목록 가져오기
   const { data: userInvites } = useUserInvites(user?.id || '')
+  
+  // 해커톤 상태 확인
+  const hackathon = useMemo(() => {
+    const raw = localStorage.getItem('hackathons')
+    if (!raw) return null
+    try {
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed.find((h: any) => h.slug === hackathonSlug) : null
+    } catch {
+      return null
+    }
+  }, [hackathonSlug])
+
+  const isEnded = hackathon?.status === 'ended'
   const respondMutation = useRespondToInvite()
   const updateMutation = useUpdateTeam()
 
@@ -71,38 +85,47 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
       <h2>Teams</h2>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          onClick={handleOpenCreateNotice}
-          style={{
-            backgroundColor: '#ebf8ff',
-            color: '#2b6cb0',
-            border: '1px solid #bee3f8',
-            padding: '8px 16px',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: 'bold'
-          }}
-        >
-          새 팀 생성하기
-        </button>
-        {user && myAvailableTeams && myAvailableTeams.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setApplyModalOpen(true)}
-            style={{
-              backgroundImage: 'linear-gradient(90deg, #3B82F6, #0EA5E9)',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              boxShadow: '0 8px 20px rgba(14, 165, 233, 0.25)'
-            }}
-          >
-            내 팀으로 신청하기 ({myAvailableTeams.length})
-          </button>
+        {!isEnded ? (
+          <>
+            <button
+              type="button"
+              onClick={handleOpenCreateNotice}
+              style={{
+                backgroundColor: '#ebf8ff',
+                color: '#2b6cb0',
+                border: '1px solid #bee3f8',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              새 팀 생성하기
+            </button>
+            {user && myAvailableTeams && myAvailableTeams.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setApplyModalOpen(true)}
+                style={{
+                  backgroundImage: 'linear-gradient(90deg, #3B82F6, #0EA5E9)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  boxShadow: '0 8px 20px rgba(14, 165, 233, 0.25)'
+                }}
+              >
+                내 팀으로 신청하기 ({myAvailableTeams.length})
+              </button>
+            )}
+          </>
+        ) : (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-6 py-3 rounded-2xl flex items-center gap-3 font-bold text-sm shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+            <Info className="w-5 h-5 text-amber-500" />
+            이미 종료된 해커톤입니다. 팀 생성 및 신청이 제한됩니다.
+          </div>
         )}
       </div>
 

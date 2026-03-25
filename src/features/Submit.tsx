@@ -1,6 +1,8 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { Info } from 'lucide-react'
 import { getHackathonDetailBySlug } from '../lib/hackathonDetailData'
 import { useLog } from '../contexts/LogContext'
+import { useUser } from '../contexts/UserContext'
 
 type SubmitProps = {
   hackathonSlug: string
@@ -46,6 +48,7 @@ type TeamOption = {
   id: string
   name: string
   hackathonSlug: string
+  leaderId?: string
 }
 
 function getSubmitSectionBySlug(slug: string): SubmitSection | null {
@@ -111,7 +114,7 @@ function getTotalScore(
   return Math.round((weightedSum / totalWeight) * 10) / 10
 }
 
-function getTeamOptionsFromStorage(hackathonSlug: string): TeamOption[] {
+function getTeamOptionsFromStorage(hackathonSlug: string, userId?: string): TeamOption[] {
   const raw = localStorage.getItem(TEAMS_STORAGE_KEY)
   if (!raw) return []
 
@@ -125,6 +128,7 @@ function getTeamOptionsFromStorage(hackathonSlug: string): TeamOption[] {
         const itemHackathonSlug =
           typeof candidate.hackathonSlug === 'string' ? candidate.hackathonSlug : ''
         const name = typeof candidate.name === 'string' ? candidate.name : ''
+        const leaderId = typeof candidate.leaderId === 'string' ? candidate.leaderId : ''
         const idValue = candidate.id
         const teamCodeValue = candidate.teamCode
         const id =
@@ -134,10 +138,11 @@ function getTeamOptionsFromStorage(hackathonSlug: string): TeamOption[] {
             ? teamCodeValue
             : `${itemHackathonSlug}-${name}`
         if (!itemHackathonSlug || !name) return null
-        return { id, name, hackathonSlug: itemHackathonSlug }
+        return { id, name, hackathonSlug: itemHackathonSlug, leaderId }
       })
       .filter((item): item is TeamOption => item !== null)
       .filter((item) => item.hackathonSlug === hackathonSlug)
+      .filter((item) => !userId || item.leaderId === userId)
   } catch {
     return []
   }
@@ -145,9 +150,23 @@ function getTeamOptionsFromStorage(hackathonSlug: string): TeamOption[] {
 
 export default function Submit({ hackathonSlug }: SubmitProps) {
   const { recordEvent } = useLog()
+  const { user } = useUser()
   const submitSection = useMemo(() => getSubmitSectionBySlug(hackathonSlug), [hackathonSlug])
-  const teamOptions = useMemo(() => getTeamOptionsFromStorage(hackathonSlug), [hackathonSlug])
+  const teamOptions = useMemo(() => getTeamOptionsFromStorage(hackathonSlug, user?.id), [hackathonSlug, user?.id])
   const evalBreakdown = useMemo(() => getEvalBreakdownBySlug(hackathonSlug), [hackathonSlug])
+  
+  // 해커톤 상태 확인
+  const isEnded = useMemo(() => {
+    const raw = localStorage.getItem('hackathons')
+    if (!raw) return false
+    try {
+      const parsed = JSON.parse(raw)
+      const h = Array.isArray(parsed) ? parsed.find((item: any) => item.slug === hackathonSlug) : null
+      return h?.status === 'ended'
+    } catch {
+      return false
+    }
+  }, [hackathonSlug])
   const allowedArtifactTypes = submitSection?.allowedArtifactTypes ?? []
   const defaultType = allowedArtifactTypes[0] ?? 'zip'
 
@@ -226,167 +245,189 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
     <section style={{ marginTop: 12 }}>
       <h2 style={{ marginBottom: 12 }}>Submit</h2>
 
-      <div
-        style={{
-          border: '1px solid #e5e7eb',
-          borderRadius: 10,
-          padding: 16,
-          backgroundColor: '#fafafa',
-          marginBottom: 16,
-        }}
-      >
-        <h3 style={{ margin: '0 0 10px 0' }}>Submission Guide</h3>
-        {submitSection?.guide && submitSection.guide.length > 0 ? (
-          <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.6 }}>
-            {submitSection.guide.map((item, index) => (
-              <li key={`${item}-${index}`}>{item}</li>
-            ))}
-          </ul>
-        ) : (
-          <p style={{ margin: 0 }}>제출 가이드가 없습니다.</p>
-        )}
-      </div>
-
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          border: '1px solid #e5e7eb',
-          borderRadius: 10,
-          padding: 16,
-          display: 'grid',
-          gap: 14,
-        }}
-      >
-        <div style={{ display: 'grid', gap: 6 }}>
-          <label htmlFor="submit-team" style={{ fontWeight: 600 }}>
-            Team
-          </label>
-          <select
-            id="submit-team"
-            value={teamId}
-            onChange={(event) => setTeamId(event.target.value)}
-            required
+      {isEnded ? (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-6 py-8 rounded-3xl flex flex-col items-center gap-4 text-center shadow-sm animate-in fade-in zoom-in duration-500">
+          <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-500">
+            <Info className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="text-xl font-black mb-1">해커톤 종료</h3>
+            <p className="font-bold text-sm opacity-80 leading-relaxed">
+              이미 종료된 해커톤입니다.<br />프로젝트 제출 및 수정이 불가합니다.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div
             style={{
-              padding: '10px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: 8,
-              fontSize: 14,
+              border: '1px solid #e5e7eb',
+              borderRadius: 10,
+              padding: 16,
+              backgroundColor: '#fafafa',
+              marginBottom: 16,
             }}
           >
-            <option value="">팀을 선택하세요</option>
-            {teamOptions.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ display: 'grid', gap: 6 }}>
-          <label htmlFor="submit-notes" style={{ fontWeight: 600 }}>
-            Notes
-          </label>
-          <textarea
-            id="submit-notes"
-            placeholder="notes (optional)"
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            rows={5}
-            style={{
-              padding: '10px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: 8,
-              fontSize: 14,
-              resize: 'vertical',
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'grid', gap: 6 }}>
-          <label htmlFor="artifact-type" style={{ fontWeight: 600 }}>
-            Artifact Type
-          </label>
-          <select
-            id="artifact-type"
-            value={artifactType}
-            onChange={(event) => {
-              const nextType = event.target.value
-              setArtifactType(nextType)
-              setArtifactFile(null)
-              setArtifactUrl('')
-            }}
-            style={{
-              padding: '10px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: 8,
-              fontSize: 14,
-            }}
-          >
-            {allowedArtifactTypes.length > 0 ? (
-              allowedArtifactTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))
+            <h3 style={{ margin: '0 0 10px 0' }}>Submission Guide</h3>
+            {submitSection?.guide && submitSection.guide.length > 0 ? (
+              <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.6 }}>
+                {submitSection.guide.map((item, index) => (
+                  <li key={`${item}-${index}`}>{item}</li>
+                ))}
+              </ul>
             ) : (
-              <option value="zip">zip</option>
+              <p style={{ margin: 0 }}>제출 가이드가 없습니다.</p>
             )}
-          </select>
-        </div>
+          </div>
 
-        <div style={{ display: 'grid', gap: 6 }}>
-          <label style={{ fontWeight: 600 }}>Artifact</label>
-          {artifactType === 'url' ? (
-            <input
-              type="url"
-              placeholder="https://..."
-              value={artifactUrl}
-              onChange={(event) => setArtifactUrl(event.target.value)}
-              required
-              style={{
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: 8,
-                fontSize: 14,
-              }}
-            />
-          ) : (
-            <input
-              key={artifactType}
-              type="file"
-              accept={ACCEPT_BY_TYPE[artifactType] ?? ''}
-              onChange={(event) => setArtifactFile(event.target.files?.[0] ?? null)}
-              required
-              style={{
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: 8,
-                fontSize: 14,
-                backgroundColor: '#fff',
-              }}
-            />
-          )}
-        </div>
-
-        <div>
-          <button
-            type="submit"
+          <form
+            onSubmit={handleSubmit}
             style={{
-              padding: '10px 14px',
-              borderRadius: 8,
-              border: 'none',
-              backgroundColor: '#111827',
-              color: '#fff',
-              cursor: 'pointer',
-              fontWeight: 600,
+              border: '1px solid #e5e7eb',
+              borderRadius: 10,
+              padding: 16,
+              display: 'grid',
+              gap: 14,
             }}
           >
-            submit
-          </button>
-        </div>
-      </form>
+            <div style={{ display: 'grid', gap: 6 }}>
+              <label htmlFor="submit-team" style={{ fontWeight: 600 }}>
+                Team (팀장만 제출 가능)
+              </label>
+              <select
+                id="submit-team"
+                value={teamId}
+                onChange={(event) => setTeamId(event.target.value)}
+                required
+                style={{
+                  padding: '10px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: 8,
+                  fontSize: 14,
+                }}
+              >
+                <option value="">팀을 선택하세요</option>
+                {teamOptions.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+              {teamOptions.length === 0 && user && (
+                <p style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 'bold', marginTop: 4 }}>
+                  * 귀하가 팀장인 팀이 없습니다. 제출은 팀장만 가능합니다.
+                </p>
+              )}
+            </div>
+
+            <div style={{ display: 'grid', gap: 6 }}>
+              <label htmlFor="submit-notes" style={{ fontWeight: 600 }}>
+                Notes
+              </label>
+              <textarea
+                id="submit-notes"
+                placeholder="notes (optional)"
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                rows={5}
+                style={{
+                  padding: '10px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gap: 6 }}>
+              <label htmlFor="artifact-type" style={{ fontWeight: 600 }}>
+                Artifact Type
+              </label>
+              <select
+                id="artifact-type"
+                value={artifactType}
+                onChange={(event) => {
+                  const nextType = event.target.value
+                  setArtifactType(nextType)
+                  setArtifactFile(null)
+                  setArtifactUrl('')
+                }}
+                style={{
+                  padding: '10px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: 8,
+                  fontSize: 14,
+                }}
+              >
+                {allowedArtifactTypes.length > 0 ? (
+                  allowedArtifactTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))
+                ) : (
+                  <option value="zip">zip</option>
+                )}
+              </select>
+            </div>
+
+            <div style={{ display: 'grid', gap: 6 }}>
+              <label style={{ fontWeight: 600 }}>Artifact</label>
+              {artifactType === 'url' ? (
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={artifactUrl}
+                  onChange={(event) => setArtifactUrl(event.target.value)}
+                  required
+                  style={{
+                    padding: '10px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: 8,
+                    fontSize: 14,
+                  }}
+                />
+              ) : (
+                <input
+                  key={artifactType}
+                  type="file"
+                  accept={ACCEPT_BY_TYPE[artifactType] ?? ''}
+                  onChange={(event) => setArtifactFile(event.target.files?.[0] ?? null)}
+                  required
+                  style={{
+                    padding: '10px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    backgroundColor: '#fff',
+                  }}
+                />
+              )}
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={teamOptions.length === 0}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  border: 'none',
+                  backgroundColor: teamOptions.length === 0 ? '#9ca3af' : '#111827',
+                  color: '#fff',
+                  cursor: teamOptions.length === 0 ? 'not-allowed' : 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                submit
+              </button>
+            </div>
+          </form>
+        </>
+      )}
 
       {message ? <p style={{ marginTop: 12 }}>{message}</p> : null}
     </section>
   )
-}
+  }

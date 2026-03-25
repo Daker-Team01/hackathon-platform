@@ -2,12 +2,11 @@ import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  Cell, PieChart, Pie, LineChart, Line, AreaChart, Area
+  AreaChart, Area
 } from 'recharts'
 import { 
   ArrowLeft, TrendingUp, Users, Trophy, Target, 
-  Activity, Calendar, BarChart3, PieChart as PieChartIcon, 
-  Clock, Hash, CheckCircle
+  Activity, BarChart3, Clock, Hash, CheckCircle
 } from 'lucide-react'
 
 import { Card } from "@/components/ui/card"
@@ -33,7 +32,7 @@ function getFromStorage<T>(key: string): T[] {
 
 export default function Analytics() {
   const navigate = useNavigate()
-  const { logs, refreshLogs, loading } = useLog()
+  const { refreshLogs, loading } = useLog()
   const [filterDays, setFilterDays] = useState<number | 'all'>('all')
   const [dbLogs, setDbLogs] = useState<EventLog[]>([])
   const [isFetching, setIsFetching] = useState(false)
@@ -65,7 +64,6 @@ export default function Analytics() {
   const statsSummary = useMemo(() => {
     const joinCount = dbLogs.filter((l) => l.action_type === 'hackathon_join').length
     const submitCount = dbLogs.filter((l) => l.action_type === 'submit_project').length
-    const viewCount = dbLogs.filter((l) => l.action_type === 'hackathon_view').length
     const teamCount = dbLogs.filter((l) => l.action_type === 'team_create').length
     
     return [
@@ -76,18 +74,56 @@ export default function Analytics() {
     ]
   }, [dbLogs, hackathons])
 
-  const tagData = useMemo(() => {
-    const counts: Record<string, number> = {}
-    hackathons.forEach((h) => {
-      h.tags.forEach((tag) => {
-        counts[tag] = (counts[tag] || 0) + 1
-      })
+  // 일별 활동 추이 데이터 생성
+  const dailyTrendData = useMemo(() => {
+    if (dbLogs.length === 0) return []
+    
+    const counts: Record<string, { date: string; views: number; joins: number; submits: number }> = {}
+    
+    // 선택된 기간만큼의 날짜 초기화 (데이터가 없는 날도 표시하기 위함)
+    const days = filterDays === 'all' ? 14 : filterDays
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const dateStr = d.toISOString().split('T')[0]
+      counts[dateStr] = { date: dateStr.split('-').slice(1).join('/'), views: 0, joins: 0, submits: 0 }
+    }
+
+    dbLogs.forEach(log => {
+      const dateStr = new Date(log.created_at).toISOString().split('T')[0]
+      if (counts[dateStr]) {
+        if (log.action_type === 'hackathon_view') counts[dateStr].views++
+        if (log.action_type === 'hackathon_join') counts[dateStr].joins++
+        if (log.action_type === 'submit_project') counts[dateStr].submits++
+      }
     })
-    return Object.entries(counts)
+
+    return Object.values(counts)
+  }, [dbLogs, filterDays])
+
+  // 기술 스택 트렌드 변화 분석 (로그 기반)
+  const tagTrendData = useMemo(() => {
+    const tagCounts: Record<string, number> = {}
+    const hackathonMap = new Map(hackathons.map(h => [h.slug, h.tags]))
+    
+    dbLogs.forEach(log => {
+      const tags = hackathonMap.get(log.target_id)
+      if (tags) {
+        tags.forEach(tag => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1
+        })
+      }
+    })
+
+    return Object.entries(tagCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 6)
-      .map(([name, value]) => ({ name, value }))
-  }, [hackathons])
+      .map(([name, value]) => ({ 
+        name, 
+        value,
+        percentage: dbLogs.length > 0 ? Math.round((value / dbLogs.length) * 100) : 0
+      }))
+  }, [dbLogs, hackathons])
 
   const popularData = useMemo(() => {
     const stats: Record<string, { views: number; joins: number; teams: number; title: string }> = {}
@@ -103,7 +139,7 @@ export default function Analytics() {
     })
 
     return Object.entries(stats)
-      .map(([slug, data]) => ({ name: data.title.split(' ')[0], views: data.views, joins: data.joins, teams: data.teams }))
+      .map(([_, data]) => ({ name: data.title.split(' ')[0], views: data.views, joins: data.joins, teams: data.teams }))
       .sort((a, b) => (b.views + b.joins * 2) - (a.views + a.joins * 2))
       .slice(0, 5)
   }, [dbLogs, hackathons])
@@ -179,8 +215,8 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        {statsSummary.map((stat, idx) => (
-          <Card key={idx} className="p-6 border-0 shadow-lg bg-white rounded-3xl hover:scale-[1.02] transition-transform">
+        {statsSummary.map((stat) => (
+          <Card key={stat.title} className="p-6 border-0 shadow-lg bg-white rounded-3xl hover:scale-[1.02] transition-transform">
             <div className="flex items-center justify-between mb-4">
               <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center ${stat.color}`}>
                 <stat.icon className="w-6 h-6" />
@@ -196,96 +232,149 @@ export default function Analytics() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-        <Card className="p-8 border-0 shadow-xl bg-white rounded-3xl">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+        <Card className="lg:col-span-2 p-8 border-0 shadow-xl bg-white rounded-3xl">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Hash className="w-5 h-5 text-blue-500" />
-              인기 기술 태그 TOP 6
+              <Activity className="w-5 h-5 text-blue-500" />
+              일별 활동 추이
             </h3>
-            <PieChartIcon className="w-5 h-5 text-gray-300" />
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-blue-500" />
+                <span className="text-xs text-gray-500 font-bold">조회</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                <span className="text-xs text-gray-500 font-bold">참가</span>
+              </div>
+            </div>
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={tagData}
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={8}
-                  dataKey="value"
-                >
-                  {tagData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
+              <AreaChart data={dailyTrendData}>
+                <defs>
+                  <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorJoins" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="date" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 600 }}
+                  dy={10}
+                />
+                <YAxis hide />
                 <Tooltip 
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 />
-              </PieChart>
+                <Area type="monotone" dataKey="views" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" name="상세 조회" />
+                <Area type="monotone" dataKey="joins" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorJoins)" name="참가 신청" />
+              </AreaChart>
             </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            {tagData.map((tag, idx) => (
-              <div key={tag.name} className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                <span className="text-sm font-bold text-gray-600 truncate">{tag.name}</span>
-              </div>
-            ))}
           </div>
         </Card>
 
         <Card className="p-8 border-0 shadow-xl bg-white rounded-3xl">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-500" />
-              해커톤별 활동 지표
+              <Hash className="w-5 h-5 text-purple-500" />
+              기술 스택 분석
             </h3>
-            <Activity className="w-5 h-5 text-gray-300" />
+            <span className="text-xs font-bold text-gray-400">최근 활동 기준</span>
           </div>
-          <div className="h-[350px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={popularData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 12, fontWeight: 'bold' }} />
-                <Tooltip 
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                />
-                <Bar dataKey="views" fill="#3B82F6" radius={[0, 4, 4, 0]} name="상세 조회" barSize={16} />
-                <Bar dataKey="joins" fill="#10B981" radius={[0, 4, 4, 0]} name="참가 신청" barSize={16} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-        <Card className="lg:col-span-1 p-8 border-0 shadow-xl bg-white rounded-3xl">
-          <h3 className="text-xl font-bold text-gray-900 mb-8 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-emerald-500" />
-            전환 파이프라인
-          </h3>
           <div className="space-y-6">
-            {funnelData.map((item, idx) => (
-              <div key={item.name}>
+            {tagTrendData.map((tag, idx) => (
+              <div key={tag.name}>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-bold text-gray-600">{item.name}</span>
-                  <span className="text-sm font-black text-gray-900">{item.value.toLocaleString()}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                    <span className="text-sm font-bold text-gray-700">{tag.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-400">{tag.value}건</span>
+                    <span className="text-sm font-black text-gray-900">{tag.percentage}%</span>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-3">
+                <div className="w-full bg-gray-50 rounded-full h-2">
                   <div 
-                    className="h-full rounded-full transition-all duration-1000" 
-                    style={{ width: `${(item.value / (funnelData[0].value || 1)) * 100}%`, backgroundColor: item.fill }} 
+                    className="h-full rounded-full" 
+                    style={{ width: `${tag.percentage}%`, backgroundColor: COLORS[idx % COLORS.length] }} 
                   />
                 </div>
               </div>
             ))}
           </div>
         </Card>
+      </div>
 
-        <Card className="lg:col-span-2 p-8 border-0 shadow-xl bg-white rounded-3xl overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        <Card className="p-8 border-0 shadow-xl bg-white rounded-3xl">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-500" />
+              인기 해커톤 TOP 5
+            </h3>
+            <Activity className="w-5 h-5 text-gray-300" />
+          </div>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={popularData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                <Tooltip 
+                  cursor={{ fill: '#f8fafc' }}
+                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                />
+                <Bar dataKey="views" fill="#3B82F6" radius={[0, 4, 4, 0]} name="조회" barSize={12} />
+                <Bar dataKey="joins" fill="#10B981" radius={[0, 4, 4, 0]} name="참가" barSize={12} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card className="p-8 border-0 shadow-xl bg-white rounded-3xl">
+          <h3 className="text-xl font-bold text-gray-900 mb-8 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-emerald-500" />
+            사용자 활동 파이프라인
+          </h3>
+          <div className="space-y-6">
+            {funnelData.map((item) => (
+              <div key={item.name}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-bold text-gray-600">{item.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-400">
+                      {funnelData[0].value > 0 ? Math.round((item.value / funnelData[0].value) * 100) : 0}%
+                    </span>
+                    <span className="text-sm font-black text-gray-900">{item.value.toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                  <div 
+                    className="h-full transition-all duration-1000" 
+                    style={{ 
+                      width: `${funnelData[0].value > 0 ? (item.value / funnelData[0].value) * 100 : 0}%`, 
+                      backgroundColor: item.fill 
+                    }} 
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <div className="mb-10">
+        <Card className="p-8 border-0 shadow-xl bg-white rounded-3xl overflow-hidden">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <Clock className="w-5 h-5 text-purple-500" />
@@ -294,7 +383,7 @@ export default function Analytics() {
             <Badge className="bg-purple-100 text-purple-700 border-0">Live Update</Badge>
           </div>
           <div className="space-y-6 max-h-[400px] overflow-y-auto pr-4 scrollbar-hide">
-            {dbLogs.slice().slice(0, 15).map((log, idx) => (
+            {dbLogs.slice(0, 15).map((log, idx) => (
               <div key={log.id} className="relative flex gap-4">
                 {idx !== 14 && (
                   <div className="absolute left-[19px] top-10 bottom-0 w-0.5 bg-gray-100" />
