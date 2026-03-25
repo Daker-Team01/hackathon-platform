@@ -1,0 +1,543 @@
+/* 실시간 채팅 API - Supabase Realtime 기반 */
+
+import { supabase } from "../lib/supabase"
+import type { RealtimeChannel } from "@supabase/supabase-js"
+
+export interface SupabaseChatRoom {
+  id: string
+  name: string
+  room_type: "general" | "team" | "direct"
+  team_id?: string
+  created_at: string
+  updated_at: string
+  created_by?: string
+  is_active: boolean
+}
+
+export interface SupabaseChatMessage {
+  id: string
+  room_id: string
+  user_id: string
+  user_nickname: string
+  content: string
+  message_type: "text" | "system" | "invite" | "file"
+  created_at: string
+  updated_at: string
+  is_deleted: boolean
+  reply_to_id?: string
+}
+
+export interface SupabaseChatMember {
+  id: string
+  room_id: string
+  user_id: string
+  nickname: string
+  joined_at: string
+  last_read_at?: string
+  is_active: boolean
+}
+
+/* ============ 채팅방 관리 ============ */
+
+/**
+ * 모든 채팅방 조회
+ */
+export const fetchAllChatRooms = async () => {
+  try {
+    const query = supabase
+      .from("chat_rooms")
+      .select("*")
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false })
+
+    const { data, error } = await query
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error("Failed to fetch chat rooms:", error)
+    return []
+  }
+}
+
+/**
+ * 특정 팀의 채팅방 조회
+ */
+export const fetchTeamChatRoom = async (teamId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("chat_rooms")
+      .select("*")
+      .eq("team_id", teamId)
+      .single()
+
+    if (error && error.code !== "PGRST116") throw error // PGRST116: no rows returned
+    return data
+  } catch (error) {
+    console.error("Failed to fetch team chat room:", error)
+    return null
+  }
+}
+
+/**
+ * 새 채팅방 생성
+ */
+export const createChatRoom = async (
+  name: string,
+  roomType: "general" | "team" | "direct" = "general",
+  teamId?: string,
+  createdBy?: string
+): Promise<SupabaseChatRoom | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("chat_rooms")
+      .insert({
+        name,
+        room_type: roomType,
+        team_id: teamId,
+        created_by: createdBy,
+        is_active: true
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error("Failed to create chat room:", error)
+    return null
+  }
+}
+
+/**
+ * 팀 채팅방 생성 및 매핑
+ */
+export const createTeamChatRoom = async (
+  teamId: string,
+  teamName: string,
+  initiatorId: string
+): Promise<SupabaseChatRoom | null> => {
+  try {
+    // 1. 채팅방 생성
+    const room = await createChatRoom(
+      `${teamName} 팀 채팅방`,
+      "team",
+      teamId,
+      initiatorId
+    )
+
+    if (!room) return null
+
+    // 2. 팀-채팅방 매핑 생성
+    const { error: mappingError } = await supabase
+      .from("team_chat_mapping")
+      .insert({
+        team_id: teamId,
+        room_id: room.id
+      })
+
+    if (mappingError) {
+      console.error("Failed to create team mapping:", mappingError)
+      // 채팅방은 생성되었지만 매핑 실패 - 선택적 처리
+    }
+
+    return room
+  } catch (error) {
+    console.error("Failed to create team chat room:", error)
+    return null
+  }
+}
+
+/* ============ 채팅 멤버 관리 ============ */
+
+/**
+ * 채팅방에 멤버 추가
+ */
+export const addChatMember = async (
+  roomId: string,
+  userId: string,
+  nickname: string
+) => {
+  try {
+    const { data, error } = await supabase
+      .from("chat_members")
+      .insert({
+        room_id: roomId,
+        user_id: userId,
+        nickname,
+        is_active: true
+      })
+      .select()
+      .single()
+
+    if (error) {
+      // Unique 제약으로 이미 있는 경우 업데이트
+      if (error.code === "23505") {
+        const { data: updateData, error: updateError } = await supabase
+          .from("chat_members")
+          .update({ is_active: true, joined_at: new Date().toISOString() })
+          .eq("room_id", roomId)
+          .eq("user_id", userId)
+          .select()
+          .single()
+
+        if (updateError) throw updateError
+        return updateData
+      }
+      throw error
+    }
+    return data
+  } catch (error) {
+    console.error("Failed to add chat member:", error)
+    return null
+  }
+}
+
+/**
+ * 채팅방에서 멤버 제거
+ */
+export const removeChatMember = async (roomId: string, userId: string) => {
+  try {
+    const { error } = await supabase
+      .from("chat_members")
+      .update({ is_active: false })
+      .eq("room_id", roomId)
+      .eq("user_id", userId)
+
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error("Failed to remove chat member:", error)
+    return false
+  }
+}
+
+/**
+ * 특정 채팅방의 모든 멤버 조회
+ */
+export const fetchRoomMembers = async (roomId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("chat_members")
+      .select("*")
+      .eq("room_id", roomId)
+      .eq("is_active", true)
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error("Failed to fetch room members:", error)
+    return []
+  }
+}
+
+/**
+ * 팀으로부터 모든 멤버를 채팅방에 초대
+ */
+export const addTeamMembersToChatRoom = async (
+  roomId: string,
+  members: Array<{ userId: string; userName: string }>
+) => {
+  try {
+    const { error } = await supabase
+      .from("chat_members")
+      .insert(
+        members.map((member) => ({
+          room_id: roomId,
+          user_id: member.userId,
+          nickname: member.userName,
+          is_active: true
+        }))
+      )
+
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error("Failed to add team members to chat room:", error)
+    return false
+  }
+}
+
+/* ============ 메시지 관리 ============ */
+
+/**
+ * 채팅방의 메시지 조회
+ */
+export const fetchRoomMessages = async (
+  roomId: string,
+  limit: number = 50,
+  offset: number = 0
+) => {
+  try {
+    const { data: messages, error, count } = await supabase
+      .from("chat_messages")
+      .select("*", { count: "exact" })
+      .eq("room_id", roomId)
+      .eq("is_deleted", false)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (error) throw error
+    return { messages: (messages || []).reverse(), count }
+  } catch (error) {
+    console.error("Failed to fetch messages:", error)
+    return { messages: [], count: 0 }
+  }
+}
+
+/**
+ * 메시지 전송
+ */
+export const sendMessage = async (
+  roomId: string,
+  userId: string,
+  userNickname: string,
+  content: string,
+  messageType: "text" | "system" | "invite" | "file" = "text"
+): Promise<SupabaseChatMessage | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .insert({
+        room_id: roomId,
+        user_id: userId,
+        user_nickname: userNickname,
+        content,
+        message_type: messageType,
+        is_deleted: false
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error("Failed to send message:", error)
+    return null
+  }
+}
+
+/**
+ * 시스템 메시지 전송 (팀 환영, 멤버 추가 등)
+ */
+export const sendSystemMessage = async (
+  roomId: string,
+  content: string
+) => {
+  return sendMessage(roomId, "system", "시스템", content, "system")
+}
+
+/**
+ * 메시지 수정
+ */
+export const updateMessage = async (messageId: string, content: string) => {
+  try {
+    const { data: message, error } = await supabase
+      .from("chat_messages")
+      .update({
+        content,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", messageId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return message
+  } catch (error) {
+    console.error("Failed to update message:", error)
+    return null
+  }
+}
+
+/**
+ * 메시지 삭제
+ */
+export const deleteMessage = async (messageId: string) => {
+  try {
+    const { error } = await supabase
+      .from("chat_messages")
+      .update({ is_deleted: true })
+      .eq("id", messageId)
+
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error("Failed to delete message:", error)
+    return false
+  }
+}
+
+/* ============ 실시간 구독 ============ */
+
+const messageChannels = new Map<string, RealtimeChannel>()
+
+/**
+ * 채팅방 메시지 리얼타임 구독
+ */
+export const subscribeToRoomMessages = (
+  roomId: string,
+  onNewMessage: (message: SupabaseChatMessage) => void,
+  onError?: (error: any) => void
+) => {
+  try {
+    // 같은 룸에 대해 기존 구독이 있으면 교체
+    const existing = messageChannels.get(roomId)
+    if (existing) {
+      existing.unsubscribe()
+      messageChannels.delete(roomId)
+    }
+
+    const channel = supabase
+      .channel(`chat:room:${roomId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+          filter: `room_id=eq.${roomId}`
+        },
+        (payload) => {
+          onNewMessage(payload.new as SupabaseChatMessage)
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "chat_messages",
+          filter: `room_id=eq.${roomId}`
+        },
+        (payload) => {
+          onNewMessage(payload.new as SupabaseChatMessage)
+        }
+      )
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" && onError) {
+          onError("채팅 실시간 연결 실패")
+        }
+        console.log("Chat subscription status:", status)
+      })
+
+    messageChannels.set(roomId, channel)
+
+    return () => {
+      const subscribed = messageChannels.get(roomId)
+      if (subscribed) {
+        subscribed.unsubscribe()
+        messageChannels.delete(roomId)
+      }
+    }
+  } catch (error) {
+    console.error("Failed to subscribe to messages:", error)
+    if (onError) onError(error)
+    return () => {}
+  }
+}
+
+/**
+ * 특정 룸의 멤버 변경 실시간 구독
+ */
+export const subscribeToRoomMembers = (
+  roomId: string,
+  onMemberChange: (type: "INSERT" | "UPDATE" | "DELETE", member: SupabaseChatMember) => void
+) => {
+  try {
+    const channel = supabase
+      .channel(`chat:members:${roomId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "chat_members",
+          filter: `room_id=eq.${roomId}`
+        },
+        (payload) => {
+          onMemberChange(payload.eventType as "INSERT" | "UPDATE" | "DELETE", payload.new as SupabaseChatMember)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      channel.unsubscribe()
+    }
+  } catch (error) {
+    console.error("Failed to subscribe to members:", error)
+    return () => {}
+  }
+}
+
+/**
+ * 특정 유저의 채팅방 멤버십 변경 실시간 구독
+ */
+export const subscribeToUserMemberships = (
+  userId: string,
+  onMembershipChange: () => void,
+  onError?: (error: any) => void
+) => {
+  try {
+    const channel = supabase
+      .channel(`chat:membership:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "chat_members",
+          filter: `user_id=eq.${userId}`
+        },
+        () => {
+          onMembershipChange()
+        }
+      )
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" && onError) {
+          onError("멤버십 실시간 연결 실패")
+        }
+      })
+
+    return () => {
+      channel.unsubscribe()
+    }
+  } catch (error) {
+    console.error("Failed to subscribe to user memberships:", error)
+    if (onError) onError(error)
+    return () => {}
+  }
+}
+
+/* ============ 사용자 채팅 목록 ============ */
+
+/**
+ * 사용자가 속한 모든 채팅방 조회
+ */
+export const fetchUserChatRooms = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("chat_members")
+      .select("room_id")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+
+    if (error) throw error
+
+    if (!data || data.length === 0) return []
+
+    const roomIds = data.map((m) => m.room_id)
+
+    const { data: rooms, error: roomError } = await supabase
+      .from("chat_rooms")
+      .select("*")
+      .in("id", roomIds)
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false })
+
+    if (roomError) throw roomError
+    return rooms
+  } catch (error) {
+    console.error("Failed to fetch user chat rooms:", error)
+    return []
+  }
+}

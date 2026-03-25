@@ -8,13 +8,44 @@ type Props = {
   respondingInviteId?: string | null
 }
 
-const formatMessage = (text: string) => {
-  // 마크다운 형식의 텍스트를 HTML로 변환
-  let formatted = text
+// HTML 특수문자 이스케이프 (XSS 방지)
+const escapeHtml = (text: string): string =>
+  text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+
+const formatMessage = (text: string): string => {
+  return escapeHtml(text)
+    // 코드 블록 ```...```
+    .replace(
+      /```[\w]*\n?([\s\S]*?)```/g,
+      '<pre style="background:#f1f5f9;padding:8px 12px;border-radius:6px;font-size:12px;overflow-x:auto;margin:6px 0;font-family:monospace;white-space:pre-wrap">$1</pre>'
+    )
+    // 인라인 코드 `code`
+    .replace(
+      /`([^`]+)`/g,
+      '<code style="background:#f1f5f9;padding:2px 5px;border-radius:4px;font-size:12px;font-family:monospace">$1</code>'
+    )
+    // 굵게 **text**
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // 기울임 *text*
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // 불릿 항목 (줄 시작의 • 또는 -)
+    .replace(
+      /^[•\-] (.+)$/gm,
+      '<span style="display:block;padding:2px 0 2px 10px;border-left:2px solid #3b82f6;margin:2px 0">• $1</span>'
+    )
+    // 번호 목록 "1. text"
+    .replace(
+      /^(\d+)\. (.+)$/gm,
+      '<span style="display:block;padding:2px 0 2px 4px;margin:2px 0"><strong>$1.</strong> $2</span>'
+    )
+    // 구분선 ---
+    .replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0"/>')
+    // 줄바꿈
     .replace(/\n/g, '<br />')
-  return formatted
 }
 
 const INVITE_STATUS_META = {
