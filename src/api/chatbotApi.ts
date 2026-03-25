@@ -4,6 +4,7 @@
 import { normalizedHackathons as hackathons } from '../lib/hackathonData'
 import teams from '../data/team_dummy_data.json'
 import { allUsers } from '../contexts/UserContext'
+import type { User } from '../contexts/UserContext'
 
 
 type HackathonData = (typeof hackathons)[0]
@@ -31,6 +32,41 @@ const users: UserData[] = allUsers.map((user) => ({
 
 // 포인트 기준 정렬
 const usersByPoints = [...users].sort((a, b) => b.points - a.points)
+
+// 로그인 유저 컨텍스트 문자열 생성
+const buildCurrentUserContext = (user: User): string => {
+  const parts: string[] = [
+    `닉네임: ${user.nickname}`,
+    `이메일: ${user.email}`,
+    `포인트: ${user.points}점`,
+    `현재 랭킹: ${user.ranking}위`,
+    `활동 점수: ${user.activityScore}`,
+    `평판 점수: ${user.reputation}`,
+  ]
+  if (user.techStack.length > 0) {
+    parts.push(`기술 스택: ${user.techStack.join(', ')}`)
+  }
+  if (user.preferredRoles.length > 0) {
+    parts.push(`선호 역할: ${user.preferredRoles.join(', ')}`)
+  }
+  if (user.personalityTags.length > 0) {
+    parts.push(`성향 태그: ${user.personalityTags.join(', ')}`)
+  }
+  const ws = user.workStyle
+  parts.push(`업무 스타일: 소통(${ws.communication}), 리더십(${ws.leadership}), 실행력(${ws.execution})`)
+  if (user.participations.length > 0) {
+    const lines = user.participations.map(
+      (p) =>
+        `  - 해커톤:${p.hackathonSlug} | 팀:${p.teamCode} | 역할:${p.role} | ${
+          p.isLeader ? '팀장' : '팀원'
+        } | 기여점수:${p.contributionScore} | 상태:${p.status}`
+    )
+    parts.push(`참여 해커톤 이력:\n${lines.join('\n')}`)
+  } else {
+    parts.push('참여 해커톤 이력: 없음')
+  }
+  return parts.join('\n')
+}
 
 // 텍스트 유사도 계산 (간단한 키워드 매칭)
 const calculateSimilarity = (text1: string, text2: string): number => {
@@ -127,6 +163,114 @@ const getActionByIntent = (intent: string): ChatbotAction | undefined => {
 export const getChatbotAction = (userMessage: string): ChatbotAction | undefined => {
   const intent = detectIntent(userMessage)
   return getActionByIntent(intent)
+}
+
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string | undefined
+const GROQ_MODEL = (import.meta.env.VITE_GROQ_MODEL as string | undefined) || 'llama-3.1-8b-instant'
+
+const buildRagContext = (userMessage: string, currentUser?: User): string => {
+  const intent = detectIntent(userMessage)
+
+  const topHackathons = searchHackathons(userMessage).slice(0, 5)
+  const topTeams = searchTeams(userMessage).slice(0, 5)
+  const topUsers = usersByPoints.slice(0, 10)
+
+  const statusSummary = {
+    ongoing: getHackathonsByStatus('ongoing').length,
+    upcoming: getHackathonsByStatus('upcoming').length,
+    ended: getHackathonsByStatus('ended').length
+  }
+
+  const hackathonLines = topHackathons.length
+    ? topHackathons.map((h) => `- ${h.title} | 상태:${h.status} | 태그:${h.tags.join(', ')}`).join('\n')
+    : '- 관련 해커톤 없음'
+
+  const teamLines = topTeams.length
+    ? topTeams.map((t) => `- ${t.name} | 모집:${t.isOpen ? '열림' : '닫힘'} | 역할:${t.lookingFor.join(', ')}`).join('\n')
+    : '- 관련 팀 없음'
+
+  const rankingLines = topUsers.length
+    ? topUsers.map((u, idx) => `- ${idx + 1}위 ${u.nickname} (${u.points}점)`).join('\n')
+    : '- 랭킹 데이터 없음'
+
+  const parts = [
+    `의도: ${intent}`,
+    `해커톤 현황: 진행중 ${statusSummary.ongoing}, 예정 ${statusSummary.upcoming}, 종료 ${statusSummary.ended}`,
+    '관련 해커톤:',
+    hackathonLines,
+    '관련 팀:',
+    teamLines,
+    '상위 유저 랭킹:',
+    rankingLines
+  ]
+  if (currentUser) {
+    parts.push('\n--- 현재 로그인한 사용자 정보 ---')
+    parts.push(buildCurrentUserContext(currentUser))
+  }
+  return parts.join('\n')
+}
+
+const generateGroqResponse = async (userMessage: string, currentUser?: User): Promise<string | null> => {
+  if (!GROQ_API_KEY) {
+    return null
+  }
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 10000)
+
+  try {
+    const ragContext = buildRagContext(userMessage, currentUser)
+
+    const systemPrompt = [
+      '당신은 해커톤 플랫폼 전용 AI 도우미입니다. 다음 규칙을 반드시 따르세요:',
+      '1. 항상 한국어로 답변하세요.',
+      '2. 컨텍스트에 제공된 데이터를 최우선으로 사용하세요.',
+      '3. "나", "내", "저", "me", "my" 등 자기 자신에 대한 질문은 [현재 로그인한 사용자 정보] 섹션의 데이터로 구체적으로 답하세요.',
+      '4. 컨텍스트에 없는 사실은 추측하지 말고 "해당 정보가 없습니다"라고 답하세요.',
+      '5. 답변은 명확하고 자연스러운 대화체로 작성하세요. 불필요하게 길게 쓰지 마세요.',
+      '6. 목록 항목은 반드시 "• " 으로 시작하세요.',
+      '7. 중요 내용은 **굵게** 표시하세요.',
+      '8. 답변 마지막에 짧은 다음 행동 제안을 한 문장으로 추가하세요.',
+    ].join('\n')
+
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        temperature: 0.4,
+        max_tokens: 700,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: `질문: ${userMessage}\n\n컨텍스트:\n${ragContext}`
+          }
+        ]
+      }),
+      signal: controller.signal
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+    }
+
+    const content = data.choices?.[0]?.message?.content?.trim()
+    return content || null
+  } catch (error) {
+    console.warn('Groq response failed, fallback to local rule response:', error)
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 // 챗봇 응답 생성
@@ -267,4 +411,15 @@ export const generateChatbotResponse = (userMessage: string): string => {
       return `죄송하지만 정확히 이해하지 못했습니다. 😅\n다음과 같이 재시도해보세요:\n• "진행 중인 해커톤"\n• "팀 모집"\n• "도움말 (또는 ?)"을 입력해보세요!`
     }
   }
+}
+
+export const generateChatbotResponseWithFallback = async (
+  userMessage: string,
+  currentUser?: User
+): Promise<string> => {
+  const groqResponse = await generateGroqResponse(userMessage, currentUser)
+  if (groqResponse) {
+    return groqResponse
+  }
+  return generateChatbotResponse(userMessage)
 }

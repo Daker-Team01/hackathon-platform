@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useUser } from '../../contexts/UserContext'
 import { useChat } from '../../contexts/ChatContext'
-import { generateChatbotResponse, getChatbotAction } from '../../api/chatbotApi'
+import { generateChatbotResponseWithFallback, getChatbotAction } from '../../api/chatbotApi'
 import { useRespondToInvite } from '../../hooks/useTeams'
 import ChatRoomList from './ChatRoomList'
 import ChatMessages from './ChatMessages'
@@ -14,8 +14,8 @@ type Props = {
 }
 
 export default function ChatPanel({ open, onClose }: Props) {
-  const { isLoggedIn } = useUser()
-  const { chatData, addMessage } = useChat()
+  const { isLoggedIn, user } = useUser()
+  const { chatData, supabaseRooms, addMessage, addSupabaseMessage } = useChat()
   const respondMutation = useRespondToInvite()
   const [selectedRoomId, setSelectedRoomId] = useState(GENERAL_ROOM_ID)
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false)
@@ -75,9 +75,17 @@ export default function ChatPanel({ open, onClose }: Props) {
   // 채팅 데이터 없으면 아무것도 렌더링하지 않음
   if (!chatData) return null
 
+  const supabaseRoomIds = new Set(supabaseRooms.map((room) => room.id))
+  const mergedRooms = [...chatData.rooms]
+  supabaseRooms.forEach((room) => {
+    if (!mergedRooms.some((r) => r.id === room.id)) {
+      mergedRooms.push({ id: room.id, name: room.name, unreadCount: 0 })
+    }
+  })
+
   // 로그인 안 했을 때는 챗봇/일반방만 노출
-  const allowedRoomIds = isLoggedIn ? chatData.rooms.map(r => r.id) : [GENERAL_ROOM_ID, '4']
-  const filteredRooms = chatData.rooms.filter(r => allowedRoomIds.includes(r.id))
+  const allowedRoomIds = isLoggedIn ? mergedRooms.map(r => r.id) : [GENERAL_ROOM_ID, '4']
+  const filteredRooms = mergedRooms.filter(r => allowedRoomIds.includes(r.id))
   // 선택된 방이 허용되지 않으면 일반방으로 강제
   const safeSelectedRoomId = allowedRoomIds.includes(selectedRoomId) ? selectedRoomId : GENERAL_ROOM_ID
 
@@ -89,7 +97,15 @@ export default function ChatPanel({ open, onClose }: Props) {
     }
   }
 
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = async (text: string) => {
+    if (supabaseRoomIds.has(safeSelectedRoomId)) {
+      if (!user) return
+      addSupabaseMessage(safeSelectedRoomId, user.userId, user.nickname, text).catch((error) => {
+        console.error('Failed to send Supabase message:', error)
+      })
+      return
+    }
+
     const timestamp = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
     const uniqueId = Date.now().toString()
     const userMessage = {
@@ -102,8 +118,8 @@ export default function ChatPanel({ open, onClose }: Props) {
 
     if (safeSelectedRoomId === '4') {
       setIsWaitingForResponse(true)
-      setTimeout(() => {
-        const botResponse = generateChatbotResponse(text)
+      try {
+        const botResponse = await generateChatbotResponseWithFallback(text, user ?? undefined)
         const botAction = getChatbotAction(text)
         const botMessage = {
           id: (Date.now() + 1).toString(),
@@ -113,8 +129,9 @@ export default function ChatPanel({ open, onClose }: Props) {
           action: botAction
         }
         addMessage(safeSelectedRoomId, botMessage)
+      } finally {
         setIsWaitingForResponse(false)
-      }, 600)
+      }
     }
   }
 

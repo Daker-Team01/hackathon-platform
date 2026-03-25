@@ -288,7 +288,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // 새로고침 후 자동 복원된 로그인 유저의 채팅 데이터도 초기화
   useEffect(() => {
     if (user?.email) {
-      initializeChatData(user.email, user.nickname)
+      initializeChatData(user.email, user.nickname, user.userId)
     }
     // initializeChatData는 컨텍스트 렌더마다 참조가 바뀔 수 있어 최초 복원 시점에만 실행
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -329,7 +329,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       saveUserToStorage(normalizedUser)
       
       // 채팅 데이터 초기화
-      initializeChatData(foundUser.email, foundUser.nickname)
+      initializeChatData(foundUser.email, foundUser.nickname, foundUser.userId)
       
       return true
     }
