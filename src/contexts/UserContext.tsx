@@ -192,6 +192,7 @@ const normalizeUser = (value: unknown): User | null => {
     : typeof candidate.userId === 'string'
       ? candidate.userId
       : ''
+  const resolvedUserId = typeof candidate.userId === 'string' ? candidate.userId : id
   const email = typeof candidate.email === 'string'
     ? candidate.email
     : typeof candidate.username === 'string'
@@ -207,15 +208,13 @@ const normalizeUser = (value: unknown): User | null => {
 
   return {
     id,
-    userId: typeof candidate.userId === 'string' ? candidate.userId : id,
+    userId: resolvedUserId,
     username: typeof candidate.username === 'string' ? candidate.username : email,
     email,
     nickname,
     profileImage: resolveProfileImage(candidate.profileImage, nickname),
-    ranking:
-      typeof candidate.ranking === 'number' && Number.isFinite(candidate.ranking)
-        ? candidate.ranking
-        : rankingByUserId.get(id) ?? 0,
+    // 랭킹은 저장값보다 userId 기준 계산값을 우선 사용해 일관성을 보장
+    ranking: rankingByUserId.get(resolvedUserId) ?? rankingByUserId.get(id) ?? toFiniteNumber(candidate.ranking),
     points: normalizedPoints.total,
     techStack: normalizeStringArray(candidate.techStack ?? candidate.skills),
     personalityTags: normalizeStringArray(candidate.personalityTags),
