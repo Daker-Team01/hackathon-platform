@@ -9,12 +9,13 @@ export type TargetType = 'hackathon' | 'team'
 
 export interface EventLog {
   id: string
-  userId: string | null
-  eventType: EventType
-  targetType: TargetType
-  targetId: string
-  timestamp: string
-  metadata?: Record<string, unknown>
+  user_id: string | null
+  nickname: string | null
+  action_type: EventType
+  target_id: string
+  page_url: string
+  metadata?: Record<string, any>
+  created_at: string
 }
 
 export const LOG_MODULE = true

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, CheckCircle2, Info, Users } from 'lucide-react'
 import { useTeams, useUpdateTeam, useUserInvites, useRespondToInvite } from '../hooks/useTeams'
 import { useUser } from '../contexts/UserContext'
+import { useLog } from '../contexts/LogContext'
 import { Button } from '@/components/ui/button'
 
 type TeamsProps = {
@@ -12,6 +13,7 @@ type TeamsProps = {
 export default function Teams({ hackathonSlug }: TeamsProps) {
   const navigate = useNavigate()
   const { user } = useUser()
+  const { recordEvent } = useLog()
   const { data: teams, isLoading } = useTeams(hackathonSlug)
   const { data: allTeams } = useTeams() // 내 팀을 찾기 위해 전체 목록 가져오기
   const { data: userInvites } = useUserInvites(user?.id || '')
@@ -51,6 +53,8 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
         onSuccess: () => {
           alert('참여 신청이 완료되었습니다!')
           setApplyModalOpen(false)
+          // 로그 수집: hackathon_join
+          recordEvent('hackathon_join', 'hackathon', hackathonSlug, { teamCode })
         }
       }
     )
