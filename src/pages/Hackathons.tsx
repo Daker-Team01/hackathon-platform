@@ -116,7 +116,7 @@ export default function Hackathons() {
               <Button
                 variant={tagFilter === 'all' ? 'secondary' : 'outline'}
                 onClick={() => setTagFilter('all')}
-                className={tagFilter === 'all' ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-0' : 'hover:border-emerald-500 hover:text-emerald-500'}
+                className={tagFilter === 'all' ? 'bg-gradient-to-r from-[#3B82F6] to-[#0EA5E9] text-white border-0 shadow-sm hover:opacity-95 transition-all' : 'border-sky-200 bg-white text-slate-600 hover:border-sky-300 hover:bg-sky-50 hover:text-[#2563EB] transition-colors'}
                 size="sm"
               >
                 태그 전체
@@ -126,7 +126,7 @@ export default function Hackathons() {
                   key={tag}
                   variant={tagFilter === tag ? 'secondary' : 'outline'}
                   onClick={() => setTagFilter(tag)}
-                  className={tagFilter === tag ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-0' : 'hover:border-emerald-500 hover:text-emerald-500'}
+                  className={tagFilter === tag ? 'bg-gradient-to-r from-[#3B82F6] to-[#0EA5E9] text-white border-0 shadow-sm hover:opacity-95 transition-all' : 'border-sky-200 bg-white text-slate-600 hover:border-sky-300 hover:bg-sky-50 hover:text-[#2563EB] transition-colors'}
                   size="sm"
                 >
                   {tag}
@@ -228,13 +228,13 @@ export default function Hackathons() {
                       <Badge 
                         key={tag} 
                         variant="secondary" 
-                        className="bg-blue-50 text-blue-600 border-0 hover:bg-blue-100 transition-colors"
+                        className="border border-sky-100 bg-sky-50 text-sky-700 hover:border-sky-200 hover:bg-sky-100 transition-colors font-medium"
                       >
                         #{tag}
                       </Badge>
                     ))}
                     {hackathon.tags.length > 3 && (
-                      <Badge variant="outline" className="text-gray-400 border-gray-100">
+                      <Badge variant="outline" className="bg-white text-slate-500 border-slate-200">
                         +{hackathon.tags.length - 3}
                       </Badge>
                     )}
