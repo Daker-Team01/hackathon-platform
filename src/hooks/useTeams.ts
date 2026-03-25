@@ -13,6 +13,7 @@ import {
   kickMember 
 } from "../api/teamApi"
 import type { Team, TeamInvite } from "../types/team"
+import { useLog } from "../contexts/LogContext"
 
 export const useTeams = (hackathonSlug?: string) => {
   return useQuery({
@@ -31,10 +32,17 @@ export const useTeam = (teamCode: string) => {
 
 export const useCreateTeam = () => {
   const queryClient = useQueryClient()
+  const { recordEvent } = useLog()
+
   return useMutation({
     mutationFn: (team: Omit<Team, "teamCode" | "createdAt" | "members"> & { leaderName?: string }) => createTeam(team),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["teams"] })
+      // 로그 수집: team_create
+      recordEvent('team_create', 'team', data.teamCode, {
+        teamName: data.name,
+        hackathonSlug: data.hackathonSlug
+      })
     }
   })
 }
@@ -99,6 +107,8 @@ export const useClearResolvedInvitesForUser = () => {
 
 export const useRespondToInvite = () => {
   const queryClient = useQueryClient()
+  const { recordEvent } = useLog()
+
   return useMutation({
     mutationFn: ({ inviteId, status }: { inviteId: string; status: 'ACCEPTED' | 'REJECTED' }) => 
       respondToInvite(inviteId, status),
@@ -107,6 +117,14 @@ export const useRespondToInvite = () => {
       queryClient.invalidateQueries({ queryKey: ["invites", "team", data.teamId] })
       queryClient.invalidateQueries({ queryKey: ["teams"] })
       queryClient.invalidateQueries({ queryKey: ["team", data.teamId] })
+
+      // 로그 수집: team_join (수락 시에만)
+      if (data.status === 'ACCEPTED') {
+        recordEvent('team_join', 'team', data.teamId, {
+          inviteId: data.id,
+          teamName: data.teamName
+        })
+      }
     }
   })
 }

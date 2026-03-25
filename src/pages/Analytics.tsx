@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -14,7 +14,9 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useLog } from '../contexts/LogContext'
+import { supabase } from '../lib/supabase'
 import type { Hackathon } from '../types/hackathon'
+import type { EventLog } from '../types/log'
 
 const HACKATHONS_STORAGE_KEY = 'hackathons'
 
@@ -31,23 +33,40 @@ function getFromStorage<T>(key: string): T[] {
 
 export default function Analytics() {
   const navigate = useNavigate()
-  const { logs } = useLog()
+  const { logs, refreshLogs, loading } = useLog()
   const [filterDays, setFilterDays] = useState<number | 'all'>('all')
+  const [dbLogs, setDbLogs] = useState<EventLog[]>([])
+  const [isFetching, setIsFetching] = useState(false)
 
   const hackathons = useMemo(() => getFromStorage<Hackathon>(HACKATHONS_STORAGE_KEY), [])
 
-  const filteredLogs = useMemo(() => {
-    if (filterDays === 'all') return logs
-    const now = new Date()
-    const cutoff = new Date(now.setDate(now.getDate() - filterDays))
-    return logs.filter((log) => new Date(log.timestamp) >= cutoff)
-  }, [logs, filterDays])
+  // 전체 로그를 DB에서 직접 다시 한 번 가져오기 (필터링 대응)
+  useEffect(() => {
+    async function fetchAnalyticsLogs() {
+      setIsFetching(true)
+      let query = supabase.from('user_logs').select('*').order('created_at', { ascending: false })
+      
+      if (filterDays !== 'all') {
+        const date = new Date()
+        date.setDate(date.getDate() - filterDays)
+        query = query.gte('created_at', date.toISOString())
+      }
+
+      const { data, error } = await query
+      if (!error && data) {
+        setDbLogs(data as EventLog[])
+      }
+      setIsFetching(false)
+    }
+
+    fetchAnalyticsLogs()
+  }, [filterDays])
 
   const statsSummary = useMemo(() => {
-    const joinCount = filteredLogs.filter((l) => l.eventType === 'hackathon_join').length
-    const submitCount = filteredLogs.filter((l) => l.eventType === 'submit_project').length
-    const viewCount = filteredLogs.filter((l) => l.eventType === 'hackathon_view').length
-    const teamCount = filteredLogs.filter((l) => l.eventType === 'team_create').length
+    const joinCount = dbLogs.filter((l) => l.action_type === 'hackathon_join').length
+    const submitCount = dbLogs.filter((l) => l.action_type === 'submit_project').length
+    const viewCount = dbLogs.filter((l) => l.action_type === 'hackathon_view').length
+    const teamCount = dbLogs.filter((l) => l.action_type === 'team_create').length
     
     return [
       { title: '누적 해커톤', value: hackathons.length, icon: Trophy, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -55,7 +74,7 @@ export default function Analytics() {
       { title: '프로젝트 제출', value: submitCount, icon: CheckCircle, color: 'text-purple-600', bg: 'bg-purple-50' },
       { title: '팀 생성', value: teamCount, icon: Target, color: 'text-amber-600', bg: 'bg-amber-50' },
     ]
-  }, [filteredLogs, hackathons])
+  }, [dbLogs, hackathons])
 
   const tagData = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -76,24 +95,24 @@ export default function Analytics() {
         stats[h.slug] = { views: 0, joins: 0, teams: 0, title: h.title }
     })
 
-    filteredLogs.forEach((l) => {
-      if (!stats[l.targetId]) return
-      if (l.eventType === 'hackathon_view') stats[l.targetId].views++
-      if (l.eventType === 'hackathon_join') stats[l.targetId].joins++
-      if (l.eventType === 'team_create') stats[l.targetId].teams++
+    dbLogs.forEach((l) => {
+      if (!stats[l.target_id]) return
+      if (l.action_type === 'hackathon_view') stats[l.target_id].views++
+      if (l.action_type === 'hackathon_join') stats[l.target_id].joins++
+      if (l.action_type === 'team_create') stats[l.target_id].teams++
     })
 
     return Object.entries(stats)
       .map(([slug, data]) => ({ name: data.title.split(' ')[0], views: data.views, joins: data.joins, teams: data.teams }))
       .sort((a, b) => (b.views + b.joins * 2) - (a.views + a.joins * 2))
       .slice(0, 5)
-  }, [filteredLogs, hackathons])
+  }, [dbLogs, hackathons])
 
   const funnelData = useMemo(() => {
-    const views = filteredLogs.filter(l => l.eventType === 'hackathon_view').length
-    const joins = filteredLogs.filter(l => l.eventType === 'hackathon_join').length
-    const teams = filteredLogs.filter(l => l.eventType === 'team_create').length
-    const submits = filteredLogs.filter(l => l.eventType === 'submit_project').length
+    const views = dbLogs.filter(l => l.action_type === 'hackathon_view').length
+    const joins = dbLogs.filter(l => l.action_type === 'hackathon_join').length
+    const teams = dbLogs.filter(l => l.action_type === 'team_create').length
+    const submits = dbLogs.filter(l => l.action_type === 'submit_project').length
 
     return [
       { name: '조회', value: views, fill: '#3B82F6' },
@@ -101,7 +120,7 @@ export default function Analytics() {
       { name: '팀 빌딩', value: teams, fill: '#8B5CF6' },
       { name: '최종 제출', value: submits, fill: '#F59E0B' },
     ]
-  }, [filteredLogs])
+  }, [dbLogs])
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
 
@@ -144,14 +163,19 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div className="mb-10">
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight flex items-center gap-3">
-          <BarChart3 className="w-10 h-10 text-[#3B82F6]" />
-          Platform Analytics
-        </h1>
-        <p className="text-gray-600 text-lg max-w-2xl font-medium">
-          해커톤 플랫폼의 실시간 지표와 트렌드를 한눈에 파악하세요.
-        </p>
+      <div className="mb-10 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight flex items-center gap-3">
+            <BarChart3 className="w-10 h-10 text-[#3B82F6]" />
+            Platform Analytics
+          </h1>
+          <p className="text-gray-600 text-lg max-w-2xl font-medium">
+            Supabase 실시간 지표와 트렌드를 확인하세요. {(isFetching || loading) && <span className="text-blue-500 animate-pulse ml-2 font-bold">(동기화 중...)</span>}
+          </p>
+        </div>
+        <Button onClick={() => refreshLogs()} variant="outline" size="sm" className="rounded-xl font-bold">
+          새로고침
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
@@ -163,7 +187,7 @@ export default function Analytics() {
               </div>
               <Badge variant="outline" className="text-emerald-500 border-emerald-100 bg-emerald-50">
                 <TrendingUp className="w-3 h-3 mr-1" />
-                +12%
+                Live
               </Badge>
             </div>
             <div className="text-3xl font-black text-gray-900 mb-1">{stat.value.toLocaleString()}</div>
@@ -265,32 +289,32 @@ export default function Analytics() {
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <Clock className="w-5 h-5 text-purple-500" />
-              실시간 활동 타임라인
+              실시간 활동 타임라인 (Supabase)
             </h3>
             <Badge className="bg-purple-100 text-purple-700 border-0">Live Update</Badge>
           </div>
           <div className="space-y-6 max-h-[400px] overflow-y-auto pr-4 scrollbar-hide">
-            {filteredLogs.slice().reverse().slice(0, 15).map((log, idx) => (
+            {dbLogs.slice().slice(0, 15).map((log, idx) => (
               <div key={log.id} className="relative flex gap-4">
                 {idx !== 14 && (
                   <div className="absolute left-[19px] top-10 bottom-0 w-0.5 bg-gray-100" />
                 )}
                 <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100 z-10 flex-shrink-0">
-                  {log.eventType.includes('view') ? <TrendingUp className="w-4 h-4 text-blue-500" /> : 
-                   log.eventType.includes('join') ? <Users className="w-4 h-4 text-emerald-500" /> :
+                  {log.action_type.includes('view') ? <TrendingUp className="w-4 h-4 text-blue-500" /> : 
+                   log.action_type.includes('join') ? <Users className="w-4 h-4 text-emerald-500" /> :
                    <Activity className="w-4 h-4 text-amber-500" />}
                 </div>
                 <div className="flex-1 pb-6 border-b border-gray-50 last:border-0">
                   <div className="flex justify-between mb-1">
                     <span className="font-bold text-gray-900 text-sm">
-                      {log.userId || 'Guest User'} <span className="font-normal text-gray-500 italic">가</span> {log.targetId} <span className="font-normal text-gray-500 italic">에 대해</span> {log.eventType}
+                      {log.nickname || 'Guest User'} <span className="font-normal text-gray-500 italic">가</span> {log.target_id} <span className="font-normal text-gray-500 italic">에 대해</span> {log.action_type}
                     </span>
                     <span className="text-xs text-gray-400 font-medium">
-                      {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                   <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
-                    {new Date(log.timestamp).toLocaleDateString()}
+                    {new Date(log.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
