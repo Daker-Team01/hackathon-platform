@@ -12,9 +12,12 @@ type TeamData = (typeof teams)[0]
 
 interface UserData {
   id: string
+  userId: string
+  email: string
   nickname: string
   points: number
   ranking: number
+  reputation: number
 }
 
 export type ChatbotAction = {
@@ -25,21 +28,35 @@ export type ChatbotAction = {
 // 개인 사용자 데이터
 const users: UserData[] = allUsers.map((user) => ({
   id: user.id,
+  userId: user.userId,
+  email: user.email,
   nickname: user.nickname,
   points: user.points,
-  ranking: user.ranking
+  ranking: user.ranking,
+  reputation: user.reputation
 }))
 
 // 포인트 기준 정렬
-const usersByPoints = [...users].sort((a, b) => b.points - a.points)
+const usersByPoints = [...users].sort((a, b) => {
+  if (b.points !== a.points) return b.points - a.points
+  return b.reputation - a.reputation
+})
+
+const rankingByUserId = new Map(usersByPoints.map((u, idx) => [u.userId, idx + 1] as const))
+
+const getCanonicalUserRank = (user: User): number => {
+  return rankingByUserId.get(user.userId) ?? rankingByUserId.get(user.id) ?? user.ranking
+}
 
 // 로그인 유저 컨텍스트 문자열 생성
 const buildCurrentUserContext = (user: User): string => {
+  const canonicalRank = getCanonicalUserRank(user)
   const parts: string[] = [
+    `사용자 고유키: ${user.userId}`,
     `닉네임: ${user.nickname}`,
     `이메일: ${user.email}`,
     `포인트: ${user.points}점`,
-    `현재 랭킹: ${user.ranking}위`,
+    `현재 랭킹: ${canonicalRank}위 (userId 기준 계산)`,
     `활동 점수: ${user.activityScore}`,
     `평판 점수: ${user.reputation}`,
   ]
@@ -168,47 +185,65 @@ export const getChatbotAction = (userMessage: string): ChatbotAction | undefined
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string | undefined
 const GROQ_MODEL = (import.meta.env.VITE_GROQ_MODEL as string | undefined) || 'llama-3.1-8b-instant'
+const GROQ_FALLBACK_NOTICE = '현재 Groq API 응답이 불가능해 기본 답변 모드로 동작 중입니다. (API 키/모델 설정 확인 필요)'
 
-const buildRagContext = (userMessage: string, currentUser?: User): string => {
+const isPersonalQuery = (query: string): boolean => {
+  return /(\bme\b|\bmy\b|나|내|저|내정보|내 정보|프로필|개인|분석)/i.test(query)
+}
+
+const buildIntentContext = (userMessage: string, currentUser?: User): string => {
   const intent = detectIntent(userMessage)
 
-  const topHackathons = searchHackathons(userMessage).slice(0, 5)
-  const topTeams = searchTeams(userMessage).slice(0, 5)
-  const topUsers = usersByPoints.slice(0, 10)
-
-  const statusSummary = {
-    ongoing: getHackathonsByStatus('ongoing').length,
-    upcoming: getHackathonsByStatus('upcoming').length,
-    ended: getHackathonsByStatus('ended').length
-  }
-
-  const hackathonLines = topHackathons.length
-    ? topHackathons.map((h) => `- ${h.title} | 상태:${h.status} | 태그:${h.tags.join(', ')}`).join('\n')
-    : '- 관련 해커톤 없음'
-
-  const teamLines = topTeams.length
-    ? topTeams.map((t) => `- ${t.name} | 모집:${t.isOpen ? '열림' : '닫힘'} | 역할:${t.lookingFor.join(', ')}`).join('\n')
-    : '- 관련 팀 없음'
-
-  const rankingLines = topUsers.length
-    ? topUsers.map((u, idx) => `- ${idx + 1}위 ${u.nickname} (${u.points}점)`).join('\n')
-    : '- 랭킹 데이터 없음'
-
-  const parts = [
-    `의도: ${intent}`,
-    `해커톤 현황: 진행중 ${statusSummary.ongoing}, 예정 ${statusSummary.upcoming}, 종료 ${statusSummary.ended}`,
-    '관련 해커톤:',
-    hackathonLines,
-    '관련 팀:',
-    teamLines,
-    '상위 유저 랭킹:',
-    rankingLines
+  const parts: string[] = [
+    `[QUERY]\n${userMessage}`,
+    `[INTENT]\n${intent}`
   ]
-  if (currentUser) {
-    parts.push('\n--- 현재 로그인한 사용자 정보 ---')
-    parts.push(buildCurrentUserContext(currentUser))
+
+  if (intent === 'ongoing_hackathons') {
+    const ongoing = getHackathonsByStatus('ongoing').slice(0, 4)
+    const lines = ongoing.length
+      ? ongoing.map((h) => `${h.title} | 마감:${new Date(h.period.submissionDeadlineAt).toLocaleDateString('ko-KR')} | 태그:${h.tags.slice(0, 3).join(',')}`).join('\n')
+      : '없음'
+    parts.push(`[HACKATHONS]\n${lines}`)
   }
-  return parts.join('\n')
+
+  if (intent === 'upcoming_hackathons') {
+    const upcoming = getHackathonsByStatus('upcoming').slice(0, 4)
+    const lines = upcoming.length
+      ? upcoming.map((h) => `${h.title} | 마감:${new Date(h.period.submissionDeadlineAt).toLocaleDateString('ko-KR')} | 태그:${h.tags.slice(0, 3).join(',')}`).join('\n')
+      : '없음'
+    parts.push(`[HACKATHONS]\n${lines}`)
+  }
+
+  if (intent === 'hackathons' || intent === 'general') {
+    const searched = searchHackathons(userMessage).slice(0, 4)
+    if (searched.length > 0) {
+      parts.push(`[HACKATHONS]\n${searched.map((h) => `${h.title} | 상태:${h.status} | 태그:${h.tags.slice(0, 3).join(',')}`).join('\n')}`)
+    }
+  }
+
+  if (intent === 'teams' || intent === 'team_ranking' || intent === 'general') {
+    const searchedTeams = searchTeams(userMessage)
+    const targetTeams = searchedTeams.length > 0 ? searchedTeams.slice(0, 4) : teams.filter((t) => t.isOpen).slice(0, 4)
+    if (targetTeams.length > 0) {
+      parts.push(`[TEAMS]\n${targetTeams.map((t) => `${t.name} | 모집:${t.isOpen ? '열림' : '닫힘'} | 역할:${t.lookingFor.slice(0, 3).join(',')}`).join('\n')}`)
+    }
+  }
+
+  if (intent === 'leaderboard' || intent === 'team_ranking') {
+    const topUsers = usersByPoints.slice(0, 5)
+    parts.push(`[RANKING]\n${topUsers.map((u, idx) => `${idx + 1}위 ${u.nickname} ${u.points}점`).join('\n')}`)
+  }
+
+  if (currentUser && (isPersonalQuery(userMessage) || intent === 'leaderboard')) {
+    parts.push(`[CURRENT_USER]\n${buildCurrentUserContext(currentUser)}`)
+  }
+
+  if (intent === 'help') {
+    parts.push('[SUPPORTED_FEATURES]\n해커톤 검색, 진행/예정 해커톤 조회, 팀 찾기, 팀 랭킹, 개인 랭킹, 로그인 유저 프로필 분석')
+  }
+
+  return parts.join('\n\n')
 }
 
 const generateGroqResponse = async (userMessage: string, currentUser?: User): Promise<string | null> => {
@@ -220,18 +255,16 @@ const generateGroqResponse = async (userMessage: string, currentUser?: User): Pr
   const timer = setTimeout(() => controller.abort(), 10000)
 
   try {
-    const ragContext = buildRagContext(userMessage, currentUser)
+    const selectedContext = buildIntentContext(userMessage, currentUser)
 
     const systemPrompt = [
-      '당신은 해커톤 플랫폼 전용 AI 도우미입니다. 다음 규칙을 반드시 따르세요:',
-      '1. 항상 한국어로 답변하세요.',
-      '2. 컨텍스트에 제공된 데이터를 최우선으로 사용하세요.',
-      '3. "나", "내", "저", "me", "my" 등 자기 자신에 대한 질문은 [현재 로그인한 사용자 정보] 섹션의 데이터로 구체적으로 답하세요.',
-      '4. 컨텍스트에 없는 사실은 추측하지 말고 "해당 정보가 없습니다"라고 답하세요.',
-      '5. 답변은 명확하고 자연스러운 대화체로 작성하세요. 불필요하게 길게 쓰지 마세요.',
-      '6. 목록 항목은 반드시 "• " 으로 시작하세요.',
-      '7. 중요 내용은 **굵게** 표시하세요.',
-      '8. 답변 마지막에 짧은 다음 행동 제안을 한 문장으로 추가하세요.',
+      '당신은 해커톤 플랫폼 AI입니다.',
+      '항상 한국어로 답하세요.',
+      '반드시 전달된 컨텍스트만 사용하세요.',
+      '질문 의도([INTENT])와 관련된 섹션만 우선 사용하세요.',
+      '데이터가 있으면 구체 항목(이름/상태/점수)을 반드시 포함하세요.',
+      '불필요한 반복/장황한 설명은 금지합니다.',
+      '답변 형식: 요약 1~2문장 + 핵심 목록 2~5개 + 마지막 한 줄 제안.'
     ].join('\n')
 
     const response = await fetch(GROQ_API_URL, {
@@ -243,19 +276,24 @@ const generateGroqResponse = async (userMessage: string, currentUser?: User): Pr
       body: JSON.stringify({
         model: GROQ_MODEL,
         temperature: 0.4,
-        max_tokens: 700,
+        max_tokens: 520,
         messages: [
           { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: `질문: ${userMessage}\n\n컨텍스트:\n${ragContext}`
-          }
+          { role: 'user', content: `질문:\n${userMessage}\n\n선택된 컨텍스트:\n${selectedContext}` }
         ]
       }),
       signal: controller.signal
     })
 
     if (!response.ok) {
+      let reason = `${response.status}`
+      try {
+        const errorData = (await response.json()) as { error?: { message?: string; type?: string; code?: string } }
+        reason = `${response.status} ${errorData.error?.type ?? ''} ${errorData.error?.code ?? ''} ${errorData.error?.message ?? ''}`.trim()
+      } catch {
+        // no-op: keep status-only reason
+      }
+      console.warn('Groq API non-OK response:', reason)
       return null
     }
 
@@ -421,5 +459,9 @@ export const generateChatbotResponseWithFallback = async (
   if (groqResponse) {
     return groqResponse
   }
-  return generateChatbotResponse(userMessage)
+  const ruleBased = generateChatbotResponse(userMessage)
+  if (GROQ_API_KEY) {
+    return `${GROQ_FALLBACK_NOTICE}\n\n${ruleBased}`
+  }
+  return ruleBased
 }
