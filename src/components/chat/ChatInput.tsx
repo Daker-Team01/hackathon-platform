@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 
 type Props = {
   onSend: (text: string) => void
@@ -15,10 +15,20 @@ const QUICK_QUESTIONS = [
 
 export default function ChatInput({ onSend, isLoading = false, isChatbot = false }: Props) {
   const [text, setText] = useState("")
+  const isComposingRef = useRef(false)
+  const lastSendRef = useRef<{ text: string; ts: number } | null>(null)
 
   const handleSend = () => {
-    if (!text.trim() || isLoading) return
-    onSend(text)
+    const nextText = text.trim()
+    if (!nextText || isLoading) return
+
+    const now = Date.now()
+    if (lastSendRef.current && lastSendRef.current.text === nextText && now - lastSendRef.current.ts < 300) {
+      return
+    }
+
+    lastSendRef.current = { text: nextText, ts: now }
+    onSend(nextText)
     setText("")
   }
 
@@ -96,7 +106,18 @@ export default function ChatInput({ onSend, isLoading = false, isChatbot = false
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          onCompositionStart={() => {
+            isComposingRef.current = true
+          }}
+          onCompositionEnd={() => {
+            isComposingRef.current = false
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return
+            if (isComposingRef.current) return
+            e.preventDefault()
+            handleSend()
+          }}
           placeholder={isLoading ? "응답 대기 중..." : "메시지 입력..."}
           disabled={isLoading}
           style={{

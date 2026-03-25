@@ -39,7 +39,7 @@ export default function TeamManagement() {
       return;
     }
 
-    if (team.members?.some(m => m.userId === targetUser.id)) {
+    if (team.members?.some(m => m.userId === targetUser.userId)) {
       alert('이미 팀에 소속된 유저입니다.');
       return;
     }
@@ -47,7 +47,7 @@ export default function TeamManagement() {
     inviteMutation.mutate({
       teamId: team.teamCode,
       teamName: team.name,
-      invitedUserId: targetUser.id,
+      invitedUserId: targetUser.userId,
       invitedUserName: targetUser.nickname,
     }, {
       onSuccess: () => {

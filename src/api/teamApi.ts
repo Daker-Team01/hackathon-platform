@@ -5,11 +5,20 @@ import {
   GENERAL_ROOM_ID,
   createChatTimestamp,
   createTeamRoom,
+  getTeamRoomId,
   mutateUserChatData,
   upsertMessageInChatData,
   upsertRoomInChatData,
   type ChatMessage
 } from "../utils/chatStorage"
+import {
+  createTeamChatRoom,
+  fetchTeamChatRoom,
+  addChatMember,
+  removeChatMember,
+  addTeamMembersToChatRoom,
+  sendSystemMessage
+} from "./realtimeChatApi"
 
 const LOCAL_STORAGE_KEY = "teams"
 const INVITES_STORAGE_KEY = "team_invites"
@@ -17,6 +26,10 @@ const TEAM_BOT_NAME = "Team Bot"
 
 const getNicknameByUserId = (userId: string) => {
   return userDummyData.find((user) => user.userId === userId)?.nickname || "Unknown User"
+}
+
+const getUserByUserId = (userId: string) => {
+  return userDummyData.find((user) => user.userId === userId)
 }
 
 const getUniqueUsernames = (userIds: string[]) => {
@@ -114,6 +127,31 @@ const syncTeamChatRoom = (team: Team, joinedMember?: TeamMember) => {
   })
 }
 
+const ensureSupabaseTeamChatRoom = async (team: Team): Promise<string | null> => {
+  const existingRoom = await fetchTeamChatRoom(team.teamCode)
+  if (existingRoom) {
+    return existingRoom.id
+  }
+
+  const createdRoom = await createTeamChatRoom(team.teamCode, team.name, team.leaderId)
+  if (!createdRoom) {
+    return null
+  }
+
+  // 레거시(기존 더미) 팀도 초대 수락 시점에 채팅방을 자동 복구 생성한다.
+  await addTeamMembersToChatRoom(
+    createdRoom.id,
+    (team.members || []).map((member) => ({ userId: member.userId, userName: member.userName }))
+  )
+
+  await sendSystemMessage(
+    createdRoom.id,
+    `${team.name} 팀 채팅방이 생성되었습니다. 팀원: ${(team.members || []).map((m) => m.userName).join(', ')}`
+  )
+
+  return createdRoom.id
+}
+
 const normalizeTeam = (team: any): Team => {
   const leaderId = team.leaderId || team.authorId || ''
   const rawMembers = Array.isArray(team.members) ? team.members : []
@@ -197,6 +235,35 @@ export const createTeam = async (
 
   const updatedTeams = [newTeam, ...teams]
   saveTeams(updatedTeams)
+  
+  // Supabase에 팀 채팅방 생성
+  try {
+    const supabaseRoom = await createTeamChatRoom(
+      newTeam.teamCode,
+      newTeam.name,
+      team.leaderId
+    )
+
+    if (supabaseRoom) {
+      // 팀 리더를 채팅방 멤버로 추가
+      await addChatMember(supabaseRoom.id, team.leaderId, leaderName || getNicknameByUserId(team.leaderId))
+      
+      // 다른 멤버들도 추가
+      if (newTeam.members.length > 1) {
+        await addTeamMembersToChatRoom(
+          supabaseRoom.id,
+          newTeam.members.map(m => ({ userId: m.userId, userName: m.userName }))
+        )
+      }
+
+      // 채팅방 환영 메시지
+      await sendSystemMessage(supabaseRoom.id, `${newTeam.name} 팀 채팅방이 생성되었습니다. 팀원: ${newTeam.members.map(m => m.userName).join(', ')}`)
+    }
+  } catch (error) {
+    console.error('Failed to create Supabase chat room:', error)
+    // 실패해도 팀은 생성됨 (localStorage는 성공)
+  }
+
   syncTeamChatRoom(newTeam)
   return newTeam
 }
@@ -285,6 +352,19 @@ export const respondToInvite = async (inviteId: string, status: 'ACCEPTED' | 'RE
         team.members = [...(team.members || []), newMember]
         team.memberCount = team.members.length
         saveTeams(teams)
+
+        // Supabase 채팅방에 새 멤버 추가
+        try {
+          const roomId = await ensureSupabaseTeamChatRoom(team)
+          if (roomId) {
+            await addChatMember(roomId, updatedInvite.invitedUserId, updatedInvite.invitedUserName)
+            await sendSystemMessage(roomId, `${updatedInvite.invitedUserName}님이 ${team.name} 팀 채팅방에 참여했습니다.`)
+          }
+        } catch (error) {
+          console.error('Failed to add member to Supabase chat room:', error)
+          // 실패해도 팀 멤버십은 성공
+        }
+
         syncTeamChatRoom(team, newMember)
       } else {
         syncTeamChatRoom(team)
@@ -303,8 +383,45 @@ export const kickMember = async (teamCode: string, userId: string): Promise<Team
   if (index === -1) throw new Error("Team not found")
 
   const team = teams[index]
+  const kickedMember = team.members.find((m) => m.userId === userId)
   team.members = team.members.filter(m => m.userId !== userId)
   team.memberCount = team.members.length
   saveTeams(teams)
+
+  try {
+    const room = await fetchTeamChatRoom(teamCode)
+    if (room) {
+      await removeChatMember(room.id, userId)
+      await sendSystemMessage(room.id, `${kickedMember?.userName ?? getNicknameByUserId(userId)}님이 ${team.name} 팀에서 제외되었습니다.`)
+    }
+  } catch (error) {
+    console.error('Failed to remove kicked member from Supabase chat room:', error)
+  }
+
+  const kickedNickname = getNicknameByUserId(userId)
+  const kickedUser = getUserByUserId(userId)
+  const teamRoomId = getTeamRoomId(teamCode)
+
+  const possibleSessionKeys = new Set<string>([
+    kickedNickname,
+    userId,
+    kickedUser?.email || '',
+    kickedUser?.userId || ''
+  ].filter(Boolean))
+
+  possibleSessionKeys.forEach((key) => {
+    mutateUserChatData(key, (chatData) => {
+      const nextRooms = chatData.rooms.filter((room) => room.id !== teamRoomId)
+      const nextMessages = { ...chatData.messages }
+      delete nextMessages[teamRoomId]
+
+      return {
+        ...chatData,
+        rooms: nextRooms,
+        messages: nextMessages
+      }
+    })
+  })
+
   return team
 }
