@@ -131,6 +131,52 @@ export const createChatRoom = async (
 }
 
 /**
+ * 활성 일반 채팅방 1개 조회
+ */
+export const fetchGeneralChatRoom = async (): Promise<SupabaseChatRoom | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_rooms')
+      .select('*')
+      .eq('room_type', 'general')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+
+    if (error) throw error
+    if (!data || data.length === 0) return null
+    return data[0] as SupabaseChatRoom
+  } catch (error) {
+    console.error('Failed to fetch general chat room:', error)
+    return null
+  }
+}
+
+/**
+ * 유저의 일반 채팅방 접근 보장 (방 생성 + 멤버 활성화)
+ */
+export const ensureGeneralRoomForUser = async (
+  userId: string,
+  nickname: string
+): Promise<SupabaseChatRoom | null> => {
+  try {
+    let room = await fetchGeneralChatRoom()
+
+    if (!room) {
+      room = await createChatRoom('일반', 'general', undefined, 'system')
+    }
+
+    if (!room) return null
+
+    await addChatMember(room.id, userId, nickname)
+    return room
+  } catch (error) {
+    console.error('Failed to ensure general room for user:', error)
+    return null
+  }
+}
+
+/**
  * 팀 채팅방 생성 및 매핑
  */
 export const createTeamChatRoom = async (

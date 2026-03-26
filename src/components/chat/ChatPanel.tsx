@@ -85,6 +85,7 @@ export default function ChatPanel({ open, onClose }: Props) {
 
   const supabaseRoomIds = new Set(supabaseRooms.map((room) => room.id))
   const directRoomIds = new Set(supabaseRooms.filter((r) => r.room_type === 'direct').map((r) => r.id))
+  const supabaseGeneralRoomId = supabaseRooms.find((room) => room.room_type === 'general')?.id
   const mergedRooms = [...chatData.rooms]
   supabaseRooms.forEach((room) => {
     if (!mergedRooms.some((r) => r.id === room.id)) {
@@ -96,7 +97,9 @@ export default function ChatPanel({ open, onClose }: Props) {
   const allowedRoomIds = isLoggedIn ? mergedRooms.map(r => r.id) : [GENERAL_ROOM_ID, '4']
   const filteredRooms = mergedRooms.filter(r => allowedRoomIds.includes(r.id))
   // 선택된 방이 허용되지 않으면 일반방으로 강제
-  const safeSelectedRoomId = allowedRoomIds.includes(selectedRoomId) ? selectedRoomId : GENERAL_ROOM_ID
+  const safeSelectedRoomId = allowedRoomIds.includes(selectedRoomId)
+    ? selectedRoomId
+    : (isLoggedIn ? (supabaseGeneralRoomId ?? allowedRoomIds[0] ?? GENERAL_ROOM_ID) : GENERAL_ROOM_ID)
 
   const handleInviteResponse = (inviteId: string, status: 'ACCEPTED' | 'REJECTED') => {
     const actionLabel = status === 'ACCEPTED' ? '수락' : '거절'

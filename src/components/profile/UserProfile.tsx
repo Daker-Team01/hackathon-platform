@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useUser } from '../../contexts/UserContext'
+import { useUser, type UserWorkStyle } from '../../contexts/UserContext'
 import { router } from '../../router/router'
 import ParticipationSummary from './ParticipationSummary'
 
@@ -37,6 +37,32 @@ const TECH_STACK_OPTIONS = [
   'DevOps'
 ]
 
+const PREFERRED_ROLE_OPTIONS = [
+  '기획',
+  'PM',
+  '프론트엔드',
+  '백엔드',
+  '디자이너',
+  'AI/ML',
+  '데이터 분석',
+  'DevOps',
+  '모바일',
+  '풀스택',
+  'QA'
+]
+
+const WORK_STYLE_OPTIONS = [
+  { value: 'low', label: '낮음' },
+  { value: 'medium', label: '보통' },
+  { value: 'high', label: '높음' }
+] as const
+
+const WORK_STYLE_FIELDS: Array<{ key: keyof UserWorkStyle; label: string }> = [
+  { key: 'communication', label: '소통' },
+  { key: 'leadership', label: '리더십' },
+  { key: 'execution', label: '실행력' }
+]
+
 const WORK_STYLE_LABELS: Record<string, string> = {
   low: '낮음',
   medium: '보통',
@@ -67,13 +93,20 @@ export default function UserProfile() {
   const [editData, setEditData] = useState({
     nickname: user?.nickname || '',
     personalityTags: normalizeStringArray(user?.personalityTags),
-    techStack: normalizeStringArray(user?.techStack)
+    techStack: normalizeStringArray(user?.techStack),
+    preferredRoles: normalizeStringArray(user?.preferredRoles),
+    workStyle: {
+      communication: user?.workStyle.communication ?? 'medium',
+      leadership: user?.workStyle.leadership ?? 'medium',
+      execution: user?.workStyle.execution ?? 'medium'
+    }
   })
 
   if (!user) return null
 
   const personalityTags = normalizeStringArray(user.personalityTags)
   const techStack = normalizeStringArray(user.techStack)
+  const preferredRoles = normalizeStringArray(user.preferredRoles)
   const participationCount = user.participations.length
   const ongoingParticipationCount = user.participations.filter((item) => item.status === 'ongoing').length
   const activityPercent = Math.round(user.activityScore * 100)
@@ -107,7 +140,9 @@ export default function UserProfile() {
     updateUser({
       nickname: editData.nickname,
       personalityTags: normalizeStringArray(editData.personalityTags),
-      techStack: normalizeStringArray(editData.techStack)
+      techStack: normalizeStringArray(editData.techStack),
+      preferredRoles: normalizeStringArray(editData.preferredRoles),
+      workStyle: editData.workStyle
     })
     setIsEditing(false)
   }
@@ -116,7 +151,13 @@ export default function UserProfile() {
     setEditData({
       nickname: user.nickname,
       personalityTags,
-      techStack
+      techStack,
+      preferredRoles,
+      workStyle: {
+        communication: user.workStyle.communication,
+        leadership: user.workStyle.leadership,
+        execution: user.workStyle.execution
+      }
     })
     setIsEditing(false)
   }
@@ -157,6 +198,28 @@ export default function UserProfile() {
         }
       }
     })
+  }
+
+  const togglePreferredRole = (role: string) => {
+    setEditData((prev) => {
+      const isSelected = prev.preferredRoles.includes(role)
+      return {
+        ...prev,
+        preferredRoles: isSelected
+          ? prev.preferredRoles.filter((item) => item !== role)
+          : [...prev.preferredRoles, role]
+      }
+    })
+  }
+
+  const updateWorkStyle = (field: keyof UserWorkStyle, value: string) => {
+    setEditData((prev) => ({
+      ...prev,
+      workStyle: {
+        ...prev.workStyle,
+        [field]: value
+      }
+    }))
   }
 
   const handleLogout = () => {
@@ -306,43 +369,108 @@ export default function UserProfile() {
 
       <div style={{ padding: 12, backgroundColor: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
         <p style={{ margin: '0 0 8px 0', fontSize: 12, fontWeight: 600, color: '#1f2937' }}>선호 역할</p>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-          {user.preferredRoles.map((role) => (
-            <span
-              key={role}
-              style={{
-                padding: '4px 8px',
-                backgroundColor: '#ecfeff',
-                color: '#155e75',
-                borderRadius: 12,
-                fontSize: 12,
-                fontWeight: 500
-              }}
-            >
-              {role}
-            </span>
-          ))}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-          <div style={{ padding: 8, borderRadius: 8, backgroundColor: '#ffffff' }}>
-            <p style={{ margin: 0, fontSize: 11, color: '#64748b' }}>소통</p>
-            <p style={{ margin: '4px 0 0 0', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-              {WORK_STYLE_LABELS[user.workStyle.communication] ?? user.workStyle.communication}
-            </p>
+        {isEditing ? (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+            {PREFERRED_ROLE_OPTIONS.map((role) => {
+              const selected = editData.preferredRoles.includes(role)
+
+              return (
+                <button
+                  key={role}
+                  onClick={() => togglePreferredRole(role)}
+                  style={{
+                    padding: '6px 10px',
+                    border: selected ? '2px solid #0891b2' : '1px solid #d1d5db',
+                    backgroundColor: selected ? '#cffafe' : '#ffffff',
+                    color: selected ? '#155e75' : '#475569',
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {role}
+                </button>
+              )
+            })}
           </div>
-          <div style={{ padding: 8, borderRadius: 8, backgroundColor: '#ffffff' }}>
-            <p style={{ margin: 0, fontSize: 11, color: '#64748b' }}>리더십</p>
-            <p style={{ margin: '4px 0 0 0', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-              {WORK_STYLE_LABELS[user.workStyle.leadership] ?? user.workStyle.leadership}
-            </p>
+        ) : (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+            {preferredRoles.length > 0 ? preferredRoles.map((role) => (
+              <span
+                key={role}
+                style={{
+                  padding: '4px 8px',
+                  backgroundColor: '#ecfeff',
+                  color: '#155e75',
+                  borderRadius: 12,
+                  fontSize: 12,
+                  fontWeight: 500
+                }}
+              >
+                {role}
+              </span>
+            )) : (
+              <span style={{ fontSize: 12, color: '#94a3b8' }}>아직 선택한 역할이 없습니다.</span>
+            )}
           </div>
-          <div style={{ padding: 8, borderRadius: 8, backgroundColor: '#ffffff' }}>
-            <p style={{ margin: 0, fontSize: 11, color: '#64748b' }}>실행력</p>
-            <p style={{ margin: '4px 0 0 0', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-              {WORK_STYLE_LABELS[user.workStyle.execution] ?? user.workStyle.execution}
-            </p>
+        )}
+
+        {isEditing ? (
+          <div style={{ display: 'grid', gap: 10 }}>
+            {WORK_STYLE_FIELDS.map((field) => (
+              <div key={field.key} style={{ padding: 10, borderRadius: 8, backgroundColor: '#ffffff' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: 11, color: '#64748b' }}>{field.label}</p>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {WORK_STYLE_OPTIONS.map((option) => {
+                    const selected = editData.workStyle[field.key] === option.value
+
+                    return (
+                      <button
+                        key={option.value}
+                        onClick={() => updateWorkStyle(field.key, option.value)}
+                        style={{
+                          flex: 1,
+                          padding: '7px 0',
+                          borderRadius: 8,
+                          border: selected ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                          backgroundColor: selected ? '#dbeafe' : '#ffffff',
+                          color: selected ? '#1d4ed8' : '#475569',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <div style={{ padding: 8, borderRadius: 8, backgroundColor: '#ffffff' }}>
+              <p style={{ margin: 0, fontSize: 11, color: '#64748b' }}>소통</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                {WORK_STYLE_LABELS[user.workStyle.communication] ?? user.workStyle.communication}
+              </p>
+            </div>
+            <div style={{ padding: 8, borderRadius: 8, backgroundColor: '#ffffff' }}>
+              <p style={{ margin: 0, fontSize: 11, color: '#64748b' }}>리더십</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                {WORK_STYLE_LABELS[user.workStyle.leadership] ?? user.workStyle.leadership}
+              </p>
+            </div>
+            <div style={{ padding: 8, borderRadius: 8, backgroundColor: '#ffffff' }}>
+              <p style={{ margin: 0, fontSize: 11, color: '#64748b' }}>실행력</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                {WORK_STYLE_LABELS[user.workStyle.execution] ?? user.workStyle.execution}
+              </p>
+            </div>
+          </div>
+        )}
         <p style={{ margin: '10px 0 0 0', fontSize: 11, color: '#64748b' }}>
           현재 진행 중인 해커톤 {ongoingParticipationCount}개 · 가입일 {formatDate(user.createdAt)}
         </p>
