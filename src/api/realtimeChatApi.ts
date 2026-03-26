@@ -278,6 +278,38 @@ export const removeChatMember = async (roomId: string, userId: string) => {
 }
 
 /**
+ * DM 방이 비어있는지 확인 후 is_active = false로 설정
+ */
+export const deactivateDirectRoomIfEmpty = async (roomId: string) => {
+  try {
+    // 현재 활성 멤버 확인
+    const { data: members, error: fetchError } = await supabase
+      .from("chat_members")
+      .select("*")
+      .eq("room_id", roomId)
+      .eq("is_active", true)
+
+    if (fetchError) throw fetchError
+
+    // DM 방은 1명 이하 남으면 방도 비활성화 (1:1이므로 한 명이 나가면 상대방 목록에서도 제거)
+    if (!members || members.length <= 1) {
+      const { error: updateError } = await supabase
+        .from("chat_rooms")
+        .update({ is_active: false })
+        .eq("id", roomId)
+        .eq("room_type", "direct")
+
+      if (updateError) throw updateError
+      return true
+    }
+    return false
+  } catch (error) {
+    console.error("Failed to deactivate direct room:", error)
+    return false
+  }
+}
+
+/**
  * 특정 채팅방의 모든 멤버 조회
  */
 export const fetchRoomMembers = async (roomId: string) => {
@@ -569,6 +601,46 @@ export const subscribeToUserMemberships = (
     }
   } catch (error) {
     console.error("Failed to subscribe to user memberships:", error)
+    if (onError) onError(error)
+    return () => {}
+  }
+}
+
+/**
+ * DM 화방의 멤버십 변경(이 방에 속한 누구든지 나감) 실시간 구독
+ * → 상대방이 방을 나가면 자신의 채팅방 목록에서도 제거
+ */
+export const subscribeToDmRoomMembers = (
+  roomId: string,
+  onMembershipChange: () => void,
+  onError?: (error: any) => void
+) => {
+  try {
+    const channel = supabase
+      .channel(`chat:dm-members:${roomId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "chat_members",
+          filter: `room_id=eq.${roomId}`
+        },
+        () => {
+          onMembershipChange()
+        }
+      )
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" && onError) {
+          onError("DM 멤버십 실시간 연결 실패")
+        }
+      })
+
+    return () => {
+      channel.unsubscribe()
+    }
+  } catch (error) {
+    console.error("Failed to subscribe to DM room members:", error)
     if (onError) onError(error)
     return () => {}
   }

@@ -1,9 +1,10 @@
 type Props = {
   onClick: () => void
   open: boolean
+  unreadCount?: number
 }
 
-export default function ChatButton({ onClick, open }: Props) {
+export default function ChatButton({ onClick, open, unreadCount = 0 }: Props) {
   // 채팅창이 열려있으면 버튼 숨김
   if (open) return null
 
@@ -39,6 +40,29 @@ export default function ChatButton({ onClick, open }: Props) {
       title="채팅"
     >
       💬
+      {unreadCount > 0 && (
+        <span
+          style={{
+            position: 'absolute',
+            top: -2,
+            right: -2,
+            backgroundColor: '#ef4444',
+            color: 'white',
+            borderRadius: '50%',
+            width: 20,
+            height: 20,
+            fontSize: 10,
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '2px solid white',
+            pointerEvents: 'none'
+          }}
+        >
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </span>
+      )}
     </button>
   )
 }

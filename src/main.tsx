@@ -11,6 +11,7 @@ import { router } from "./router/router"
 import { ChatProvider } from "./contexts/ChatContext"
 import { UserProvider } from "./contexts/UserContext"
 import { LogProvider } from "./contexts/LogContext"
+import { DmRequestProvider } from "./contexts/DmRequestContext"
 import teamsData from "./data/team_dummy_data.json"
 import { HACKATHON_DATA_VERSION, normalizedHackathons } from "./lib/hackathonData"
 
@@ -35,11 +36,13 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ChatProvider>
-        <UserProvider>
-          <LogProvider>
-            <RouterProvider router={router} />
-          </LogProvider>
-        </UserProvider>
+        <DmRequestProvider>
+          <UserProvider>
+            <LogProvider>
+              <RouterProvider router={router} />
+            </LogProvider>
+          </UserProvider>
+        </DmRequestProvider>
       </ChatProvider>
     </QueryClientProvider>
   </StrictMode>
