@@ -1,13 +1,8 @@
 import { useMemo } from 'react'
+import { useTeams } from '../hooks/useTeams'
 
 type LeaderboardProps = {
   hackathonSlug: string
-}
-
-type Team = {
-  id: string
-  hackathonSlug: string
-  name: string
 }
 
 type LeaderboardSubmission = {
@@ -28,41 +23,7 @@ type LeaderboardRow = {
   rank: number | null
 }
 
-const TEAMS_STORAGE_KEY = 'teams'
 const LEADERBOARD_SUBMISSIONS_STORAGE_KEY = 'leaderboard_submissions'
-
-function normalizeTeam(item: unknown): Team | null {
-  if (typeof item !== 'object' || item === null) return null
-  const candidate = item as Record<string, unknown>
-
-  const hackathonSlug = typeof candidate.hackathonSlug === 'string' ? candidate.hackathonSlug : ''
-  const name = typeof candidate.name === 'string' ? candidate.name : ''
-  const idValue = candidate.id
-  const teamCodeValue = candidate.teamCode
-  const id =
-    typeof idValue === 'string'
-      ? idValue
-      : typeof teamCodeValue === 'string'
-      ? teamCodeValue
-      : `${hackathonSlug}-${name}`
-
-  if (!hackathonSlug || !name) return null
-  return { id, hackathonSlug, name }
-}
-
-function getTeamsFromStorage(): Team[] {
-  const raw = localStorage.getItem(TEAMS_STORAGE_KEY)
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .map((item) => normalizeTeam(item))
-      .filter((item): item is Team => item !== null)
-  } catch {
-    return []
-  }
-}
 
 function normalizeLeaderboardSubmission(item: unknown): LeaderboardSubmission | null {
   if (typeof item !== 'object' || item === null) return null
@@ -125,8 +86,9 @@ function formatScore(value: number | null): string {
 }
 
 export default function Leaderboard({ hackathonSlug }: LeaderboardProps) {
+  const { data: teams = [] } = useTeams(hackathonSlug)
+
   const rows = useMemo(() => {
-    const teams = getTeamsFromStorage().filter((team) => team.hackathonSlug === hackathonSlug)
     const submissions = getLeaderboardSubmissionsFromStorage().filter(
       (submission) => submission.hackathonSlug === hackathonSlug
     )
@@ -139,10 +101,10 @@ export default function Leaderboard({ hackathonSlug }: LeaderboardProps) {
     })
 
     const baseRows: LeaderboardRow[] = teams.map((team) => {
-      const teamSubmissions = submissionsByTeam.get(team.id) ?? []
+      const teamSubmissions = submissionsByTeam.get(team.teamCode) ?? []
       if (teamSubmissions.length === 0) {
         return {
-          teamId: team.id,
+          teamId: team.teamCode,
           teamName: team.name,
           bestScore: null,
           bestSubmittedAt: null,
@@ -156,7 +118,7 @@ export default function Leaderboard({ hackathonSlug }: LeaderboardProps) {
         chooseBestSubmission(best, current)
       )
       return {
-        teamId: team.id,
+        teamId: team.teamCode,
         teamName: team.name,
         bestScore: bestSubmission.totalScore,
         bestSubmittedAt: bestSubmission.submittedAt,
@@ -188,7 +150,7 @@ export default function Leaderboard({ hackathonSlug }: LeaderboardProps) {
         if (b.rank !== null) return 1
         return a.teamName.localeCompare(b.teamName)
       })
-  }, [hackathonSlug])
+  }, [hackathonSlug, teams])
 
   return (
     <section style={{ marginTop: 12 }}>
