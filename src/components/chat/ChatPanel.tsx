@@ -15,11 +15,19 @@ type Props = {
 
 export default function ChatPanel({ open, onClose }: Props) {
   const { isLoggedIn, user } = useUser()
-  const { chatData, supabaseRooms, addMessage, addSupabaseMessage } = useChat()
+  const { chatData, supabaseRooms, addMessage, addSupabaseMessage, leaveDirectRoom, markRoomSeen } = useChat()
   const respondMutation = useRespondToInvite()
   const [selectedRoomId, setSelectedRoomId] = useState(GENERAL_ROOM_ID)
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false)
   const [panelWidth, setPanelWidth] = useState(500)
+
+  // 패널이 열릴 때 현재 DM 방을 읽음 처리
+  useEffect(() => {
+    if (!open) return
+    const isDirect = supabaseRooms.some((r) => r.id === selectedRoomId && r.room_type === 'direct')
+    if (isDirect) markRoomSeen(selectedRoomId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
   const [panelHeight, setPanelHeight] = useState(760)
   const [panelRight, setPanelRight] = useState(20)
   const [panelBottom, setPanelBottom] = useState(20)
@@ -76,6 +84,7 @@ export default function ChatPanel({ open, onClose }: Props) {
   if (!chatData) return null
 
   const supabaseRoomIds = new Set(supabaseRooms.map((room) => room.id))
+  const directRoomIds = new Set(supabaseRooms.filter((r) => r.room_type === 'direct').map((r) => r.id))
   const mergedRooms = [...chatData.rooms]
   supabaseRooms.forEach((room) => {
     if (!mergedRooms.some((r) => r.id === room.id)) {
@@ -205,8 +214,16 @@ export default function ChatPanel({ open, onClose }: Props) {
             <ChatRoomList
               rooms={filteredRooms}
               selectedRoomId={safeSelectedRoomId}
-              onSelectRoom={rid => {
-                if (allowedRoomIds.includes(rid)) setSelectedRoomId(rid)
+              directRoomIds={directRoomIds}
+              onSelectRoom={(rid) => {
+                if (!allowedRoomIds.includes(rid)) return
+                setSelectedRoomId(rid)
+                const isDirect = directRoomIds.has(rid)
+                if (isDirect) markRoomSeen(rid)
+              }}
+              onLeaveRoom={async (roomId) => {
+                await leaveDirectRoom(roomId)
+                if (selectedRoomId === roomId) setSelectedRoomId(GENERAL_ROOM_ID)
               }}
             />
             <div style={{

@@ -2,6 +2,8 @@ import { createContext, useContext, useState, type ReactNode, useEffect, useRef 
 import {
   CHAT_SYNC_EVENT,
   createUserChatData,
+  getLastSeenAt,
+  setLastSeenAt,
   getTeamRoomId,
   loadChatDataFromSession,
   loadOrCreateChatData,
@@ -12,10 +14,15 @@ import {
 } from '../utils/chatStorage'
 import {
   sendMessage,
+  createChatRoom,
+  addChatMember,
+  removeChatMember,
+  deactivateDirectRoomIfEmpty,
   subscribeToTeamChatMappingChanges,
   subscribeToRoomMessages,
   subscribeToTeamRoomLifecycle,
   subscribeToUserMemberships,
+  subscribeToDmRoomMembers,
   fetchUserChatRooms,
   fetchRoomMessages,
   type TeamRoomLifecycleEvent,
@@ -28,8 +35,12 @@ type ChatContextType = {
   chatData: UserChatData | null
   supabaseRooms: SupabaseChatRoom[]
   isLoadingRooms: boolean
+  unreadDmCount: number
   addMessage: (roomId: string, message: ChatMessage) => void
   addSupabaseMessage: (roomId: string, userId: string, nickname: string, content: string) => Promise<void>
+  openDirectRoom: (fromUserId: string, fromNickname: string, toUserId: string, toNickname: string) => Promise<string | null>
+  leaveDirectRoom: (roomId: string) => Promise<void>
+  markRoomSeen: (roomId: string) => void
   initializeChatData: (username: string, displayName?: string, supabaseUserId?: string) => void
   clearChatData: () => void
   loadSupabaseRooms: (userId: string) => Promise<void>
@@ -65,6 +76,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const supabaseRoomIdsRef = useRef<Set<string>>(new Set())
   const supabaseRoomsRef = useRef<SupabaseChatRoom[]>([])
   const currentSupabaseUserIdRef = useRef<string>('')
+  const [unreadDmRoomIds, setUnreadDmRoomIds] = useState<Set<string>>(new Set())
+  const activeRoomIdRef = useRef<string | null>(null)
 
   // 게스트 채팅 데이터 자동 초기화
   useEffect(() => {
@@ -101,6 +114,50 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       supabaseRoomIdsRef.current = nextSupabaseRoomIds
       supabaseRoomsRef.current = rooms
       setSupabaseRooms(rooms)
+
+      // DM 미읽음 알림 체크
+      const dmUserId = currentSupabaseUserIdRef.current
+      if (dmUserId) {
+        setUnreadDmRoomIds((prev) => {
+          const next = new Set(prev)
+          // 삭제된 방 제거
+          prev.forEach((id) => {
+            if (!rooms.some((r) => r.id === id)) next.delete(id)
+          })
+          // 각 DM 방 검사
+          rooms.forEach((room) => {
+            if (room.room_type !== 'direct') return
+            const lastSeen = getLastSeenAt(dmUserId, room.id)
+            
+            // 현재 보고 있는 방은 unread 제외
+            if (room.id === activeRoomIdRef.current) {
+              next.delete(room.id)
+              // 현재 방의 lastSeen 업데이트
+              setLastSeenAt(dmUserId, room.id, new Date().toISOString())
+            } 
+            // lastSeen이 없으면 새 방 → 무조건 unread 추가
+            else if (!lastSeen) {
+              next.add(room.id)
+              // 초기 lastSeen은 room.updated_at - 1초로 설정 (이후 새 메시지만 감지)
+              const initialTime = new Date(new Date(room.updated_at).getTime() - 1000).toISOString()
+              setLastSeenAt(dmUserId, room.id, initialTime)
+            } 
+            // lastSeen이 있으면 최신 메시지 확인
+            else if (new Date(room.updated_at) > new Date(lastSeen)) {
+              next.add(room.id)
+            } 
+            // 미읽음이 있는데 이미 로드됐으면 유지
+            else if (next.has(room.id)) {
+              // 유지
+            } 
+            // 아니면 읽음으로 표시
+            else {
+              next.delete(room.id)
+            }
+          })
+          return next
+        })
+      }
 
       // 기존 룸 구독 정리 후 재구독
       unsubscribeMapRef.current.forEach((unsubscribe) => unsubscribe())
@@ -174,7 +231,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       // 각 채팅방의 메시지 실시간 구독
       rooms.forEach((room) => {
-        const unsubscribe = subscribeToRoomMessages(
+        const unsubscribeMessages = subscribeToRoomMessages(
           room.id,
           (message) => {
             // 새 메시지를 로컬 채팅 데이터에 추가
@@ -185,8 +242,32 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               timestamp: new Date(message.created_at).toLocaleTimeString('ko-KR')
             }
             addMessage(room.id, chatMessage)
+            // DM 방의 새 메시지: 현재 해당 방을 보고 있지 않으면 미읽음 표시
+            if (room.room_type === 'direct' && room.id !== activeRoomIdRef.current) {
+              setUnreadDmRoomIds((prev) => new Set([...prev, room.id]))
+            }
           }
         )
+        
+        // DM 방의 멤버십 변경 구독 (상대방이 나가면 감지)
+        let unsubscribeMembers: (() => void) | undefined
+        if (room.room_type === 'direct') {
+          unsubscribeMembers = subscribeToDmRoomMembers(
+            room.id,
+            () => {
+              // 멤버십이 변경되면 방 목록 다시 로드
+              const userId = currentSupabaseUserIdRef.current
+              if (userId) loadSupabaseRooms(userId)
+            }
+          )
+        }
+        
+        // 두 구독 모두 정리하는 unsubscribe 함수
+        const unsubscribe = () => {
+          unsubscribeMessages()
+          unsubscribeMembers?.()
+        }
+        
         unsubscribeMapRef.current.set(room.id, unsubscribe)
       })
     } catch (error) {
@@ -335,6 +416,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setIsSupabaseBackedUser(false)
     setChatSessionPersistenceEnabled(true)
     setSupabaseRooms([])
+    setUnreadDmRoomIds(new Set())
+    activeRoomIdRef.current = null
     supabaseRoomIdsRef.current = new Set()
     supabaseRoomsRef.current = []
     currentSupabaseUserIdRef.current = ''
@@ -359,6 +442,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       supabaseRoomIdsRef.current = new Set()
       supabaseRoomsRef.current = []
       currentSupabaseUserIdRef.current = ''
+      setUnreadDmRoomIds(new Set())
+      activeRoomIdRef.current = null
       setIsSupabaseBackedUser(false)
       setChatSessionPersistenceEnabled(true)
     }
@@ -394,6 +479,53 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  const leaveDirectRoom = async (roomId: string): Promise<void> => {
+    const userId = currentSupabaseUserIdRef.current
+    if (!userId) return
+    await removeChatMember(roomId, userId)
+    // 방이 비어있으면 chat_rooms.is_active = false로 설정
+    await deactivateDirectRoomIfEmpty(roomId)
+    await loadSupabaseRooms(userId)
+  }
+
+  const markRoomSeen = (roomId: string) => {
+    activeRoomIdRef.current = roomId
+    setUnreadDmRoomIds((prev) => {
+      const next = new Set(prev)
+      next.delete(roomId)
+      return next
+    })
+    const userId = currentSupabaseUserIdRef.current
+    if (userId) setLastSeenAt(userId, roomId, new Date().toISOString())
+  }
+
+  const openDirectRoom = async (
+    fromUserId: string,
+    fromNickname: string,
+    toUserId: string,
+    toNickname: string
+  ): Promise<string | null> => {
+    try {
+      const room = await createChatRoom(
+        `${fromNickname} ↔ ${toNickname}`,
+        'direct',
+        undefined,
+        fromUserId
+      )
+      if (!room) return null
+      await addChatMember(room.id, fromUserId, fromNickname)
+      await addChatMember(room.id, toUserId, toNickname)
+      const currentUserId = currentSupabaseUserIdRef.current
+      if (currentUserId) {
+        await loadSupabaseRooms(currentUserId)
+      }
+      return room.id
+    } catch (error) {
+      console.error('Failed to open direct room:', error)
+      return null
+    }
+  }
+
   const addSupabaseMessage = async (roomId: string, userId: string, nickname: string, content: string) => {
     try {
       const message = await sendMessage(roomId, userId, nickname, content, 'text')
@@ -418,8 +550,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         chatData,
         supabaseRooms,
         isLoadingRooms,
+        unreadDmCount: unreadDmRoomIds.size,
         addMessage,
         addSupabaseMessage,
+        openDirectRoom,
+        leaveDirectRoom,
+        markRoomSeen,
         initializeChatData,
         clearChatData,
         loadSupabaseRooms

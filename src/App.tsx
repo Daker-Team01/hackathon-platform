@@ -2,10 +2,12 @@ import { useState } from 'react'
 import ChatButton from './components/chat/ChatButton'
 import ChatPanel from './components/chat/ChatPanel'
 import Navbar from './components/Navbar'
+import { useChat } from './contexts/ChatContext'
 
 export default function App({ children }: { children: React.ReactNode }) {
   const [chatOpen, setChatOpen] = useState(false)
   const [authCardOpen, setAuthCardOpen] = useState(false)
+  const { unreadDmCount } = useChat()
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -24,7 +26,7 @@ export default function App({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      <ChatButton onClick={() => setChatOpen(true)} open={chatOpen} />
+      <ChatButton onClick={() => setChatOpen(true)} open={chatOpen} unreadCount={unreadDmCount} />
       <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   )
