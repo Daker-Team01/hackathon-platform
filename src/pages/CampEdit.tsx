@@ -142,7 +142,7 @@ export default function CampEdit() {
   const handleDelete = () => {
     if (!teamCode) return
     
-    if (window.confirm("정말로 이 팀 모집글을 삭제하시겠습니까?")) {
+    if (window.confirm("삭제 시 팀 정보도 함께 삭제되며 되돌릴 수 없습니다.\n정말 삭제하시겠습니까?")) {
       deleteMutation.mutate(teamCode, {
         onSuccess: () => {
           alert("삭제되었습니다.")

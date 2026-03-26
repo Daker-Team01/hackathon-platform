@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
+import { useLog } from '@/contexts/LogContext'
 import teamsData from '../data/team_dummy_data.json'
 import usersData from '../data/user_dummy_data.json'
 
@@ -90,6 +91,7 @@ function SourceSummary({
 }
 
 export default function Matcher() {
+  const { recordEvent } = useLog()
   const userMap = useMemo(
     () => new Map(usersData.map((item) => [item.userId, item] as const)),
     [],
@@ -163,9 +165,11 @@ export default function Matcher() {
     }
 
     if (!sourceDocuments.some((doc) => doc.source_id === selectedSourceId)) {
-      setSelectedSourceId(sourceDocuments[0].source_id)
+      const firstSourceId = sourceDocuments[0].source_id
+      setSelectedSourceId(firstSourceId)
+      recordEvent('matcher_profile_select', sourceType, firstSourceId, { actionType: 'autoSelect' })
     }
-  }, [selectedSourceId, sourceDocuments])
+  }, [selectedSourceId, sourceDocuments, sourceType, recordEvent])
 
   const runMatch = async () => {
     if (!selectedSource) return
@@ -252,7 +256,10 @@ export default function Matcher() {
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => setSourceType(option.value)}
+                      onClick={() => {
+                        setSourceType(option.value)
+                        recordEvent('matcher_filter', option.value === 'team' ? 'team' : 'user', option.value, { filterType: 'sourceType', filterValue: option.value })
+                      }}
                       className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all ${active ? 'border-[#3B82F6]/30 bg-[#3B82F6]/8 shadow-sm' : 'border-slate-200 bg-white hover:border-[#3B82F6]/20 hover:bg-slate-50'}`}
                     >
                       <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${active ? 'bg-gradient-to-br from-[#3B82F6] to-[#0EA5E9] text-white' : 'bg-slate-100 text-slate-500'}`}>
@@ -272,7 +279,11 @@ export default function Matcher() {
               <p className="mb-2 text-sm font-semibold text-slate-700">선택한 프로필</p>
               <select
                 value={selectedSourceId}
-                onChange={(event) => setSelectedSourceId(event.target.value)}
+                onChange={(event) => {
+                  const newSourceId = event.target.value
+                  setSelectedSourceId(newSourceId)
+                  recordEvent('matcher_profile_select', sourceType, newSourceId, { actionType: 'profileSelect' })
+                }}
                 className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-[#3B82F6]/40 focus:ring-4 focus:ring-[#3B82F6]/10"
               >
                 {sourceDocuments.map((doc) => {
@@ -292,7 +303,11 @@ export default function Matcher() {
               <p className="mb-2 text-sm font-semibold text-slate-700">해커톤 필터</p>
               <select
                 value={hackathonFilter}
-                onChange={(event) => setHackathonFilter(event.target.value as FilterValue)}
+                onChange={(event) => {
+                  const newFilter = event.target.value as FilterValue
+                  setHackathonFilter(newFilter)
+                  recordEvent('matcher_filter', sourceType, newFilter, { filterType: 'hackathon', filterValue: newFilter })
+                }}
                 className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-[#3B82F6]/40 focus:ring-4 focus:ring-[#3B82F6]/10"
               >
                 <option value="all">전체</option>
@@ -309,7 +324,11 @@ export default function Matcher() {
                 <p className="mb-2 text-sm font-semibold text-slate-700">모집 상태</p>
                 <select
                   value={openOnly}
-                  onChange={(event) => setOpenOnly(event.target.value as 'all' | 'open')}
+                  onChange={(event) => {
+                    const newFilter = event.target.value as 'all' | 'open'
+                    setOpenOnly(newFilter)
+                    recordEvent('matcher_filter', sourceType, newFilter, { filterType: 'openOnly', filterValue: newFilter })
+                  }}
                   className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-[#3B82F6]/40 focus:ring-4 focus:ring-[#3B82F6]/10"
                 >
                   <option value="all">전체</option>

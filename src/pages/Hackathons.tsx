@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { Hackathon } from '../types/hackathon'
 import { useUser } from '../contexts/UserContext'
+import { useLog } from '../contexts/LogContext'
 import { isHackathonInterested, toggleHackathonInterest } from '../utils/interestStorage'
 
 const HACKATHONS_STORAGE_KEY = 'hackathons'
@@ -25,6 +26,7 @@ function getHackathonsFromStorage(): Hackathon[] {
 export default function Hackathons() {
   const navigate = useNavigate()
   const { user } = useUser()
+  const { recordEvent } = useLog()
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [tagFilter, setTagFilter] = useState<string>('all')
   const [, setInterestVersion] = useState(0)
@@ -90,7 +92,10 @@ export default function Hackathons() {
             <div className="flex gap-2 flex-wrap">
               <Button
                 variant={statusFilter === 'all' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('all')}
+                onClick={() => {
+                  setStatusFilter('all')
+                  recordEvent('hackathon_filter', 'hackathon', 'all', { filterType: 'status', filterValue: 'all' })
+                }}
                 className={statusFilter === 'all' ? 'bg-[#3B82F6] hover:bg-[#2563EB]' : 'hover:border-[#3B82F6] hover:text-[#3B82F6]'}
                 size="sm"
               >
@@ -100,7 +105,10 @@ export default function Hackathons() {
                 <Button
                   key={status}
                   variant={statusFilter === status ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter(status)}
+                  onClick={() => {
+                    setStatusFilter(status)
+                    recordEvent('hackathon_filter', 'hackathon', status, { filterType: 'status', filterValue: status })
+                  }}
                   className={statusFilter === status ? 'bg-[#3B82F6] hover:bg-[#2563EB]' : 'hover:border-[#3B82F6] hover:text-[#3B82F6]'}
                   size="sm"
                 >
@@ -115,7 +123,10 @@ export default function Hackathons() {
             <div className="flex gap-2 flex-wrap">
               <Button
                 variant={tagFilter === 'all' ? 'secondary' : 'outline'}
-                onClick={() => setTagFilter('all')}
+                onClick={() => {
+                  setTagFilter('all')
+                  recordEvent('hackathon_filter', 'hackathon', 'all', { filterType: 'tag', filterValue: 'all' })
+                }}
                 className={tagFilter === 'all' ? 'bg-gradient-to-r from-[#3B82F6] to-[#0EA5E9] text-white border-0 shadow-sm hover:opacity-95 transition-all' : 'border-sky-200 bg-white text-slate-600 hover:border-sky-300 hover:bg-sky-50 hover:text-[#2563EB] transition-colors'}
                 size="sm"
               >
@@ -125,7 +136,10 @@ export default function Hackathons() {
                 <Button
                   key={tag}
                   variant={tagFilter === tag ? 'secondary' : 'outline'}
-                  onClick={() => setTagFilter(tag)}
+                  onClick={() => {
+                    setTagFilter(tag)
+                    recordEvent('hackathon_filter', 'hackathon', tag, { filterType: 'tag', filterValue: tag })
+                  }}
                   className={tagFilter === tag ? 'bg-gradient-to-r from-[#3B82F6] to-[#0EA5E9] text-white border-0 shadow-sm hover:opacity-95 transition-all' : 'border-sky-200 bg-white text-slate-600 hover:border-sky-300 hover:bg-sky-50 hover:text-[#2563EB] transition-colors'}
                   size="sm"
                 >
@@ -185,7 +199,8 @@ export default function Hackathons() {
                           alert('로그인 후 관심 등록할 수 있습니다.')
                           return
                         }
-                        toggleHackathonInterest(user.id, hackathon.slug)
+                        const next = toggleHackathonInterest(user.id, hackathon.slug)
+                        recordEvent('hackathon_interest_toggle', 'hackathon', hackathon.slug, { interested: next })
                         setInterestVersion((prev) => prev + 1)
                       }}
                     >
