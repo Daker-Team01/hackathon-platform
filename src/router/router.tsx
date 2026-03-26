@@ -9,6 +9,7 @@ import CampCreate from "../pages/CampCreate"
 import CampEdit from "../pages/CampEdit"
 import Analytics from "../pages/Analytics"
 import TeamManagement from "../pages/TeamManagement"
+import Matcher from '../pages/Matcher'
 
 export const router = createBrowserRouter([
   {
@@ -27,7 +28,8 @@ export const router = createBrowserRouter([
       { path: "camp/new", element: <CampCreate /> },
       { path: "camp/edit/:id", element: <CampEdit /> },
       { path: "analytics", element: <Analytics /> },
-      { path: "team/:teamCode/manage", element: <TeamManagement /> }
+      { path: "team/:teamCode/manage", element: <TeamManagement /> },
+      { path: 'matcher', element: <Matcher /> }
     ]
   }
 ])
