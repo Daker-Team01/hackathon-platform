@@ -37,6 +37,10 @@ export interface SupabaseChatMember {
   is_active: boolean
 }
 
+export type TeamRoomLifecycleEvent = Partial<SupabaseChatRoom> & {
+  _action: 'DELETE' | 'UPSERT'
+}
+
 /* ============ 채팅방 관리 ============ */
 
 /**
@@ -75,6 +79,24 @@ export const fetchTeamChatRoom = async (teamId: string) => {
   } catch (error) {
     console.error("Failed to fetch team chat room:", error)
     return null
+  }
+}
+
+/**
+ * 특정 팀의 채팅방 목록 조회 (복수 레코드 방어용)
+ */
+export const fetchTeamChatRooms = async (teamId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_rooms')
+      .select('*')
+      .eq('team_id', teamId)
+
+    if (error) throw error
+    return data ?? []
+  } catch (error) {
+    console.error('Failed to fetch team chat rooms:', error)
+    return []
   }
 }
 
@@ -152,15 +174,17 @@ export const createTeamChatRoom = async (
  */
 export const deactivateTeamChatRoom = async (teamId: string): Promise<boolean> => {
   try {
-    const room = await fetchTeamChatRoom(teamId)
-    if (!room) {
+    const rooms = await fetchTeamChatRooms(teamId)
+    if (!rooms.length) {
       return true
     }
+
+    const roomIds = rooms.map((room) => room.id)
 
     const { error: memberError } = await supabase
       .from('chat_members')
       .update({ is_active: false })
-      .eq('room_id', room.id)
+      .in('room_id', roomIds)
       .eq('is_active', true)
 
     if (memberError) throw memberError
@@ -168,7 +192,8 @@ export const deactivateTeamChatRoom = async (teamId: string): Promise<boolean> =
     const { error: roomError } = await supabase
       .from('chat_rooms')
       .update({ is_active: false, updated_at: new Date().toISOString() })
-      .eq('id', room.id)
+      .in('id', roomIds)
+      .eq('is_active', true)
 
     if (roomError) throw roomError
 
@@ -549,6 +574,90 @@ export const subscribeToUserMemberships = (
   }
 }
 
+/**
+ * 팀 채팅방 생성/비활성화 실시간 구독
+ */
+export const subscribeToTeamRoomLifecycle = (
+  onRoomChange: (room: TeamRoomLifecycleEvent) => void,
+  onError?: (error: any) => void
+) => {
+  try {
+    const channel = supabase
+      .channel('chat:team-room-lifecycle')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chat_rooms',
+          filter: 'room_type=eq.team'
+        },
+        (payload) => {
+          const eventType = payload.eventType
+
+          if (eventType === 'DELETE') {
+            const room = payload.old as Partial<SupabaseChatRoom>
+            onRoomChange({ ...room, _action: 'DELETE' })
+          } else {
+            const room = payload.new as Partial<SupabaseChatRoom>
+            onRoomChange({ ...room, _action: 'UPSERT' })
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' && onError) {
+          onError('팀 채팅방 실시간 연결 실패')
+        }
+      })
+
+    return () => {
+      channel.unsubscribe()
+    }
+  } catch (error) {
+    console.error('Failed to subscribe to team room lifecycle:', error)
+    if (onError) onError(error)
+    return () => {}
+  }
+}
+
+/**
+ * 팀-채팅방 매핑 변경 실시간 구독
+ */
+export const subscribeToTeamChatMappingChanges = (
+  onMappingChange: (payload: { team_id?: string; room_id?: string }) => void,
+  onError?: (error: any) => void
+) => {
+  try {
+    const channel = supabase
+      .channel('chat:team-chat-mapping')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_chat_mapping'
+        },
+        (payload) => {
+          const row = (payload.new || payload.old) as { team_id?: string; room_id?: string }
+          onMappingChange(row)
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' && onError) {
+          onError('팀 채팅 매핑 실시간 연결 실패')
+        }
+      })
+
+    return () => {
+      channel.unsubscribe()
+    }
+  } catch (error) {
+    console.error('Failed to subscribe to team chat mapping changes:', error)
+    if (onError) onError(error)
+    return () => {}
+  }
+}
+
 /* ============ 사용자 채팅 목록 ============ */
 
 /**
@@ -558,24 +667,24 @@ export const fetchUserChatRooms = async (userId: string) => {
   try {
     const { data, error } = await supabase
       .from("chat_members")
-      .select("room_id")
+      .select(`
+        room_id,
+        chat_rooms!inner(*)
+      `)
       .eq("user_id", userId)
       .eq("is_active", true)
+      .eq('chat_rooms.is_active', true)
 
     if (error) throw error
 
     if (!data || data.length === 0) return []
 
-    const roomIds = data.map((m) => m.room_id)
+    const rooms = data
+      .map((row) => (row as { chat_rooms?: SupabaseChatRoom | SupabaseChatRoom[] }).chat_rooms)
+      .flatMap((room) => (Array.isArray(room) ? room : room ? [room] : []))
+      .filter((room): room is SupabaseChatRoom => Boolean(room))
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
 
-    const { data: rooms, error: roomError } = await supabase
-      .from("chat_rooms")
-      .select("*")
-      .in("id", roomIds)
-      .eq("is_active", true)
-      .order("updated_at", { ascending: false })
-
-    if (roomError) throw roomError
     return rooms
   } catch (error) {
     console.error("Failed to fetch user chat rooms:", error)

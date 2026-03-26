@@ -2,18 +2,23 @@ import { createContext, useContext, useState, type ReactNode, useEffect, useRef 
 import {
   CHAT_SYNC_EVENT,
   createUserChatData,
+  getTeamRoomId,
   loadChatDataFromSession,
   loadOrCreateChatData,
+  setChatSessionPersistenceEnabled,
   saveChatDataToSession,
   type ChatMessage,
   type UserChatData
 } from '../utils/chatStorage'
 import {
   sendMessage,
+  subscribeToTeamChatMappingChanges,
   subscribeToRoomMessages,
+  subscribeToTeamRoomLifecycle,
   subscribeToUserMemberships,
   fetchUserChatRooms,
   fetchRoomMessages,
+  type TeamRoomLifecycleEvent,
   type SupabaseChatRoom
 } from '../api/realtimeChatApi'
 
@@ -32,16 +37,34 @@ type ChatContextType = {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
+const sanitizeChatDataForSupabaseUser = (data: UserChatData): UserChatData => {
+  const nextRooms = data.rooms.filter((room) => !room.id.startsWith('team:'))
+  const nextMessages = Object.fromEntries(
+    Object.entries(data.messages).filter(([roomId]) => !roomId.startsWith('team:'))
+  )
+
+  return {
+    ...data,
+    rooms: nextRooms,
+    messages: nextMessages
+  }
+}
+
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [chatData, setChatData] = useState<UserChatData | null>(null)
   const [currentUsername, setCurrentUsername] = useState<string>('')
   const [currentDisplayName, setCurrentDisplayName] = useState<string>('')
+  const [isSupabaseBackedUser, setIsSupabaseBackedUser] = useState(false)
   const [supabaseRooms, setSupabaseRooms] = useState<SupabaseChatRoom[]>([])
   const [isLoadingRooms, setIsLoadingRooms] = useState(false)
 
   const unsubscribeMapRef = useRef<Map<string, () => void>>(new Map())
   const membershipUnsubscribeRef = useRef<(() => void) | null>(null)
+  const teamRoomLifecycleUnsubscribeRef = useRef<(() => void) | null>(null)
+  const teamChatMappingUnsubscribeRef = useRef<(() => void) | null>(null)
   const supabaseRoomIdsRef = useRef<Set<string>>(new Set())
+  const supabaseRoomsRef = useRef<SupabaseChatRoom[]>([])
+  const currentSupabaseUserIdRef = useRef<string>('')
 
   // 게스트 채팅 데이터 자동 초기화
   useEffect(() => {
@@ -51,7 +74,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [chatData])
 
   useEffect(() => {
-    if (!currentUsername) return
+    if (!currentUsername || isSupabaseBackedUser) return
 
     const handleChatSync = (event: Event) => {
       const customEvent = event as CustomEvent<{ username?: string }>
@@ -65,16 +88,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener(CHAT_SYNC_EVENT, handleChatSync as EventListener)
     return () => window.removeEventListener(CHAT_SYNC_EVENT, handleChatSync as EventListener)
-  }, [currentDisplayName, currentUsername])
+  }, [currentDisplayName, currentUsername, isSupabaseBackedUser])
 
   // Supabase 채팅방 로드 및 실시간 구독
   const loadSupabaseRooms = async (userId: string) => {
     try {
       setIsLoadingRooms(true)
       const rooms = await fetchUserChatRooms(userId)
+      const previousSupabaseRooms = supabaseRoomsRef.current
       const previousSupabaseRoomIds = supabaseRoomIdsRef.current
       const nextSupabaseRoomIds = new Set(rooms.map((room) => room.id))
       supabaseRoomIdsRef.current = nextSupabaseRoomIds
+      supabaseRoomsRef.current = rooms
       setSupabaseRooms(rooms)
 
       // 기존 룸 구독 정리 후 재구독
@@ -85,8 +110,28 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         if (!prev) return prev
 
         const removedRoomIds = [...previousSupabaseRoomIds].filter((id) => !nextSupabaseRoomIds.has(id))
+        const removedLegacyTeamRoomIds = previousSupabaseRooms
+          .filter((room) => removedRoomIds.includes(room.id) && room.room_type === 'team' && room.team_id)
+          .map((room) => getTeamRoomId(room.team_id!))
 
-        const mergedRooms = prev.rooms.filter((room) => !removedRoomIds.includes(room.id))
+        // 로그인 직후에는 previousSupabaseRoomIds가 비어 있을 수 있어,
+        // 현재 활성 Supabase 팀방 목록에 없는 로컬 team:* 방은 항상 정리한다.
+        const activeLegacyTeamRoomIds = new Set(
+          rooms
+            .filter((room) => room.room_type === 'team' && Boolean(room.team_id))
+            .map((room) => getTeamRoomId(room.team_id!))
+        )
+        const staleLegacyTeamRoomIds = prev.rooms
+          .filter((room) => room.id.startsWith('team:') && !activeLegacyTeamRoomIds.has(room.id))
+          .map((room) => room.id)
+
+        const allRemovedRoomIds = new Set([
+          ...removedRoomIds,
+          ...removedLegacyTeamRoomIds,
+          ...staleLegacyTeamRoomIds
+        ])
+
+        const mergedRooms = prev.rooms.filter((room) => !allRemovedRoomIds.has(room.id))
         rooms.forEach((room) => {
           if (!mergedRooms.some((r) => r.id === room.id)) {
             mergedRooms.push({ id: room.id, name: room.name, unreadCount: 0 })
@@ -94,7 +139,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         })
 
         const nextMessages = { ...prev.messages }
-        removedRoomIds.forEach((roomId) => {
+        allRemovedRoomIds.forEach((roomId) => {
           delete nextMessages[roomId]
         })
 
@@ -154,11 +199,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const initializeChatData = (username: string, displayName = username, supabaseUserId?: string) => {
     setCurrentUsername(username)
     setCurrentDisplayName(displayName)
-    const savedData = loadChatDataFromSession(username)
-    setChatData(savedData ?? createUserChatData(username, displayName))
+    const isSupabaseUser = Boolean(supabaseUserId)
+    setIsSupabaseBackedUser(isSupabaseUser)
+    setChatSessionPersistenceEnabled(!isSupabaseUser)
+
+    const savedData = isSupabaseUser ? null : loadChatDataFromSession(username)
+    const initialData = savedData ?? createUserChatData(username, displayName)
+
+    // 로그인 사용자는 팀 채팅방 상태를 Supabase를 source-of-truth로 사용한다.
+    // 오래된 sessionStorage(team:*)가 복원되며 화면을 덮어쓰는 문제를 방지한다.
+    setChatData(isSupabaseUser ? sanitizeChatDataForSupabaseUser(initialData) : initialData)
 
     // Supabase 채팅방 로드 (기본은 username, 있으면 userId 우선)
     const resolvedUserId = supabaseUserId ?? username
+    currentSupabaseUserIdRef.current = resolvedUserId
     loadSupabaseRooms(resolvedUserId)
 
     // 유저의 chat_members 변경(초대 수락/강퇴 등)을 실시간 반영
@@ -176,6 +230,83 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         console.error('Failed to subscribe to membership changes:', error)
       }
     )
+
+    if (teamRoomLifecycleUnsubscribeRef.current) {
+      teamRoomLifecycleUnsubscribeRef.current()
+      teamRoomLifecycleUnsubscribeRef.current = null
+    }
+
+    teamRoomLifecycleUnsubscribeRef.current = subscribeToTeamRoomLifecycle(
+      (room: TeamRoomLifecycleEvent) => {
+        if (room.team_id && (room.is_active === false || room._action === 'DELETE')) {
+          const legacyRoomId = getTeamRoomId(room.team_id)
+          setChatData((prev) => {
+            if (!prev) return prev
+
+            if (!prev.rooms.some((candidate) => candidate.id === legacyRoomId) && !prev.messages[legacyRoomId]) {
+              return prev
+            }
+
+            const nextMessages = { ...prev.messages }
+            delete nextMessages[legacyRoomId]
+
+            return {
+              ...prev,
+              rooms: prev.rooms.filter((candidate) => candidate.id !== legacyRoomId),
+              messages: nextMessages
+            }
+          })
+        }
+
+        const currentUserId = currentSupabaseUserIdRef.current
+        if (currentUserId) {
+          loadSupabaseRooms(currentUserId)
+        }
+      },
+      (error) => {
+        console.error('Failed to subscribe to team room lifecycle changes:', error)
+      }
+    )
+
+    if (teamChatMappingUnsubscribeRef.current) {
+      teamChatMappingUnsubscribeRef.current()
+      teamChatMappingUnsubscribeRef.current = null
+    }
+
+    teamChatMappingUnsubscribeRef.current = subscribeToTeamChatMappingChanges(
+      (mapping) => {
+        if (mapping.team_id) {
+          const legacyRoomId = getTeamRoomId(mapping.team_id)
+          setChatData((prev) => {
+            if (!prev) return prev
+
+            const hasLegacyRoom = prev.rooms.some((candidate) => candidate.id === legacyRoomId)
+            const hasLegacyMessages = Boolean(prev.messages[legacyRoomId])
+
+            if (!hasLegacyRoom && !hasLegacyMessages) {
+              return prev
+            }
+
+            const nextMessages = { ...prev.messages }
+            delete nextMessages[legacyRoomId]
+
+            return {
+              ...prev,
+              rooms: prev.rooms.filter((candidate) => candidate.id !== legacyRoomId),
+              messages: nextMessages
+            }
+          })
+        }
+
+        const currentUserId = currentSupabaseUserIdRef.current
+        if (currentUserId) {
+          loadSupabaseRooms(currentUserId)
+        }
+      },
+      (error) => {
+        console.error('Failed to subscribe to team chat mapping changes:', error)
+      }
+    )
   }
 
   const clearChatData = () => {
@@ -186,15 +317,27 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       membershipUnsubscribeRef.current()
       membershipUnsubscribeRef.current = null
     }
+    if (teamRoomLifecycleUnsubscribeRef.current) {
+      teamRoomLifecycleUnsubscribeRef.current()
+      teamRoomLifecycleUnsubscribeRef.current = null
+    }
+    if (teamChatMappingUnsubscribeRef.current) {
+      teamChatMappingUnsubscribeRef.current()
+      teamChatMappingUnsubscribeRef.current = null
+    }
 
-    if (currentUsername && chatData) {
+    if (!isSupabaseBackedUser && currentUsername && chatData) {
       saveChatDataToSession(currentUsername, chatData, false)
     }
     setChatData(null)
     setCurrentUsername('')
     setCurrentDisplayName('')
+    setIsSupabaseBackedUser(false)
+    setChatSessionPersistenceEnabled(true)
     setSupabaseRooms([])
     supabaseRoomIdsRef.current = new Set()
+    supabaseRoomsRef.current = []
+    currentSupabaseUserIdRef.current = ''
   }
 
   useEffect(() => {
@@ -205,7 +348,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         membershipUnsubscribeRef.current()
         membershipUnsubscribeRef.current = null
       }
+      if (teamRoomLifecycleUnsubscribeRef.current) {
+        teamRoomLifecycleUnsubscribeRef.current()
+        teamRoomLifecycleUnsubscribeRef.current = null
+      }
+      if (teamChatMappingUnsubscribeRef.current) {
+        teamChatMappingUnsubscribeRef.current()
+        teamChatMappingUnsubscribeRef.current = null
+      }
       supabaseRoomIdsRef.current = new Set()
+      supabaseRoomsRef.current = []
+      currentSupabaseUserIdRef.current = ''
+      setIsSupabaseBackedUser(false)
+      setChatSessionPersistenceEnabled(true)
     }
   }, [])
 
@@ -231,7 +386,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      if (currentUsername) {
+      if (currentUsername && !isSupabaseBackedUser) {
         saveChatDataToSession(currentUsername, updatedChatData, false)
       }
 

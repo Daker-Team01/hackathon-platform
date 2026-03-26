@@ -1,6 +1,7 @@
 import type { InviteStatus } from '../types/team'
 
 export const CHAT_SYNC_EVENT = 'hackathon-chat-sync'
+const CHAT_SESSION_DISABLED_KEY = 'hackathon-chat-session-disabled'
 export const GENERAL_ROOM_ID = '1'
 export const NOTICE_ROOM_ID = '2'
 export const TEAM_FINDER_ROOM_ID = '3'
@@ -40,6 +41,16 @@ export type UserChatData = {
 
 const getChatStorageKey = (username: string) => `chat_${username}`
 
+const isChatSessionPersistenceDisabled = () => {
+  if (typeof window === 'undefined') return false
+  return sessionStorage.getItem(CHAT_SESSION_DISABLED_KEY) === 'true'
+}
+
+export const setChatSessionPersistenceEnabled = (enabled: boolean) => {
+  if (typeof window === 'undefined') return
+  sessionStorage.setItem(CHAT_SESSION_DISABLED_KEY, enabled ? 'false' : 'true')
+}
+
 export const createChatTimestamp = (date = new Date()) => {
   return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
 }
@@ -75,6 +86,7 @@ export const createUserChatData = (username: string, displayName = username): Us
 
 export const loadChatDataFromSession = (username: string): UserChatData | null => {
   if (typeof window === 'undefined') return null
+  if (isChatSessionPersistenceDisabled()) return null
 
   const savedData = sessionStorage.getItem(getChatStorageKey(username))
 
@@ -96,6 +108,7 @@ export const loadOrCreateChatData = (username: string, displayName = username): 
 
 export const saveChatDataToSession = (username: string, chatData: UserChatData, shouldNotify = true) => {
   if (typeof window === 'undefined') return
+  if (isChatSessionPersistenceDisabled()) return
 
   sessionStorage.setItem(getChatStorageKey(username), JSON.stringify(chatData))
 
