@@ -1,16 +1,7 @@
 import type { Team, TeamInvite, TeamMember } from "../types/team"
 import userDummyData from "../data/user_dummy_data.json"
 import { supabase } from "../lib/supabase"
-import {
-  GENERAL_ROOM_ID,
-  createChatTimestamp,
-  createTeamRoom,
-  getTeamRoomId,
-  mutateUserChatData,
-  upsertMessageInChatData,
-  upsertRoomInChatData,
-  type ChatMessage
-} from "../utils/chatStorage"
+import { enqueueGeneralChatNotification } from '../utils/generalChatNotifications'
 import {
   createTeamChatRoom,
   fetchTeamChatRoom,
@@ -21,7 +12,6 @@ import {
   deactivateTeamChatRoom
 } from "./realtimeChatApi"
 
-const TEAM_BOT_NAME = "Team Bot"
 const HACKATHON_TAG_PREFIX = "hackathon:"
 
 type SupabaseTeamRow = {
@@ -57,103 +47,14 @@ const getNicknameByUserId = (userId: string) => {
   return userDummyData.find((user) => user.userId === userId)?.nickname || "Unknown User"
 }
 
-const getUserByUserId = (userId: string) => {
-  return userDummyData.find((user) => user.userId === userId)
+const announceGeneralToUsers = (userIds: string[], text: string) => {
+  const uniqueUserIds = Array.from(new Set(userIds.filter(Boolean)))
+  uniqueUserIds.forEach((userId) => enqueueGeneralChatNotification(userId, text))
 }
 
-const getUniqueUsernames = (userIds: string[]) => {
-  return Array.from(
-    new Set(
-      userIds
-        .map((userId) => getNicknameByUserId(userId))
-    )
-  )
-}
-
-const createInviteChatMessage = (invite: TeamInvite): ChatMessage => ({
-  id: `team-invite:${invite.id}`,
-  user: TEAM_BOT_NAME,
-  text: `${invite.teamName} 팀에서 초대가 도착했습니다.\n수락하면 ${invite.teamName} 팀 채팅방에 바로 참여합니다.`,
-  timestamp: createChatTimestamp(new Date(invite.createdAt)),
-  invite: {
-    inviteId: invite.id,
-    teamId: invite.teamId,
-    teamName: invite.teamName,
-    status: invite.status
-  }
-})
-
-const createInviteResponseMessage = (invite: TeamInvite): ChatMessage => ({
-  id: `team-invite-response:${invite.id}`,
-  user: TEAM_BOT_NAME,
-  text:
-    invite.status === 'ACCEPTED'
-      ? `${invite.teamName} 팀 초대를 수락했습니다.\n${invite.teamName} 팀 채팅방이 생성되었고 바로 참여되었습니다.`
-      : `${invite.teamName} 팀 초대를 거절했습니다.`,
-  timestamp: createChatTimestamp()
-})
-
-const createTeamWelcomeMessage = (team: Team): ChatMessage => ({
-  id: `team-room-welcome:${team.teamCode}`,
-  user: TEAM_BOT_NAME,
-  text: `${team.name} 팀 채팅방이 생성되었습니다.\n참여자: ${team.members.map((member) => member.userName).join(', ') || '팀원 확인 중'}`,
-  timestamp: createChatTimestamp(new Date(team.createdAt))
-})
-
-const createTeamJoinMessage = (team: Team, member: TeamMember): ChatMessage => ({
-  id: `team-room-joined:${team.teamCode}:${member.userId}`,
-  user: TEAM_BOT_NAME,
-  text: `${member.userName}님이 ${team.name} 팀 채팅방에 참여했습니다.`,
-  timestamp: createChatTimestamp()
-})
-
-const syncInviteToGeneralChat = (invite: TeamInvite) => {
-  const nickname = getNicknameByUserId(invite.invitedUserId)
-
-  mutateUserChatData(nickname, (chatData) => {
-    return upsertMessageInChatData(chatData, GENERAL_ROOM_ID, createInviteChatMessage(invite))
-  })
-}
-
-const appendInviteResponseToGeneralChat = (invite: TeamInvite) => {
-  const nickname = getNicknameByUserId(invite.invitedUserId)
-
-  mutateUserChatData(nickname, (chatData) => {
-    const nextChatData = upsertMessageInChatData(
-      chatData,
-      GENERAL_ROOM_ID,
-      createInviteChatMessage(invite)
-    )
-
-    return upsertMessageInChatData(nextChatData, GENERAL_ROOM_ID, createInviteResponseMessage(invite))
-  })
-}
-
-const syncTeamChatRoom = (team: Team, joinedMember?: TeamMember) => {
-  const nicknames = getUniqueUsernames([
-    team.leaderId,
-    ...team.members.map((member) => member.userId)
-  ])
-
-  const room = createTeamRoom(team.teamCode, team.name)
-  const welcomeMessage = createTeamWelcomeMessage(team)
-
-  nicknames.forEach((nickname) => {
-    mutateUserChatData(nickname, (chatData) => {
-      let nextChatData = upsertRoomInChatData(chatData, room)
-      nextChatData = upsertMessageInChatData(nextChatData, room.id, welcomeMessage)
-
-      if (joinedMember) {
-        nextChatData = upsertMessageInChatData(
-          nextChatData,
-          room.id,
-          createTeamJoinMessage(team, joinedMember)
-        )
-      }
-
-      return nextChatData
-    })
-  })
+const announceGeneralToUser = (userId: string, text: string) => {
+  if (!userId) return
+  enqueueGeneralChatNotification(userId, text)
 }
 
 const ensureSupabaseTeamChatRoom = async (team: Team): Promise<string | null> => {
@@ -388,7 +289,8 @@ export const createTeam = async (
     // 실패해도 팀은 생성됨
   }
 
-  syncTeamChatRoom(createdTeam)
+  announceGeneralToUser(createdTeam.leaderId, `${createdTeam.name} 팀을 생성했습니다. 팀 채팅방이 생성되었습니다.`)
+
   return createdTeam
 }
 
@@ -466,8 +368,6 @@ export const deleteTeam = async (teamCode: string): Promise<void> => {
     console.error('Failed to deactivate team chat room on team deletion:', error)
   }
 
-  // local/session 채팅 목록에서도 팀 채팅방 제거
-  const teamRoomId = getTeamRoomId(teamCode)
   const memberIds = Array.from(
     new Set([
       targetTeam.leaderId,
@@ -475,30 +375,7 @@ export const deleteTeam = async (teamCode: string): Promise<void> => {
     ])
   )
 
-  memberIds.forEach((memberId) => {
-    const nickname = getNicknameByUserId(memberId)
-    const user = getUserByUserId(memberId)
-    const possibleSessionKeys = new Set<string>([
-      nickname,
-      memberId,
-      user?.email || '',
-      user?.userId || ''
-    ].filter(Boolean))
-
-    possibleSessionKeys.forEach((key) => {
-      mutateUserChatData(key, (chatData) => {
-        const nextRooms = chatData.rooms.filter((room) => room.id !== teamRoomId)
-        const nextMessages = { ...chatData.messages }
-        delete nextMessages[teamRoomId]
-
-        return {
-          ...chatData,
-          rooms: nextRooms,
-          messages: nextMessages
-        }
-      })
-    })
-  })
+  announceGeneralToUsers(memberIds, `${targetTeam.name} 팀이 삭제되어 팀 채팅방이 종료되었습니다.`)
 }
 
 // Invitation APIs
@@ -523,7 +400,11 @@ export const inviteUser = async (invite: Omit<TeamInvite, "id" | "status" | "cre
   }
 
   const newInvite = mapSupabaseInviteToInvite(data as SupabaseInviteRow)
-  syncInviteToGeneralChat(newInvite)
+  const team = await getTeamByCodeFromDb(newInvite.teamId)
+  const inviterId = team?.leaderId || ''
+  const inviterName = inviterId ? getNicknameByUserId(inviterId) : '팀장'
+  announceGeneralToUser(inviterId, `${newInvite.invitedUserName}님에게 ${newInvite.teamName} 팀 참여 초대장을 보냈습니다.`)
+  announceGeneralToUser(newInvite.invitedUserId, `${inviterName}님이 ${newInvite.teamName} 팀 참여 초대장을 보냈습니다.`)
   return newInvite
 }
 
@@ -645,15 +526,30 @@ export const respondToInvite = async (inviteId: string, status: 'ACCEPTED' | 'RE
           console.error('Failed to add member to Supabase chat room:', error)
           // 실패해도 팀 멤버십은 성공
         }
-
-        syncTeamChatRoom(team, newMember)
-      } else {
-        syncTeamChatRoom(team)
       }
+
+      announceGeneralToUser(
+        updatedInvite.invitedUserId,
+        `${team.name} 팀 초대장을 수락했습니다. 팀 채팅방에 자동으로 입장했습니다.`
+      )
+      announceGeneralToUser(
+        team.leaderId,
+        `${updatedInvite.invitedUserName}님이 ${team.name} 팀 초대장을 수락했습니다.`
+      )
+    }
+  } else {
+    const team = await getTeamByCodeFromDb(updatedInvite.teamId)
+    announceGeneralToUser(
+      updatedInvite.invitedUserId,
+      `${updatedInvite.teamName} 팀 초대장을 거절했습니다.`
+    )
+    if (team?.leaderId) {
+      announceGeneralToUser(
+        team.leaderId,
+        `${updatedInvite.invitedUserName}님이 ${updatedInvite.teamName} 팀 초대장을 거절했습니다.`
+      )
     }
   }
-
-  appendInviteResponseToGeneralChat(updatedInvite)
 
   return updatedInvite
 }
@@ -681,30 +577,10 @@ export const kickMember = async (teamCode: string, userId: string): Promise<Team
     console.error('Failed to remove kicked member from Supabase chat room:', error)
   }
 
-  const kickedNickname = getNicknameByUserId(userId)
-  const kickedUser = getUserByUserId(userId)
-  const teamRoomId = getTeamRoomId(teamCode)
-
-  const possibleSessionKeys = new Set<string>([
-    kickedNickname,
-    userId,
-    kickedUser?.email || '',
-    kickedUser?.userId || ''
-  ].filter(Boolean))
-
-  possibleSessionKeys.forEach((key) => {
-    mutateUserChatData(key, (chatData) => {
-      const nextRooms = chatData.rooms.filter((room) => room.id !== teamRoomId)
-      const nextMessages = { ...chatData.messages }
-      delete nextMessages[teamRoomId]
-
-      return {
-        ...chatData,
-        rooms: nextRooms,
-        messages: nextMessages
-      }
-    })
-  })
+  announceGeneralToUsers(
+    [userId, team.leaderId],
+    `${kickedMember?.userName ?? getNicknameByUserId(userId)}님이 ${team.name} 팀에서 제외되어 팀 채팅방에서 나갔습니다.`
+  )
 
   return team
 }
