@@ -65,11 +65,6 @@ export default function Home() {
               더 알아보기
             </button>
           </Link>
-          <Link to="/matcher">
-            <button className="px-8 py-4 bg-[#EAF6FF] border border-[#0EA5E9]/20 text-[#0F3B67] font-semibold rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300">
-              팀/팀원 매칭 테스트
-            </button>
-          </Link>
         </div>
       </div>
 
