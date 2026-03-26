@@ -117,6 +117,30 @@ export const saveChatDataToSession = (username: string, chatData: UserChatData, 
   }
 }
 
+/* ─── DM 최근 읽은 시각 (lastSeen) ─── */
+const getLastSeenKey = (userId: string) => `lastSeen_dm_${userId}`
+
+export const getLastSeenAt = (userId: string, roomId: string): string | null => {
+  try {
+    const raw = localStorage.getItem(getLastSeenKey(userId))
+    if (!raw) return null
+    return (JSON.parse(raw) as Record<string, string>)[roomId] ?? null
+  } catch {
+    return null
+  }
+}
+
+export const setLastSeenAt = (userId: string, roomId: string, timestamp: string): void => {
+  try {
+    const raw = localStorage.getItem(getLastSeenKey(userId))
+    const map: Record<string, string> = raw ? (JSON.parse(raw) as Record<string, string>) : {}
+    map[roomId] = timestamp
+    localStorage.setItem(getLastSeenKey(userId), JSON.stringify(map))
+  } catch {
+    // ignore
+  }
+}
+
 export const upsertRoomInChatData = (chatData: UserChatData, room: ChatRoom): UserChatData => {
   const existingRoom = chatData.rooms.find((candidate) => candidate.id === room.id)
   const nextRooms = existingRoom
