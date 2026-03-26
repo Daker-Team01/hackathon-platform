@@ -5,10 +5,20 @@ import { normalizedHackathons as hackathons } from '../lib/hackathonData'
 import teams from '../data/team_dummy_data.json'
 import { allUsers } from '../contexts/UserContext'
 import type { User } from '../contexts/UserContext'
+import { retrieveVectorContext } from './chatbotVectorApi'
 
 
 type HackathonData = (typeof hackathons)[0]
 type TeamData = (typeof teams)[0]
+type Intent =
+  | 'ongoing_hackathons'
+  | 'upcoming_hackathons'
+  | 'team_ranking'
+  | 'leaderboard'
+  | 'teams'
+  | 'hackathons'
+  | 'help'
+  | 'general'
 
 interface UserData {
   id: string
@@ -133,7 +143,7 @@ const getHackathonsByStatus = (status: 'ongoing' | 'upcoming' | 'ended'): Hackat
 }
 
 // 질문 의도 파악
-const detectIntent = (query: string): string => {
+const detectIntent = (query: string): Intent => {
   const queryLower = query.toLowerCase()
   const compactQuery = queryLower.replace(/\s+/g, '')
   
@@ -162,7 +172,7 @@ const detectIntent = (query: string): string => {
   return 'general'
 }
 
-const getActionByIntent = (intent: string): ChatbotAction | undefined => {
+const getActionByIntent = (intent: Intent): ChatbotAction | undefined => {
   switch (intent) {
     case 'ongoing_hackathons':
     case 'hackathons':
@@ -191,8 +201,7 @@ const isPersonalQuery = (query: string): boolean => {
   return /(\bme\b|\bmy\b|나|내|저|내정보|내 정보|프로필|개인|분석)/i.test(query)
 }
 
-const buildIntentContext = (userMessage: string, currentUser?: User): string => {
-  const intent = detectIntent(userMessage)
+const buildIntentContext = (userMessage: string, intent: Intent, currentUser?: User): string => {
 
   const parts: string[] = [
     `[QUERY]\n${userMessage}`,
@@ -255,7 +264,10 @@ const generateGroqResponse = async (userMessage: string, currentUser?: User): Pr
   const timer = setTimeout(() => controller.abort(), 10000)
 
   try {
-    const selectedContext = buildIntentContext(userMessage, currentUser)
+    const intent = detectIntent(userMessage)
+    const selectedContext = buildIntentContext(userMessage, intent, currentUser)
+    const vectorContext = await retrieveVectorContext(userMessage, intent)
+    const finalContext = vectorContext ? `${selectedContext}\n\n${vectorContext}` : selectedContext
 
     const systemPrompt = [
       '당신은 해커톤 플랫폼 AI입니다.',
@@ -279,7 +291,7 @@ const generateGroqResponse = async (userMessage: string, currentUser?: User): Pr
         max_tokens: 520,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `질문:\n${userMessage}\n\n선택된 컨텍스트:\n${selectedContext}` }
+          { role: 'user', content: `질문:\n${userMessage}\n\n선택된 컨텍스트:\n${finalContext}` }
         ]
       }),
       signal: controller.signal

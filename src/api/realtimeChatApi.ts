@@ -147,6 +147,47 @@ export const createTeamChatRoom = async (
   }
 }
 
+/**
+ * 팀 채팅방 비활성화 (팀 삭제 시 사용)
+ */
+export const deactivateTeamChatRoom = async (teamId: string): Promise<boolean> => {
+  try {
+    const room = await fetchTeamChatRoom(teamId)
+    if (!room) {
+      return true
+    }
+
+    const { error: memberError } = await supabase
+      .from('chat_members')
+      .update({ is_active: false })
+      .eq('room_id', room.id)
+      .eq('is_active', true)
+
+    if (memberError) throw memberError
+
+    const { error: roomError } = await supabase
+      .from('chat_rooms')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', room.id)
+
+    if (roomError) throw roomError
+
+    const { error: mappingError } = await supabase
+      .from('team_chat_mapping')
+      .delete()
+      .eq('team_id', teamId)
+
+    if (mappingError) {
+      console.error('Failed to delete team chat mapping:', mappingError)
+    }
+
+    return true
+  } catch (error) {
+    console.error('Failed to deactivate team chat room:', error)
+    return false
+  }
+}
+
 /* ============ 채팅 멤버 관리 ============ */
 
 /**

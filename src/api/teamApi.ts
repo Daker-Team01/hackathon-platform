@@ -17,7 +17,8 @@ import {
   addChatMember,
   removeChatMember,
   addTeamMembersToChatRoom,
-  sendSystemMessage
+  sendSystemMessage,
+  deactivateTeamChatRoom
 } from "./realtimeChatApi"
 
 const LOCAL_STORAGE_KEY = "teams"
@@ -284,8 +285,54 @@ export const updateTeam = async (
 
 export const deleteTeam = async (teamCode: string): Promise<void> => {
   const teams = getStoredTeams()
+  const targetTeam = teams.find((t) => t.teamCode === teamCode)
   const updatedTeams = teams.filter((t) => t.teamCode !== teamCode)
   saveTeams(updatedTeams)
+
+  if (!targetTeam) {
+    return
+  }
+
+  // Supabase 팀 채팅방/멤버십 비활성화 (팀원 채팅 목록에서 실시간 제거)
+  try {
+    await deactivateTeamChatRoom(teamCode)
+  } catch (error) {
+    console.error('Failed to deactivate team chat room on team deletion:', error)
+  }
+
+  // local/session 채팅 목록에서도 팀 채팅방 제거
+  const teamRoomId = getTeamRoomId(teamCode)
+  const memberIds = Array.from(
+    new Set([
+      targetTeam.leaderId,
+      ...targetTeam.members.map((member) => member.userId)
+    ])
+  )
+
+  memberIds.forEach((memberId) => {
+    const nickname = getNicknameByUserId(memberId)
+    const user = getUserByUserId(memberId)
+    const possibleSessionKeys = new Set<string>([
+      nickname,
+      memberId,
+      user?.email || '',
+      user?.userId || ''
+    ].filter(Boolean))
+
+    possibleSessionKeys.forEach((key) => {
+      mutateUserChatData(key, (chatData) => {
+        const nextRooms = chatData.rooms.filter((room) => room.id !== teamRoomId)
+        const nextMessages = { ...chatData.messages }
+        delete nextMessages[teamRoomId]
+
+        return {
+          ...chatData,
+          rooms: nextRooms,
+          messages: nextMessages
+        }
+      })
+    })
+  })
 }
 
 // Invitation APIs
