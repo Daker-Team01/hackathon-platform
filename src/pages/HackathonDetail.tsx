@@ -122,6 +122,7 @@ export default function HackathonDetail() {
               }
               const next = toggleHackathonInterest(user.id, hackathon.slug)
               setIsInterested(next)
+              recordEvent('hackathon_interest_toggle', 'hackathon', hackathon.slug, { interested: next })
             }}
           >
             <Heart className={`w-4 h-4 ${isInterested ? 'fill-current' : ''}`} />
@@ -196,7 +197,10 @@ export default function HackathonDetail() {
       </Card>
 
       {/* Tabs Section */}
-      <Tabs defaultValue="overview" className="space-y-8" onValueChange={setActiveSection}>
+      <Tabs defaultValue="overview" className="space-y-8" onValueChange={(value) => {
+        setActiveSection(value)
+        recordEvent('tab_view', 'hackathon', hackathon.slug, { tab: value })
+      }}>
         <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md py-4 border-b border-gray-100">
           <TabsList className="grid grid-cols-4 md:grid-cols-7 w-full h-auto p-1 bg-gray-100/50 rounded-2xl">
             <TabsTrigger value="overview" className="rounded-xl py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-sm">Overview</TabsTrigger>
