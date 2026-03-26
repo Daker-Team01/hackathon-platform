@@ -1,4 +1,5 @@
-import { createContext, useContext, useCallback, useState, type ReactNode } from 'react'
+import { createContext, useContext, useCallback, useEffect, useState, type ReactNode } from 'react'
+import { enqueueGeneralChatNotification } from '../utils/generalChatNotifications'
 
 export type DmRequest = {
   id: string
@@ -39,6 +40,17 @@ export function DmRequestProvider({ children }: { children: ReactNode }) {
   const [tick, setTick] = useState(0)
   const bump = () => setTick((v) => v + 1)
 
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (!event.key) return
+      if (!event.key.startsWith('dm_requests_')) return
+      bump()
+    }
+
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+
   const sendDmRequest = useCallback(
     (fromUserId: string, fromNickname: string, toUserId: string, toNickname: string) => {
       const existing = loadRequests(toUserId)
@@ -54,6 +66,8 @@ export function DmRequestProvider({ children }: { children: ReactNode }) {
         createdAt: new Date().toISOString(),
       }
       saveRequests(toUserId, [...existing, request])
+      enqueueGeneralChatNotification(fromUserId, `${toNickname}님에게 1:1 채팅 요청을 보냈습니다.`)
+      enqueueGeneralChatNotification(toUserId, `${fromNickname}님에게서 1:1 채팅 요청이 도착했습니다.`)
       bump()
     },
     []
@@ -69,10 +83,19 @@ export function DmRequestProvider({ children }: { children: ReactNode }) {
 
   const respondToRequest = useCallback(
     (requestId: string, toUserId: string, status: 'ACCEPTED' | 'REJECTED') => {
-      const updated = loadRequests(toUserId).map((r) =>
+      const requests = loadRequests(toUserId)
+      const targetRequest = requests.find((request) => request.id === requestId)
+      const updated = requests.map((r) =>
         r.id === requestId ? { ...r, status } : r
       )
       saveRequests(toUserId, updated)
+
+      if (targetRequest) {
+        const responseText = status === 'ACCEPTED' ? '수락' : '거절'
+        enqueueGeneralChatNotification(toUserId, `${targetRequest.fromNickname}님의 1:1 채팅 요청을 ${responseText}했습니다.`)
+        enqueueGeneralChatNotification(targetRequest.fromUserId, `${targetRequest.toNickname}님이 1:1 채팅 요청을 ${responseText}했습니다.`)
+      }
+
       bump()
     },
     []

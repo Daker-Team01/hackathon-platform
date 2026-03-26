@@ -13,6 +13,11 @@ import {
   type UserChatData
 } from '../utils/chatStorage'
 import {
+  consumeGeneralChatNotifications,
+  GENERAL_CHAT_NOTIFICATION_EVENT,
+  GENERAL_CHAT_NOTIFICATION_STORAGE_PREFIX
+} from '../utils/generalChatNotifications'
+import {
   sendMessage,
   createChatRoom,
   addChatMember,
@@ -23,8 +28,10 @@ import {
   subscribeToTeamRoomLifecycle,
   subscribeToUserMemberships,
   subscribeToDmRoomMembers,
+  ensureGeneralRoomForUser,
   fetchUserChatRooms,
   fetchRoomMessages,
+  sendSystemMessage,
   type TeamRoomLifecycleEvent,
   type SupabaseChatRoom
 } from '../api/realtimeChatApi'
@@ -37,6 +44,7 @@ type ChatContextType = {
   isLoadingRooms: boolean
   unreadDmCount: number
   addMessage: (roomId: string, message: ChatMessage) => void
+  addGeneralSystemMessage: (content: string) => Promise<void>
   addSupabaseMessage: (roomId: string, userId: string, nickname: string, content: string) => Promise<void>
   openDirectRoom: (fromUserId: string, fromNickname: string, toUserId: string, toNickname: string) => Promise<string | null>
   leaveDirectRoom: (roomId: string) => Promise<void>
@@ -49,9 +57,9 @@ type ChatContextType = {
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
 const sanitizeChatDataForSupabaseUser = (data: UserChatData): UserChatData => {
-  const nextRooms = data.rooms.filter((room) => !room.id.startsWith('team:'))
+  const nextRooms = data.rooms.filter((room) => !room.id.startsWith('team:') && !['1', '2', '3'].includes(room.id))
   const nextMessages = Object.fromEntries(
-    Object.entries(data.messages).filter(([roomId]) => !roomId.startsWith('team:'))
+    Object.entries(data.messages).filter(([roomId]) => !roomId.startsWith('team:') && !['1', '2', '3'].includes(roomId))
   )
 
   return {
@@ -79,6 +87,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [unreadDmRoomIds, setUnreadDmRoomIds] = useState<Set<string>>(new Set())
   const activeRoomIdRef = useRef<string | null>(null)
 
+  const flushGeneralNotificationQueueToSupabase = async (userId: string, nickname: string) => {
+    const queued = consumeGeneralChatNotifications(userId)
+    if (queued.length === 0) return
+
+    const room = await ensureGeneralRoomForUser(userId, nickname)
+    if (!room) return
+
+    for (const notification of queued) {
+      await sendSystemMessage(room.id, notification.text)
+    }
+  }
+
   // 게스트 채팅 데이터 자동 초기화
   useEffect(() => {
     if (!chatData) {
@@ -102,6 +122,39 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     window.addEventListener(CHAT_SYNC_EVENT, handleChatSync as EventListener)
     return () => window.removeEventListener(CHAT_SYNC_EVENT, handleChatSync as EventListener)
   }, [currentDisplayName, currentUsername, isSupabaseBackedUser])
+
+  useEffect(() => {
+    const handleGeneralNotification = (event: Event) => {
+      const customEvent = event as CustomEvent<{ userId?: string }>
+      const userId = customEvent.detail?.userId
+
+      if (!userId || userId !== currentSupabaseUserIdRef.current) {
+        return
+      }
+
+      void flushGeneralNotificationQueueToSupabase(userId, currentDisplayName || currentUsername || userId)
+      void loadSupabaseRooms(userId)
+    }
+
+    window.addEventListener(GENERAL_CHAT_NOTIFICATION_EVENT, handleGeneralNotification as EventListener)
+    return () => window.removeEventListener(GENERAL_CHAT_NOTIFICATION_EVENT, handleGeneralNotification as EventListener)
+  }, [])
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      const currentUserId = currentSupabaseUserIdRef.current
+      if (!currentUserId || !event.key) return
+
+      const targetKey = `${GENERAL_CHAT_NOTIFICATION_STORAGE_PREFIX}${currentUserId}`
+      if (event.key !== targetKey) return
+
+      void flushGeneralNotificationQueueToSupabase(currentUserId, currentDisplayName || currentUsername || currentUserId)
+      void loadSupabaseRooms(currentUserId)
+    }
+
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   // Supabase 채팅방 로드 및 실시간 구독
   const loadSupabaseRooms = async (userId: string) => {
@@ -281,20 +334,29 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setCurrentUsername(username)
     setCurrentDisplayName(displayName)
     const isSupabaseUser = Boolean(supabaseUserId)
+    const resolvedUserId = supabaseUserId ?? username
     setIsSupabaseBackedUser(isSupabaseUser)
     setChatSessionPersistenceEnabled(!isSupabaseUser)
 
     const savedData = isSupabaseUser ? null : loadChatDataFromSession(username)
-    const initialData = savedData ?? createUserChatData(username, displayName)
+    const baseData = savedData ?? createUserChatData(username, displayName)
+    const initialData = baseData
 
     // 로그인 사용자는 팀 채팅방 상태를 Supabase를 source-of-truth로 사용한다.
     // 오래된 sessionStorage(team:*)가 복원되며 화면을 덮어쓰는 문제를 방지한다.
     setChatData(isSupabaseUser ? sanitizeChatDataForSupabaseUser(initialData) : initialData)
 
     // Supabase 채팅방 로드 (기본은 username, 있으면 userId 우선)
-    const resolvedUserId = supabaseUserId ?? username
     currentSupabaseUserIdRef.current = resolvedUserId
-    loadSupabaseRooms(resolvedUserId)
+    if (isSupabaseUser) {
+      void (async () => {
+        await ensureGeneralRoomForUser(resolvedUserId, displayName)
+        await flushGeneralNotificationQueueToSupabase(resolvedUserId, displayName)
+        await loadSupabaseRooms(resolvedUserId)
+      })()
+    } else {
+      loadSupabaseRooms(resolvedUserId)
+    }
 
     // 유저의 chat_members 변경(초대 수락/강퇴 등)을 실시간 반영
     if (membershipUnsubscribeRef.current) {
@@ -544,6 +606,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const addGeneralSystemMessage = async (content: string): Promise<void> => {
+    const userId = currentSupabaseUserIdRef.current
+    if (!userId) return
+
+    const nickname = currentDisplayName || currentUsername || userId
+    const room = await ensureGeneralRoomForUser(userId, nickname)
+    if (!room) return
+
+    await sendSystemMessage(room.id, content)
+  }
+
   return (
     <ChatContext.Provider
       value={{
@@ -552,6 +625,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         isLoadingRooms,
         unreadDmCount: unreadDmRoomIds.size,
         addMessage,
+        addGeneralSystemMessage,
         addSupabaseMessage,
         openDirectRoom,
         leaveDirectRoom,

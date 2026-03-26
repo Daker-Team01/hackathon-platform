@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LogIn, User, X } from 'lucide-react'
 import insighthonLogo from '../assets/insighthon_logo.png'
@@ -6,6 +6,10 @@ import { useUser } from '../contexts/UserContext'
 import LoginForm from './profile/LoginForm'
 import UserProfile from './profile/UserProfile'
 import NotificationPanel from './profile/NotificationPanel'
+import { useUserInvites } from '../hooks/useTeams'
+import { useDmRequests } from '../contexts/DmRequestContext'
+import { useChat } from '../contexts/ChatContext'
+import { loadAnnouncedNotificationIds, loadSeenNotificationIds, saveAnnouncedNotificationIds, saveSeenNotificationIds } from '../utils/profileNotifications'
 
 type Props = {
   chatOpen?: boolean
@@ -19,9 +23,28 @@ export default function Navbar({
   onAuthCardOpenChange
 }: Props) {
   const { isLoggedIn, user } = useUser()
+  const { data: invites } = useUserInvites(user?.id || '')
+  const { getPendingForUser } = useDmRequests()
+  const { addGeneralSystemMessage } = useChat()
   const authCardRef = useRef<HTMLDivElement>(null)
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1400)
   const [authCardLayout, setAuthCardLayout] = useState({ top: 96, right: 536, maxHeight: 640 })
+  const [seenNotificationIds, setSeenNotificationIds] = useState<string[]>([])
+  const [announcedNotificationIds, setAnnouncedNotificationIds] = useState<string[]>([])
+
+  const pendingInvites = invites?.filter((invite) => invite.status === 'PENDING') || []
+  const dmRequests = user ? getPendingForUser(user.userId) : []
+  const notificationIds = useMemo(
+    () => [
+      ...pendingInvites.map((invite) => `invite:${invite.id}`),
+      ...dmRequests.map((request) => `dm:${request.id}`)
+    ],
+    [dmRequests, pendingInvites]
+  )
+  const unreadNotificationCount = useMemo(
+    () => notificationIds.filter((id) => !seenNotificationIds.includes(id)).length,
+    [notificationIds, seenNotificationIds]
+  )
 
   useEffect(() => {
     const updateLayout = () => {
@@ -70,6 +93,60 @@ export default function Navbar({
   }, [])
 
   const openBesideChat = chatOpen && windowWidth >= 980
+
+  useEffect(() => {
+    if (!user?.userId) {
+      setSeenNotificationIds([])
+      setAnnouncedNotificationIds([])
+      return
+    }
+
+    setSeenNotificationIds(loadSeenNotificationIds(user.userId))
+    setAnnouncedNotificationIds(loadAnnouncedNotificationIds(user.userId))
+  }, [user?.userId])
+
+  useEffect(() => {
+    if (!user?.userId) return
+
+    const currentNotificationIds = new Set(notificationIds)
+    const nextSeenIds = seenNotificationIds.filter((id) => currentNotificationIds.has(id))
+    const nextAnnouncedIds = announcedNotificationIds.filter((id) => currentNotificationIds.has(id))
+
+    if (nextSeenIds.length !== seenNotificationIds.length) {
+      setSeenNotificationIds(nextSeenIds)
+      saveSeenNotificationIds(user.userId, nextSeenIds)
+    }
+
+    if (nextAnnouncedIds.length !== announcedNotificationIds.length) {
+      setAnnouncedNotificationIds(nextAnnouncedIds)
+      saveAnnouncedNotificationIds(user.userId, nextAnnouncedIds)
+    }
+  }, [announcedNotificationIds, notificationIds, seenNotificationIds, user?.userId])
+
+  useEffect(() => {
+    if (!user?.userId) return
+
+    const newInviteIds = pendingInvites
+      .map((invite) => ({
+        id: `invite:${invite.id}`,
+        text: `알림: ${invite.teamName} 팀에서 팀 초대를 보냈습니다.`
+      }))
+      .filter((item) => !announcedNotificationIds.includes(item.id))
+
+    const newNotifications = [...newInviteIds]
+
+    if (newNotifications.length === 0) return
+
+    newNotifications.forEach((notification) => {
+      addGeneralSystemMessage(notification.text).catch((error) => {
+        console.error('Failed to add general system message:', error)
+      })
+    })
+
+    const nextAnnouncedIds = Array.from(new Set([...announcedNotificationIds, ...newNotifications.map((item) => item.id)]))
+    setAnnouncedNotificationIds(nextAnnouncedIds)
+    saveAnnouncedNotificationIds(user.userId, nextAnnouncedIds)
+  }, [addGeneralSystemMessage, announcedNotificationIds, pendingInvites, user?.userId])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -149,6 +226,7 @@ export default function Navbar({
           <button
             onClick={() => onAuthCardOpenChange?.(!authCardOpen)}
             style={{
+              position: 'relative',
               display: 'inline-flex',
               alignItems: 'center',
               gap: 8,
@@ -162,6 +240,29 @@ export default function Navbar({
             aria-expanded={authCardOpen}
             aria-label={isLoggedIn ? '마이페이지 열기' : '로그인 열기'}
           >
+            {isLoggedIn && unreadNotificationCount > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: -6,
+                  right: -6,
+                  minWidth: 22,
+                  height: 22,
+                  padding: '0 6px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 999,
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.35)'
+                }}
+              >
+                N {unreadNotificationCount}
+              </span>
+            )}
             {isLoggedIn ? <User size={18} color="#334155" /> : <User size={18} color="#334155" />}
             <span style={{ color: '#334155', fontWeight: 600, fontSize: 14 }}>
               {isLoggedIn ? (user?.nickname ?? '마이페이지') : 'Guest'}
@@ -237,8 +338,12 @@ export default function Navbar({
               </div>
               {isLoggedIn ? (
                 <>
+                  <NotificationPanel
+                    onUnreadCountChange={() => undefined}
+                    seenNotificationIds={seenNotificationIds}
+                    onSeenNotificationIdsChange={setSeenNotificationIds}
+                  />
                   <UserProfile />
-                  <NotificationPanel />
                 </>
               ) : (
                 <LoginForm />

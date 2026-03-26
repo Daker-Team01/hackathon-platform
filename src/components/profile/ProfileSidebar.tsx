@@ -74,8 +74,8 @@ export default function ProfileSidebar({ chatOpen }: Props) {
 
       {isLoggedIn ? (
         <>
-          <UserProfile />
           <NotificationPanel />
+          <UserProfile />
         </>
       ) : <LoginForm />}
     </div>
