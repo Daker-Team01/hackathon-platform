@@ -3,6 +3,7 @@ import { Info } from 'lucide-react'
 import { getHackathonDetailBySlug } from '../lib/hackathonDetailData'
 import { useLog } from '../contexts/LogContext'
 import { useUser } from '../contexts/UserContext'
+import { useTeams } from '../hooks/useTeams'
 
 type SubmitProps = {
   hackathonSlug: string
@@ -37,7 +38,6 @@ type LeaderboardSubmission = {
 }
 
 const SUBMISSIONS_STORAGE_KEY = 'submissions'
-const TEAMS_STORAGE_KEY = 'teams'
 const LEADERBOARD_SUBMISSIONS_STORAGE_KEY = 'leaderboard_submissions'
 const ACCEPT_BY_TYPE: Record<string, string> = {
   zip: '.zip,application/zip',
@@ -114,45 +114,22 @@ function getTotalScore(
   return Math.round((weightedSum / totalWeight) * 10) / 10
 }
 
-function getTeamOptionsFromStorage(hackathonSlug: string, userId?: string): TeamOption[] {
-  const raw = localStorage.getItem(TEAMS_STORAGE_KEY)
-  if (!raw) return []
-
-  try {
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .map((item) => {
-        if (typeof item !== 'object' || item === null) return null
-        const candidate = item as Record<string, unknown>
-        const itemHackathonSlug =
-          typeof candidate.hackathonSlug === 'string' ? candidate.hackathonSlug : ''
-        const name = typeof candidate.name === 'string' ? candidate.name : ''
-        const leaderId = typeof candidate.leaderId === 'string' ? candidate.leaderId : ''
-        const idValue = candidate.id
-        const teamCodeValue = candidate.teamCode
-        const id =
-          typeof idValue === 'string'
-            ? idValue
-            : typeof teamCodeValue === 'string'
-            ? teamCodeValue
-            : `${itemHackathonSlug}-${name}`
-        if (!itemHackathonSlug || !name) return null
-        return { id, name, hackathonSlug: itemHackathonSlug, leaderId }
-      })
-      .filter((item): item is TeamOption => item !== null)
-      .filter((item) => item.hackathonSlug === hackathonSlug)
-      .filter((item) => !userId || item.leaderId === userId)
-  } catch {
-    return []
-  }
-}
-
 export default function Submit({ hackathonSlug }: SubmitProps) {
   const { recordEvent } = useLog()
   const { user } = useUser()
+  const { data: teams = [] } = useTeams(hackathonSlug)
   const submitSection = useMemo(() => getSubmitSectionBySlug(hackathonSlug), [hackathonSlug])
-  const teamOptions = useMemo(() => getTeamOptionsFromStorage(hackathonSlug, user?.id), [hackathonSlug, user?.id])
+  const teamOptions = useMemo<TeamOption[]>(() => {
+    return teams
+      .map((team) => ({
+        id: team.teamCode,
+        name: team.name,
+        hackathonSlug: team.hackathonSlug || '',
+        leaderId: team.leaderId
+      }))
+      .filter((item) => item.hackathonSlug === hackathonSlug)
+      .filter((item) => !user?.id || item.leaderId === user.id)
+  }, [teams, hackathonSlug, user?.id])
   const evalBreakdown = useMemo(() => getEvalBreakdownBySlug(hackathonSlug), [hackathonSlug])
   
   // 해커톤 상태 확인
@@ -161,8 +138,13 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
     if (!raw) return false
     try {
       const parsed = JSON.parse(raw)
-      const h = Array.isArray(parsed) ? parsed.find((item: any) => item.slug === hackathonSlug) : null
-      return h?.status === 'ended'
+      const h = Array.isArray(parsed)
+        ? parsed.find((item) => {
+            if (typeof item !== 'object' || item === null) return false
+            return (item as { slug?: unknown }).slug === hackathonSlug
+          })
+        : null
+      return (h as { status?: unknown } | null)?.status === 'ended'
     } catch {
       return false
     }

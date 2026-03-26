@@ -1,6 +1,6 @@
 import type { Team, TeamInvite, TeamMember } from "../types/team"
-import teamDummyData from "../data/team_dummy_data.json"
 import userDummyData from "../data/user_dummy_data.json"
+import { supabase } from "../lib/supabase"
 import {
   GENERAL_ROOM_ID,
   createChatTimestamp,
@@ -21,9 +21,37 @@ import {
   deactivateTeamChatRoom
 } from "./realtimeChatApi"
 
-const LOCAL_STORAGE_KEY = "teams"
-const INVITES_STORAGE_KEY = "team_invites"
 const TEAM_BOT_NAME = "Team Bot"
+const HACKATHON_TAG_PREFIX = "hackathon:"
+
+type SupabaseTeamRow = {
+  id: number
+  team_code: string
+  name: string
+  intro: string | null
+  leader_id: string
+  members: TeamMember[] | null
+  is_open: boolean
+  max_members: number
+  member_count: number
+  looking_for: string[] | null
+  tags: string[] | null
+  contact_type: string | null
+  contact_url: string | null
+  created_at: string
+  last_updated_at: string
+  hackathon_slug?: string | null
+}
+
+type SupabaseInviteRow = {
+  id: string
+  team_id: string
+  team_name: string
+  invited_user_id: string
+  invited_user_name: string
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED'
+  created_at: string
+}
 
 const getNicknameByUserId = (userId: string) => {
   return userDummyData.find((user) => user.userId === userId)?.nickname || "Unknown User"
@@ -153,58 +181,123 @@ const ensureSupabaseTeamChatRoom = async (team: Team): Promise<string | null> =>
   return createdRoom.id
 }
 
-const normalizeTeam = (team: any): Team => {
-  const leaderId = team.leaderId || team.authorId || ''
+const normalizeTeam = (team: Record<string, unknown>): Team => {
+  const leaderId = (typeof team.leaderId === "string" ? team.leaderId : (typeof team.authorId === "string" ? team.authorId : ''))
   const rawMembers = Array.isArray(team.members) ? team.members : []
   
-  const members: TeamMember[] = rawMembers.map((m: any) => ({
-    userId: m.userId,
-    userName: m.userName || getNicknameByUserId(m.userId),
-    role: m.role || (m.userId === leaderId ? 'LEADER' : 'MEMBER'),
-    joinedAt: m.joinedAt || team.createdAt || new Date().toISOString()
-  }))
+  const members: TeamMember[] = rawMembers.map((member) => {
+    const m = (member && typeof member === "object") ? (member as Record<string, unknown>) : {}
+    const userId = typeof m.userId === "string" ? m.userId : ""
+
+    return {
+      userId,
+      userName: typeof m.userName === "string" ? m.userName : getNicknameByUserId(userId),
+      role: (m.role === 'LEADER' || m.role === 'MEMBER') ? m.role : (userId === leaderId ? 'LEADER' : 'MEMBER'),
+      joinedAt: typeof m.joinedAt === "string"
+        ? m.joinedAt
+        : (typeof team.createdAt === "string" ? team.createdAt : new Date().toISOString())
+    }
+  })
 
   return {
-    ...team,
+    teamCode: typeof team.teamCode === "string" ? team.teamCode : "",
     leaderId,
+    hackathonSlug: typeof team.hackathonSlug === "string" ? team.hackathonSlug : undefined,
+    name: typeof team.name === "string" ? team.name : "",
+    intro: typeof team.intro === "string" ? team.intro : "",
+    isOpen: typeof team.isOpen === "boolean" ? team.isOpen : true,
+    memberCount: members.length,
+    maxMembers: typeof team.maxMembers === "number" ? team.maxMembers : 5,
     members,
-    maxMembers: team.maxMembers || 5,
-    memberCount: members.length
+    lookingFor: Array.isArray(team.lookingFor)
+      ? team.lookingFor.filter((item): item is string => typeof item === "string")
+      : [],
+    contact: {
+      type: typeof (team.contact as { type?: unknown } | undefined)?.type === "string"
+        ? (team.contact as { type: string }).type
+        : "link",
+      url: typeof (team.contact as { url?: unknown } | undefined)?.url === "string"
+        ? (team.contact as { url: string }).url
+        : ""
+    },
+    createdAt: typeof team.createdAt === "string" ? team.createdAt : new Date().toISOString()
   }
 }
 
-const getStoredTeams = (): Team[] => {
-  const stored = localStorage.getItem(LOCAL_STORAGE_KEY)
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored) as any[]
-      return parsed.map(normalizeTeam)
-    } catch (e) {
-      console.error("Failed to parse stored teams", e)
+const extractHackathonSlug = (row: SupabaseTeamRow): string | undefined => {
+  if (row.hackathon_slug) {
+    return row.hackathon_slug
+  }
+
+  const tags = Array.isArray(row.tags) ? row.tags : []
+  const hackathonTag = tags.find((tag) => typeof tag === 'string' && tag.startsWith(HACKATHON_TAG_PREFIX))
+  return hackathonTag ? hackathonTag.slice(HACKATHON_TAG_PREFIX.length) : undefined
+}
+
+const mapSupabaseTeamToTeam = (row: SupabaseTeamRow): Team => {
+  const normalized = normalizeTeam({
+    teamCode: row.team_code,
+    leaderId: row.leader_id,
+    hackathonSlug: extractHackathonSlug(row),
+    name: row.name,
+    intro: row.intro || "",
+    isOpen: row.is_open,
+    memberCount: row.member_count,
+    maxMembers: row.max_members,
+    members: Array.isArray(row.members) ? row.members : [],
+    lookingFor: Array.isArray(row.looking_for) ? row.looking_for : [],
+    contact: {
+      type: row.contact_type || "link",
+      url: row.contact_url || ""
+    },
+    createdAt: row.created_at
+  })
+
+  return {
+    ...normalized,
+    memberCount: row.member_count || normalized.members.length
+  }
+}
+
+const mapSupabaseInviteToInvite = (row: SupabaseInviteRow): TeamInvite => ({
+  id: row.id,
+  teamId: row.team_id,
+  teamName: row.team_name,
+  invitedUserId: row.invited_user_id,
+  invitedUserName: row.invited_user_name,
+  status: row.status,
+  createdAt: row.created_at
+})
+
+const getTeamByCodeFromDb = async (teamCode: string): Promise<Team | undefined> => {
+  const { data, error } = await supabase
+    .from("teams")
+    .select("*")
+    .eq("team_code", teamCode)
+    .single()
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      return undefined
     }
+    throw error
   }
-  
-  const initialTeams = (teamDummyData as any[]).map(normalizeTeam)
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialTeams))
-  return initialTeams
-}
 
-const saveTeams = (teams: Team[]) => {
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(teams))
-}
-
-const getStoredInvites = (): TeamInvite[] => {
-  const stored = localStorage.getItem(INVITES_STORAGE_KEY)
-  return stored ? JSON.parse(stored) : []
-}
-
-const saveInvites = (invites: TeamInvite[]) => {
-  localStorage.setItem(INVITES_STORAGE_KEY, JSON.stringify(invites))
+  return mapSupabaseTeamToTeam(data as SupabaseTeamRow)
 }
 
 export const getTeams = async (hackathonSlug?: string): Promise<Team[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 300))
-  const teams = getStoredTeams()
+  const { data, error } = await supabase
+    .from("teams")
+    .select("*")
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Failed to fetch teams from Supabase:", error)
+    return []
+  }
+
+  const teams = (data || []).map((row) => mapSupabaseTeamToTeam(row as SupabaseTeamRow))
 
   if (!hackathonSlug) return teams
 
@@ -212,36 +305,66 @@ export const getTeams = async (hackathonSlug?: string): Promise<Team[]> => {
 }
 
 export const getTeamByCode = async (code: string): Promise<Team | undefined> => {
-  await new Promise((resolve) => setTimeout(resolve, 200))
-  const teams = getStoredTeams()
-  return teams.find((team) => team.teamCode === code)
+  try {
+    return await getTeamByCodeFromDb(code)
+  } catch (error) {
+    console.error("Failed to fetch team by code:", error)
+    return undefined
+  }
 }
 
 export const createTeam = async (
   team: Omit<Team, "teamCode" | "createdAt" | "members"> & { leaderName?: string }
 ): Promise<Team> => {
-  const teams = getStoredTeams()
-  const { leaderName, ...teamData } = team;
+  const { leaderName, ...teamData } = team
+  const nowIso = new Date().toISOString()
   const newTeam: Team = {
     teamCode: `T-${Date.now().toString().slice(-6)}`,
-    createdAt: new Date().toISOString(),
+    createdAt: nowIso,
     members: [{
       userId: team.leaderId,
       userName: leaderName || getNicknameByUserId(team.leaderId),
       role: 'LEADER',
-      joinedAt: new Date().toISOString()
+      joinedAt: nowIso
     }],
     ...teamData
   } as Team
 
-  const updatedTeams = [newTeam, ...teams]
-  saveTeams(updatedTeams)
+  const { data: createdRow, error: createError } = await supabase
+    .from("teams")
+    .insert({
+      team_code: newTeam.teamCode,
+      name: newTeam.name,
+      intro: newTeam.intro,
+      leader_id: newTeam.leaderId,
+      members: newTeam.members,
+      is_open: newTeam.isOpen,
+      max_members: newTeam.maxMembers,
+      member_count: newTeam.memberCount,
+      looking_for: newTeam.lookingFor,
+      required_skills: [],
+      preferred_personality: [],
+      tags: [],
+      hackathon_slug: newTeam.hackathonSlug || null,
+      contact_type: newTeam.contact?.type || "link",
+      contact_url: newTeam.contact?.url || "",
+      created_at: nowIso,
+      last_updated_at: nowIso
+    })
+    .select("*")
+    .single()
+
+  if (createError) {
+    throw createError
+  }
+
+  const createdTeam = mapSupabaseTeamToTeam(createdRow as SupabaseTeamRow)
   
   // Supabase에 팀 채팅방 생성
   try {
     const supabaseRoom = await createTeamChatRoom(
-      newTeam.teamCode,
-      newTeam.name,
+      createdTeam.teamCode,
+      createdTeam.name,
       team.leaderId
     )
 
@@ -250,44 +373,87 @@ export const createTeam = async (
       await addChatMember(supabaseRoom.id, team.leaderId, leaderName || getNicknameByUserId(team.leaderId))
       
       // 다른 멤버들도 추가
-      if (newTeam.members.length > 1) {
+      if (createdTeam.members.length > 1) {
         await addTeamMembersToChatRoom(
           supabaseRoom.id,
-          newTeam.members.map(m => ({ userId: m.userId, userName: m.userName }))
+          createdTeam.members.map(m => ({ userId: m.userId, userName: m.userName }))
         )
       }
 
       // 채팅방 환영 메시지
-      await sendSystemMessage(supabaseRoom.id, `${newTeam.name} 팀 채팅방이 생성되었습니다. 팀원: ${newTeam.members.map(m => m.userName).join(', ')}`)
+      await sendSystemMessage(supabaseRoom.id, `${createdTeam.name} 팀 채팅방이 생성되었습니다. 팀원: ${createdTeam.members.map(m => m.userName).join(', ')}`)
     }
   } catch (error) {
     console.error('Failed to create Supabase chat room:', error)
-    // 실패해도 팀은 생성됨 (localStorage는 성공)
+    // 실패해도 팀은 생성됨
   }
 
-  syncTeamChatRoom(newTeam)
-  return newTeam
+  syncTeamChatRoom(createdTeam)
+  return createdTeam
 }
 
 export const updateTeam = async (
   teamCode: string,
   updates: Partial<Omit<Team, "teamCode" | "createdAt">>
 ): Promise<Team> => {
-  const teams = getStoredTeams()
-  const index = teams.findIndex((t) => t.teamCode === teamCode)
-  if (index === -1) throw new Error("Team not found")
+  const { error: currentError } = await supabase
+    .from("teams")
+    .select("team_code")
+    .eq("team_code", teamCode)
+    .single()
 
-  const updatedTeam = { ...teams[index], ...updates }
-  teams[index] = updatedTeam
-  saveTeams(teams)
-  return updatedTeam
+  if (currentError) {
+    if (currentError.code === "PGRST116") {
+      throw new Error("Team not found")
+    }
+    throw currentError
+  }
+
+  const payload: Record<string, unknown> = {
+    last_updated_at: new Date().toISOString()
+  }
+
+  if (updates.name !== undefined) payload.name = updates.name
+  if (updates.intro !== undefined) payload.intro = updates.intro
+  if (updates.leaderId !== undefined) payload.leader_id = updates.leaderId
+  if (updates.members !== undefined) payload.members = updates.members
+  if (updates.isOpen !== undefined) payload.is_open = updates.isOpen
+  if (updates.maxMembers !== undefined) payload.max_members = updates.maxMembers
+  if (updates.memberCount !== undefined) payload.member_count = updates.memberCount
+  if (updates.lookingFor !== undefined) payload.looking_for = updates.lookingFor
+
+  if (updates.contact !== undefined) {
+    payload.contact_type = updates.contact?.type || "link"
+    payload.contact_url = updates.contact?.url || ""
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updates, "hackathonSlug")) {
+    payload.hackathon_slug = updates.hackathonSlug || null
+  }
+
+  const { data: updatedRow, error: updateError } = await supabase
+    .from("teams")
+    .update(payload)
+    .eq("team_code", teamCode)
+    .select("*")
+    .single()
+
+  if (updateError) throw updateError
+
+  return mapSupabaseTeamToTeam(updatedRow as SupabaseTeamRow)
 }
 
 export const deleteTeam = async (teamCode: string): Promise<void> => {
-  const teams = getStoredTeams()
-  const targetTeam = teams.find((t) => t.teamCode === teamCode)
-  const updatedTeams = teams.filter((t) => t.teamCode !== teamCode)
-  saveTeams(updatedTeams)
+  const targetTeam = await getTeamByCodeFromDb(teamCode)
+
+  const { error: deleteError } = await supabase
+    .from("teams")
+    .delete()
+    .eq("team_code", teamCode)
+
+  if (deleteError) {
+    throw deleteError
+  }
 
   if (!targetTeam) {
     return
@@ -337,55 +503,119 @@ export const deleteTeam = async (teamCode: string): Promise<void> => {
 
 // Invitation APIs
 export const inviteUser = async (invite: Omit<TeamInvite, "id" | "status" | "createdAt">): Promise<TeamInvite> => {
-  const invites = getStoredInvites()
-  const newInvite: TeamInvite = {
-    id: `INV-${Date.now().toString().slice(-6)}`,
-    status: 'PENDING',
-    createdAt: new Date().toISOString(),
-    ...invite
+  const nowIso = new Date().toISOString()
+
+  const { data, error } = await supabase
+    .from("team_invites")
+    .insert({
+      team_id: invite.teamId,
+      team_name: invite.teamName,
+      invited_user_id: invite.invitedUserId,
+      invited_user_name: invite.invitedUserName,
+      status: 'PENDING',
+      created_at: nowIso
+    })
+    .select("*")
+    .single()
+
+  if (error) {
+    throw error
   }
-  saveInvites([...invites, newInvite])
+
+  const newInvite = mapSupabaseInviteToInvite(data as SupabaseInviteRow)
   syncInviteToGeneralChat(newInvite)
   return newInvite
 }
 
 export const getInvitesForUser = async (userId: string): Promise<TeamInvite[]> => {
-  const invites = getStoredInvites()
-  return invites.filter(inv => inv.invitedUserId === userId)
+  const { data, error } = await supabase
+    .from("team_invites")
+    .select("*")
+    .eq("invited_user_id", userId)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Failed to fetch invites for user:", error)
+    return []
+  }
+
+  return (data || []).map((row) => mapSupabaseInviteToInvite(row as SupabaseInviteRow))
 }
 
 export const clearResolvedInvitesForUser = async (userId: string): Promise<number> => {
-  const invites = getStoredInvites()
-  const nextInvites = invites.filter((inv) => inv.invitedUserId !== userId || inv.status === 'PENDING')
-  const removedCount = invites.length - nextInvites.length
+  const { data: resolvedRows, error: fetchError } = await supabase
+    .from("team_invites")
+    .select("id")
+    .eq("invited_user_id", userId)
+    .neq("status", "PENDING")
 
-  if (removedCount > 0) {
-    saveInvites(nextInvites)
+  if (fetchError) {
+    throw fetchError
   }
 
-  return removedCount
+  const ids = (resolvedRows || []).map((row) => row.id)
+  if (!ids.length) {
+    return 0
+  }
+
+  const { error: deleteError } = await supabase
+    .from("team_invites")
+    .delete()
+    .in("id", ids)
+
+  if (deleteError) {
+    throw deleteError
+  }
+
+  return ids.length
 }
 
 export const getInvitesByTeam = async (teamId: string): Promise<TeamInvite[]> => {
-  const invites = getStoredInvites()
-  return invites.filter(inv => inv.teamId === teamId)
+  const { data, error } = await supabase
+    .from("team_invites")
+    .select("*")
+    .eq("team_id", teamId)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Failed to fetch invites by team:", error)
+    return []
+  }
+
+  return (data || []).map((row) => mapSupabaseInviteToInvite(row as SupabaseInviteRow))
 }
 
 export const respondToInvite = async (inviteId: string, status: 'ACCEPTED' | 'REJECTED'): Promise<TeamInvite> => {
-  const invites = getStoredInvites()
-  const index = invites.findIndex(inv => inv.id === inviteId)
-  if (index === -1) throw new Error("Invite not found")
-  if (invites[index].status !== 'PENDING') throw new Error("Invite already processed")
+  const { data: inviteRow, error: inviteError } = await supabase
+    .from("team_invites")
+    .select("*")
+    .eq("id", inviteId)
+    .single()
 
-  const updatedInvite = { ...invites[index], status }
-  invites[index] = updatedInvite
-  saveInvites(invites)
+  if (inviteError) {
+    if (inviteError.code === "PGRST116") throw new Error("Invite not found")
+    throw inviteError
+  }
+
+  const currentInvite = mapSupabaseInviteToInvite(inviteRow as SupabaseInviteRow)
+  if (currentInvite.status !== 'PENDING') throw new Error("Invite already processed")
+
+  const { data: updatedRow, error: updateError } = await supabase
+    .from("team_invites")
+    .update({ status })
+    .eq("id", inviteId)
+    .select("*")
+    .single()
+
+  if (updateError) {
+    throw updateError
+  }
+
+  const updatedInvite = mapSupabaseInviteToInvite(updatedRow as SupabaseInviteRow)
 
   if (status === 'ACCEPTED') {
-    const teams = getStoredTeams()
-    const teamIndex = teams.findIndex(t => t.teamCode === updatedInvite.teamId)
-    if (teamIndex !== -1) {
-      const team = teams[teamIndex]
+    const team = await getTeamByCodeFromDb(updatedInvite.teamId)
+    if (team) {
       const existingMember = team.members.some((member) => member.userId === updatedInvite.invitedUserId)
 
       if (!existingMember) {
@@ -398,7 +628,11 @@ export const respondToInvite = async (inviteId: string, status: 'ACCEPTED' | 'RE
 
         team.members = [...(team.members || []), newMember]
         team.memberCount = team.members.length
-        saveTeams(teams)
+
+        await updateTeam(team.teamCode, {
+          members: team.members,
+          memberCount: team.memberCount
+        })
 
         // Supabase 채팅방에 새 멤버 추가
         try {
@@ -425,15 +659,17 @@ export const respondToInvite = async (inviteId: string, status: 'ACCEPTED' | 'RE
 }
 
 export const kickMember = async (teamCode: string, userId: string): Promise<Team> => {
-  const teams = getStoredTeams()
-  const index = teams.findIndex(t => t.teamCode === teamCode)
-  if (index === -1) throw new Error("Team not found")
+  const team = await getTeamByCodeFromDb(teamCode)
+  if (!team) throw new Error("Team not found")
 
-  const team = teams[index]
   const kickedMember = team.members.find((m) => m.userId === userId)
   team.members = team.members.filter(m => m.userId !== userId)
   team.memberCount = team.members.length
-  saveTeams(teams)
+
+  await updateTeam(teamCode, {
+    members: team.members,
+    memberCount: team.memberCount
+  })
 
   try {
     const room = await fetchTeamChatRoom(teamCode)
