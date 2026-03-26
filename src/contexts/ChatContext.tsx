@@ -41,6 +41,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const unsubscribeMapRef = useRef<Map<string, () => void>>(new Map())
   const membershipUnsubscribeRef = useRef<(() => void) | null>(null)
+  const supabaseRoomIdsRef = useRef<Set<string>>(new Set())
 
   // 게스트 채팅 데이터 자동 초기화
   useEffect(() => {
@@ -71,6 +72,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoadingRooms(true)
       const rooms = await fetchUserChatRooms(userId)
+      const previousSupabaseRoomIds = supabaseRoomIdsRef.current
+      const nextSupabaseRoomIds = new Set(rooms.map((room) => room.id))
+      supabaseRoomIdsRef.current = nextSupabaseRoomIds
       setSupabaseRooms(rooms)
 
       // 기존 룸 구독 정리 후 재구독
@@ -80,16 +84,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setChatData((prev) => {
         if (!prev) return prev
 
-        const mergedRooms = [...prev.rooms]
+        const removedRoomIds = [...previousSupabaseRoomIds].filter((id) => !nextSupabaseRoomIds.has(id))
+
+        const mergedRooms = prev.rooms.filter((room) => !removedRoomIds.includes(room.id))
         rooms.forEach((room) => {
           if (!mergedRooms.some((r) => r.id === room.id)) {
             mergedRooms.push({ id: room.id, name: room.name, unreadCount: 0 })
           }
         })
 
+        const nextMessages = { ...prev.messages }
+        removedRoomIds.forEach((roomId) => {
+          delete nextMessages[roomId]
+        })
+
         return {
           ...prev,
-          rooms: mergedRooms
+          rooms: mergedRooms,
+          messages: nextMessages
         }
       })
 
@@ -182,6 +194,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setCurrentUsername('')
     setCurrentDisplayName('')
     setSupabaseRooms([])
+    supabaseRoomIdsRef.current = new Set()
   }
 
   useEffect(() => {
@@ -192,6 +205,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         membershipUnsubscribeRef.current()
         membershipUnsubscribeRef.current = null
       }
+      supabaseRoomIdsRef.current = new Set()
     }
   }, [])
 
