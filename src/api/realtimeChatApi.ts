@@ -208,6 +208,60 @@ export const ensureNoticeRoomForUser = async (
 }
 
 /**
+ * 개인 일반/공지 채팅방 중복 정리
+ * - name(일반/공지)별로 가장 오래된 활성 방 1개만 유지
+ */
+export const cleanupDuplicatePersonalGeneralRooms = async (userId: string): Promise<void> => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_rooms')
+      .select('id,name,created_at')
+      .eq('room_type', 'general')
+      .eq('created_by', userId)
+      .eq('is_active', true)
+      .in('name', ['일반', '공지'])
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+    if (!data || data.length <= 2) return
+
+    type PersonalGeneralRoom = { id: string; name: string; created_at: string }
+    const rooms = data as PersonalGeneralRoom[]
+
+    const roomsByName = rooms.reduce((acc: Record<string, PersonalGeneralRoom[]>, room: PersonalGeneralRoom) => {
+      if (!acc[room.name]) acc[room.name] = []
+      acc[room.name].push(room)
+      return acc
+    }, {})
+
+    const duplicateRoomIds = Object.values(roomsByName)
+      .flatMap((rooms) => rooms.slice(1))
+      .map((room) => room.id)
+
+    if (duplicateRoomIds.length === 0) return
+
+    const now = new Date().toISOString()
+
+    const { error: memberError } = await supabase
+      .from('chat_members')
+      .update({ is_active: false })
+      .in('room_id', duplicateRoomIds)
+      .eq('is_active', true)
+
+    if (memberError) throw memberError
+
+    const { error: roomError } = await supabase
+      .from('chat_rooms')
+      .update({ is_active: false, updated_at: now })
+      .in('id', duplicateRoomIds)
+
+    if (roomError) throw roomError
+  } catch (error) {
+    console.error('Failed to cleanup duplicate personal general rooms:', error)
+  }
+}
+
+/**
  * 팀 채팅방 생성 및 매핑
  */
 export const createTeamChatRoom = async (
@@ -839,6 +893,7 @@ export const fetchUserChatRooms = async (userId: string) => {
         }
         return true
       })
+      .filter((room, index, arr) => arr.findIndex((candidate) => candidate.id === room.id) === index)
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
 
     return rooms

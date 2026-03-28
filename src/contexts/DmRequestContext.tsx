@@ -30,7 +30,7 @@ const DmRequestContext = createContext<DmRequestContextType | undefined>(undefin
 export function DmRequestProvider({ children }: { children: ReactNode }) {
   const [dmRequests, setDmRequests] = useState<SupabaseDmRequest[]>([])
   const subscriptionMapRef = useRef<Map<string, () => void>>(new Map())
-  const loadedUsersRef = useRef<Set<string>>(new Set())
+  const pollingMapRef = useRef<Map<string, number>>(new Map())
 
   const mapSupabaseRequest = (req: SupabaseDmRequest): DmRequest => ({
     id: req.id,
@@ -113,9 +113,17 @@ export function DmRequestProvider({ children }: { children: ReactNode }) {
   // 특정 사용자의 DM 요청 구독 설정
   const setupSubscriptionForUser = useCallback(
     (userId: string) => {
-      if (loadedUsersRef.current.has(userId)) return
+      const existingUnsubscribe = subscriptionMapRef.current.get(userId)
+      if (existingUnsubscribe) {
+        existingUnsubscribe()
+        subscriptionMapRef.current.delete(userId)
+      }
 
-      loadedUsersRef.current.add(userId)
+      const existingPolling = pollingMapRef.current.get(userId)
+      if (existingPolling) {
+        window.clearInterval(existingPolling)
+        pollingMapRef.current.delete(userId)
+      }
 
       // 초기 로드
       getDmRequestsForUser(userId)
@@ -148,6 +156,20 @@ export function DmRequestProvider({ children }: { children: ReactNode }) {
       )
 
       subscriptionMapRef.current.set(userId, unsubscribe)
+
+      // Realtime 누락/끊김 대비 폴링 fallback
+      const pollingId = window.setInterval(() => {
+        getDmRequestsForUser(userId)
+          .then((requests) => {
+            setDmRequests((prev) => {
+              const others = prev.filter((r) => r.to_user_id !== userId)
+              return [...others, ...requests]
+            })
+          })
+          .catch((error) => console.error('Failed to poll DM requests:', error))
+      }, 3000)
+
+      pollingMapRef.current.set(userId, pollingId)
     },
     []
   )
@@ -160,7 +182,11 @@ export function DmRequestProvider({ children }: { children: ReactNode }) {
         unsubscribe()
       })
       subscriptionMapRef.current.clear()
-      loadedUsersRef.current.clear()
+
+      pollingMapRef.current.forEach((intervalId) => {
+        window.clearInterval(intervalId)
+      })
+      pollingMapRef.current.clear()
     }
   }, [])
 
