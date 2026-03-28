@@ -235,16 +235,16 @@ export default function Matcher() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
       <section className="mb-10 rounded-[2rem] border border-white/60 bg-white/80 p-8 shadow-[0_24px_80px_rgba(14,165,233,0.12)] backdrop-blur-xl">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
+          <div className="flex-1">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#3B82F6]/15 bg-[#3B82F6]/5 px-4 py-2 text-sm font-semibold text-[#2563EB]">
               <Sparkles className="h-4 w-4" />
-              AI 매칭 랩
+              팀·팀원 매칭 서비스
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-              팀과 팀원을 더 자연스럽게 연결해보세요
+            <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl mb-3">
+              AI 매칭 랩
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-              선택한 프로필을 기준으로 잘 맞는 팀 또는 팀원을 바로 비교해볼 수 있는 테스트 공간입니다.
+            <p className="text-base leading-7 text-slate-600 sm:text-lg">
+              AI 기반 팀·팀원 매칭으로 개인과 팀을 정밀하게 연결합니다
             </p>
           </div>
 
