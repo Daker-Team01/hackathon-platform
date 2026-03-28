@@ -10,13 +10,15 @@ import {
   useTeamRequestsByTeam
 } from '../hooks/useTeams';
 import { useUser, allUsers } from '../contexts/UserContext';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLog } from '../contexts/LogContext';
 import { Button } from '../components/ui/button';
 
 export default function TeamManagement() {
   const { teamCode } = useParams<{ teamCode: string }>();
   const navigate = useNavigate();
   const { user } = useUser();
+  const { recordEvent } = useLog();
   const { data: team, isLoading } = useTeam(teamCode || '');
   const { data: invites } = useTeamInvites(teamCode || '');
   const { data: teamRequests } = useTeamRequestsByTeam(teamCode || '');
@@ -29,6 +31,14 @@ export default function TeamManagement() {
   const [inviteUserName, setInviteUserName] = useState('');
   const [teamNotice, setTeamNotice] = useState('');
 
+  useEffect(() => {
+    if (!teamCode) return
+    recordEvent('page_view', 'page', `/team/${teamCode}/manage`, {
+      page: 'team_management',
+      teamCode
+    })
+  }, [recordEvent, teamCode])
+
   if (isLoading) return <div className="p-8">Loading...</div>;
   if (!team) return <div className="p-8 text-center text-muted-foreground">Team not found.</div>;
 
@@ -36,7 +46,24 @@ export default function TeamManagement() {
 
   const handleKick = (userId: string) => {
     if (window.confirm('정말 이 팀원을 내보내시겠습니까?')) {
-      kickMutation.mutate({ teamCode: team.teamCode, userId });
+      kickMutation.mutate(
+        { teamCode: team.teamCode, userId },
+        {
+          onSuccess: () => {
+            recordEvent('team_member_kick', 'team', team.teamCode, {
+              userId
+            })
+          },
+          onError: (error) => {
+            recordEvent('api_error', 'team', team.teamCode, {
+              api: 'kickMember',
+              action: 'team_member_kick',
+              userId,
+              message: error instanceof Error ? error.message : 'unknown_error'
+            })
+          }
+        }
+      );
     }
   };
 
@@ -65,8 +92,20 @@ export default function TeamManagement() {
       invitedUserName: targetUser.nickname,
     }, {
       onSuccess: () => {
+        recordEvent('invite_send', 'team', team.teamCode, {
+          invitedUserId: targetUser.userId,
+          invitedUserName: targetUser.nickname
+        })
         alert(`${targetUser.nickname}님에게 초대를 보냈습니다.`);
         setInviteUserName('');
+      },
+      onError: (error) => {
+        recordEvent('api_error', 'team', team.teamCode, {
+          api: 'inviteUser',
+          action: 'invite_send',
+          invitedUserId: targetUser.userId,
+          message: error instanceof Error ? error.message : 'unknown_error'
+        })
       }
     });
   };
@@ -92,10 +131,18 @@ export default function TeamManagement() {
       },
       {
         onSuccess: () => {
+          recordEvent('team_notice_send', 'team', team.teamCode, {
+            messageLength: trimmedNotice.length
+          })
           alert('팀 공지를 보냈습니다.');
           setTeamNotice('');
         },
         onError: (error) => {
+          recordEvent('api_error', 'team', team.teamCode, {
+            api: 'sendTeamNotice',
+            action: 'team_notice_send',
+            message: error instanceof Error ? error.message : 'unknown_error'
+          })
           alert(error instanceof Error ? error.message : '팀 공지 전송에 실패했습니다.');
         }
       }
@@ -106,13 +153,27 @@ export default function TeamManagement() {
     if (!window.confirm('대기중인 초대를 취소하시겠습니까?')) return
 
     cancelInviteMutation.mutate(inviteId, {
-      onSuccess: () => alert('초대를 취소했습니다.'),
-      onError: (error) => alert(error instanceof Error ? error.message : '초대 취소에 실패했습니다.')
+      onSuccess: () => {
+        recordEvent('invite_cancel', 'team', team.teamCode, {
+          inviteId
+        })
+        alert('초대를 취소했습니다.')
+      },
+      onError: (error) => {
+        recordEvent('api_error', 'team', team.teamCode, {
+          api: 'cancelInvite',
+          action: 'invite_cancel',
+          inviteId,
+          message: error instanceof Error ? error.message : 'unknown_error'
+        })
+        alert(error instanceof Error ? error.message : '초대 취소에 실패했습니다.')
+      }
     })
   }
 
   const handleRespondTeamRequest = (requestId: string, status: 'APPROVED' | 'REJECTED') => {
     if (!user?.userId) return
+    const targetRequest = teamRequests?.find((request) => request.id === requestId)
 
     respondToTeamRequestMutation.mutate(
       {
@@ -121,8 +182,31 @@ export default function TeamManagement() {
         status
       },
       {
-        onSuccess: () => alert(`요청을 ${status === 'APPROVED' ? '승인' : '거절'}했습니다.`),
-        onError: (error) => alert(error instanceof Error ? error.message : '요청 처리에 실패했습니다.')
+        onSuccess: () => {
+          recordEvent('team_request_review', 'team', team.teamCode, {
+            requestId,
+            requestType: targetRequest?.requestType ?? null,
+            requesterUserId: targetRequest?.requesterUserId ?? null,
+            status
+          })
+          recordEvent('team_request_result', 'team', team.teamCode, {
+            requestId,
+            requestType: targetRequest?.requestType ?? null,
+            requesterUserId: targetRequest?.requesterUserId ?? null,
+            status
+          })
+          alert(`요청을 ${status === 'APPROVED' ? '승인' : '거절'}했습니다.`)
+        },
+        onError: (error) => {
+          recordEvent('api_error', 'team', team.teamCode, {
+            api: 'respondToTeamRequest',
+            action: 'team_request_review',
+            requestId,
+            status,
+            message: error instanceof Error ? error.message : 'unknown_error'
+          })
+          alert(error instanceof Error ? error.message : '요청 처리에 실패했습니다.')
+        }
       }
     )
   }

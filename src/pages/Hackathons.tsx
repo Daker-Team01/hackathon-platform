@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Calendar, MapPin, Search, Trophy, Heart, ArrowLeft } from 'lucide-react'
 import { Card } from '@/components/ui/card'
@@ -27,6 +27,7 @@ export default function Hackathons() {
   const navigate = useNavigate()
   const { user } = useUser()
   const { recordEvent } = useLog()
+  const lastImpressionKeyRef = useRef('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [tagFilter, setTagFilter] = useState<string>('all')
   const [, setInterestVersion] = useState(0)
@@ -65,6 +66,30 @@ export default function Hackathons() {
         return 'bg-yellow-100 text-yellow-700 border-yellow-200'
     }
   }
+
+  useEffect(() => {
+    recordEvent('page_view', 'page', '/hackathons', {
+      page: 'hackathons',
+      statusFilter,
+      tagFilter
+    })
+  }, [recordEvent, statusFilter, tagFilter])
+
+  useEffect(() => {
+    if (filteredHackathons.length === 0) return
+
+    const impressionKey = `${statusFilter}|${tagFilter}|${filteredHackathons.map((item) => item.slug).join(',')}`
+    if (lastImpressionKeyRef.current === impressionKey) return
+    lastImpressionKeyRef.current = impressionKey
+
+    recordEvent('recommendation_impression', 'hackathon', 'hackathons_list', {
+      page: 'hackathons',
+      statusFilter,
+      tagFilter,
+      resultCount: filteredHackathons.length,
+      hackathonSlugs: filteredHackathons.slice(0, 20).map((item) => item.slug)
+    })
+  }, [filteredHackathons, recordEvent, statusFilter, tagFilter])
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -167,7 +192,20 @@ export default function Hackathons() {
               <Card 
                 key={hackathon.slug} 
                 className="group bg-white border-0 shadow-xl hover:shadow-2xl hover:scale-[1.03] transition-all duration-300 overflow-hidden flex flex-col h-full cursor-pointer"
-                onClick={() => navigate(`/hackathons/${hackathon.slug}`)}
+                onClick={() => {
+                  const position = filteredHackathons.findIndex((item) => item.slug === hackathon.slug) + 1
+                  recordEvent('card_click', 'hackathon', hackathon.slug, {
+                    page: 'hackathons',
+                    action: 'openDetail'
+                  })
+                  recordEvent('recommendation_click', 'hackathon', hackathon.slug, {
+                    page: 'hackathons',
+                    statusFilter,
+                    tagFilter,
+                    position: position > 0 ? position : null
+                  })
+                  navigate(`/hackathons/${hackathon.slug}`)
+                }}
               >
                 {/* Thumbnail Area */}
                 <div className="relative h-48 bg-gray-100 overflow-hidden">

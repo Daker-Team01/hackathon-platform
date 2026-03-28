@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useUser } from '../../contexts/UserContext'
 import { useChat } from '../../contexts/ChatContext'
+import { useLog } from '../../contexts/LogContext'
 import { generateChatbotResponseWithFallback, getChatbotAction } from '../../api/chatbotApi'
 import { useRespondToInvite } from '../../hooks/useTeams'
 import ChatRoomList from './ChatRoomList'
@@ -16,6 +17,7 @@ type Props = {
 
 export default function ChatPanel({ open, onClose }: Props) {
   const { isLoggedIn, user } = useUser()
+  const { recordEvent } = useLog()
   const { chatData, supabaseRooms, roomActivityAt, unreadRoomCounts, addMessage, addSupabaseMessage, leaveDirectRoom, markRoomSeen } = useChat()
   const respondMutation = useRespondToInvite()
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
@@ -173,6 +175,16 @@ export default function ChatPanel({ open, onClose }: Props) {
     if (!safeSelectedRoomId) return
 
     if (safeSelectedRoomId === CHATBOT_ROOM_ID) {
+      const normalizedText = text.trim()
+      const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
+      const querySample = normalizedText.length > 120 ? `${normalizedText.slice(0, 120)}…` : normalizedText
+
+      recordEvent('chatbot_query', 'chatbot', CHATBOT_ROOM_ID, {
+        queryLength: normalizedText.length,
+        querySample,
+        hasLoginUser: !!user
+      })
+
       const timestamp = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
       addMessage(CHATBOT_ROOM_ID, {
         id: `chatbot-user-${Date.now()}`,
@@ -185,6 +197,16 @@ export default function ChatPanel({ open, onClose }: Props) {
       try {
         const botResponse = await generateChatbotResponseWithFallback(text, user ?? undefined)
         const botAction = getChatbotAction(text)
+        const endedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
+
+        recordEvent('chatbot_response', 'chatbot', CHATBOT_ROOM_ID, {
+          queryLength: normalizedText.length,
+          responseLength: botResponse.length,
+          responseMs: Math.max(0, Math.round(endedAt - startedAt)),
+          hasAction: !!botAction,
+          actionPath: botAction?.path ?? null
+        })
+
         addMessage(CHATBOT_ROOM_ID, {
           id: `chatbot-bot-${Date.now()}`,
           user: 'Chatbot',

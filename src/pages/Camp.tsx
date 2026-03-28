@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { useSearchParams, useNavigate, Link } from "react-router-dom"
 import { 
   Users, MessageSquare, Plus, ArrowLeft, Filter, 
@@ -14,6 +14,7 @@ import {
   useUpdateTeam
 } from "../hooks/useTeams"
 import { useUser } from "../contexts/UserContext"
+import { useLog } from "../contexts/LogContext"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -36,6 +37,10 @@ export default function Camp() {
   const selectedTeamCode = params.get("team") || ""
 
   const { user } = useUser()
+  const { recordEvent } = useLog()
+  const teamDetailOpenedAtRef = useRef<number | null>(null)
+  const closingTeamCodeRef = useRef<string | null>(null)
+  const lastImpressionKeyRef = useRef<string>("")
   const { data: teams, isLoading, isError: isTeamsError, error: teamsError } = useTeams(slug)
   const {
     data: selectedTeamDetail,
@@ -118,17 +123,99 @@ export default function Camp() {
     return hackathonTitleMap.get(hackathonSlug) || hackathonSlug
   }
 
+  useEffect(() => {
+    recordEvent('page_view', 'page', '/camp', {
+      page: 'camp',
+      hackathonFilter,
+      statusFilter
+    })
+  }, [hackathonFilter, recordEvent, statusFilter])
+
+  useEffect(() => {
+    if (selectedTeamCode) {
+      teamDetailOpenedAtRef.current = Date.now()
+      return
+    }
+
+    const closedTeamCode = closingTeamCodeRef.current
+    const openedAt = teamDetailOpenedAtRef.current
+
+    if (closedTeamCode && openedAt) {
+      recordEvent('team_detail_dwell', 'team', closedTeamCode, {
+        page: 'camp',
+        durationMs: Date.now() - openedAt
+      })
+    }
+
+    teamDetailOpenedAtRef.current = null
+    closingTeamCodeRef.current = null
+  }, [recordEvent, selectedTeamCode])
+
+  useEffect(() => {
+    if (isLoading || hasLoadError || prioritizedTeams.length === 0) return
+
+    const impressionKey = `${hackathonFilter}|${statusFilter}|${prioritizedTeams.map((team) => team.teamCode).join(',')}`
+    if (lastImpressionKeyRef.current === impressionKey) return
+    lastImpressionKeyRef.current = impressionKey
+
+    recordEvent('recommendation_impression', 'team', hackathonFilter === 'all' ? 'all' : hackathonFilter, {
+      page: 'camp',
+      statusFilter,
+      resultCount: prioritizedTeams.length,
+      teamCodes: prioritizedTeams.slice(0, 20).map((team) => team.teamCode)
+    })
+  }, [hackathonFilter, hasLoadError, isLoading, prioritizedTeams, recordEvent, statusFilter])
+
   const handleToggleOpen = (teamCode: string, currentIsOpen: boolean) => {
-    mutation.mutate({ teamCode, updates: { isOpen: !currentIsOpen } })
+    mutation.mutate(
+      { teamCode, updates: { isOpen: !currentIsOpen } },
+      {
+        onSuccess: () => {
+          recordEvent('team_recruit_toggle', 'team', teamCode, {
+            nextIsOpen: !currentIsOpen
+          })
+        },
+        onError: (error) => {
+          recordEvent('api_error', 'team', teamCode, {
+            api: 'updateTeam',
+            action: 'team_recruit_toggle',
+            message: error instanceof Error ? error.message : 'unknown_error'
+          })
+        }
+      }
+    )
   }
 
   const openTeamDetail = (teamCode: string) => {
+    const position = prioritizedTeams.findIndex((team) => team.teamCode === teamCode) + 1
+
+    recordEvent('card_click', 'team', teamCode, {
+      page: 'camp',
+      action: 'openTeamDetail'
+    })
+    recordEvent('recommendation_click', 'team', teamCode, {
+      page: 'camp',
+      position: position > 0 ? position : null,
+      hackathonFilter,
+      statusFilter
+    })
+    recordEvent('team_detail_open', 'team', teamCode, {
+      page: 'camp'
+    })
+
     const nextParams = new URLSearchParams(params)
     nextParams.set("team", teamCode)
     setParams(nextParams)
   }
 
   const closeTeamDetail = () => {
+    if (selectedTeamCode) {
+      recordEvent('team_detail_close', 'team', selectedTeamCode, {
+        page: 'camp'
+      })
+      closingTeamCodeRef.current = selectedTeamCode
+    }
+
     const nextParams = new URLSearchParams(params)
     nextParams.delete("team")
     setParams(nextParams)
@@ -146,9 +233,20 @@ export default function Camp() {
       },
       {
         onSuccess: () => {
+          recordEvent('team_request_create', 'team', selectedTeam.teamCode, {
+            requestType,
+            teamName: selectedTeam.name,
+            hackathonSlug: selectedTeam.hackathonSlug ?? null
+          })
           alert(requestType === 'JOIN' ? '가입 신청을 보냈습니다.' : '탈퇴 신청을 보냈습니다.')
         },
         onError: (error) => {
+          recordEvent('api_error', 'team', selectedTeam.teamCode, {
+            api: 'createTeamRequest',
+            action: 'team_request_create',
+            requestType,
+            message: error instanceof Error ? error.message : 'unknown_error'
+          })
           alert(error instanceof Error ? error.message : '요청 처리에 실패했습니다.')
         }
       }
@@ -162,9 +260,19 @@ export default function Camp() {
       { requestId, requesterUserId: user.id },
       {
         onSuccess: () => {
+          recordEvent('team_request_cancel', 'team', selectedTeamCode || requestId, {
+            requestId,
+            page: 'camp'
+          })
           alert('요청을 취소했습니다.')
         },
         onError: (error) => {
+          recordEvent('api_error', 'team', selectedTeamCode || requestId, {
+            api: 'cancelTeamRequest',
+            action: 'team_request_cancel',
+            requestId,
+            message: error instanceof Error ? error.message : 'unknown_error'
+          })
           alert(error instanceof Error ? error.message : '요청 취소에 실패했습니다.')
         }
       }
@@ -172,6 +280,11 @@ export default function Camp() {
   }
 
   const updateHackathonFilter = (nextHackathonSlug: string) => {
+    recordEvent('team_filter', 'team', nextHackathonSlug === 'all' ? 'all' : nextHackathonSlug, {
+      filterType: 'hackathon',
+      filterValue: nextHackathonSlug
+    })
+
     const nextParams = new URLSearchParams(params)
 
     if (nextHackathonSlug === "all") {
@@ -185,6 +298,11 @@ export default function Camp() {
   }
 
   const updateStatusFilter = (nextStatus: "all" | "open" | "closed") => {
+    recordEvent('team_filter', 'team', nextStatus, {
+      filterType: 'status',
+      filterValue: nextStatus
+    })
+
     const nextParams = new URLSearchParams(params)
 
     if (nextStatus === "all") {
