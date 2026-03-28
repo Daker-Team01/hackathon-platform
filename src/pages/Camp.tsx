@@ -11,6 +11,7 @@ import {
   useTeam,
   useTeamRequestsForUser,
   useTeams,
+  useTeamsByLeader,
   useUpdateTeam
 } from "../hooks/useTeams"
 import { useUser } from "../contexts/UserContext"
@@ -33,6 +34,8 @@ export default function Camp() {
   const hackathonFilter = params.get("hackathon") || "all"
   const statusFilterParam = params.get("status")
   const statusFilter = statusFilterParam === "open" || statusFilterParam === "closed" ? statusFilterParam : "all"
+  const ownerFilterParam = params.get("owner")
+  const ownerFilter = ownerFilterParam === "leader" ? "leader" : "all"
   const slug = hackathonFilter === "all" ? undefined : hackathonFilter
   const selectedTeamCode = params.get("team") || ""
 
@@ -42,17 +45,23 @@ export default function Camp() {
   const closingTeamCodeRef = useRef<string | null>(null)
   const lastImpressionKeyRef = useRef<string>("")
   const { data: teams, isLoading, isError: isTeamsError, error: teamsError } = useTeams(slug)
+  const currentUserId = user?.id || user?.userId || ""
+  const {
+    data: leaderTeams,
+    isLoading: isLeaderTeamsLoading,
+    isError: isLeaderTeamsError,
+    error: leaderTeamsError
+  } = useTeamsByLeader(currentUserId, { enabled: ownerFilter === "leader" })
   const {
     data: selectedTeamDetail,
     isLoading: isSelectedTeamLoading,
     isError: isSelectedTeamError,
     error: selectedTeamError
   } = useTeam(selectedTeamCode)
-  const { data: myRequests = [] } = useTeamRequestsForUser(user?.id || "")
+  const { data: myRequests = [] } = useTeamRequestsForUser(currentUserId)
   const mutation = useUpdateTeam()
   const createTeamRequestMutation = useCreateTeamRequest()
   const cancelTeamRequestMutation = useCancelTeamRequest()
-  const currentUserId = user?.id || ""
 
   const hackathonTitleMap = useMemo(
     () => new Map(normalizedHackathons.map((hackathon) => [hackathon.slug, hackathon.title] as const)),
@@ -86,8 +95,18 @@ export default function Camp() {
     })
   }, [currentUserId, selectedTeam, teams])
 
+  const sourceTeams = useMemo(() => {
+    if (ownerFilter !== "leader") {
+      return teams || []
+    }
+
+    const byLeader = leaderTeams || []
+    if (hackathonFilter === "all") return byLeader
+    return byLeader.filter((team) => team.hackathonSlug === hackathonFilter)
+  }, [hackathonFilter, leaderTeams, ownerFilter, teams])
+
   const filteredTeams = useMemo(() => {
-    const source = teams || []
+    const source = sourceTeams
 
     if (statusFilter === "open") {
       return source.filter((team) => team.isOpen)
@@ -98,7 +117,7 @@ export default function Camp() {
     }
 
     return source
-  }, [teams, statusFilter])
+  }, [sourceTeams, statusFilter])
 
   const prioritizedTeams = useMemo(() => {
     return [...filteredTeams].sort((left, right) => {
@@ -110,10 +129,13 @@ export default function Camp() {
     })
   }, [filteredTeams, currentUserId])
 
-  const openCount = useMemo(() => (teams || []).filter((team) => team.isOpen).length, [teams])
-  const closedCount = useMemo(() => (teams || []).filter((team) => !team.isOpen).length, [teams])
-  const hasLoadError = isTeamsError || (Boolean(selectedTeamCode) && isSelectedTeamError)
+  const effectiveIsLoading = ownerFilter === "leader" ? isLeaderTeamsLoading : isLoading
+  const effectiveIsError = ownerFilter === "leader" ? isLeaderTeamsError : isTeamsError
+  const openCount = useMemo(() => sourceTeams.filter((team) => team.isOpen).length, [sourceTeams])
+  const closedCount = useMemo(() => sourceTeams.filter((team) => !team.isOpen).length, [sourceTeams])
+  const hasLoadError = effectiveIsError || (Boolean(selectedTeamCode) && isSelectedTeamError)
   const loadErrorMessage =
+    (leaderTeamsError instanceof Error ? leaderTeamsError.message : null) ||
     (teamsError instanceof Error ? teamsError.message : null) ||
     (selectedTeamError instanceof Error ? selectedTeamError.message : null) ||
     '데이터를 불러오는 중 오류가 발생했습니다.'
@@ -127,9 +149,10 @@ export default function Camp() {
     recordEvent('page_view', 'page', '/camp', {
       page: 'camp',
       hackathonFilter,
-      statusFilter
+      statusFilter,
+      ownerFilter
     })
-  }, [hackathonFilter, recordEvent, statusFilter])
+  }, [hackathonFilter, ownerFilter, recordEvent, statusFilter])
 
   useEffect(() => {
     if (selectedTeamCode) {
@@ -152,7 +175,7 @@ export default function Camp() {
   }, [recordEvent, selectedTeamCode])
 
   useEffect(() => {
-    if (isLoading || hasLoadError || prioritizedTeams.length === 0) return
+    if (effectiveIsLoading || hasLoadError || prioritizedTeams.length === 0) return
 
     const impressionKey = `${hackathonFilter}|${statusFilter}|${prioritizedTeams.map((team) => team.teamCode).join(',')}`
     if (lastImpressionKeyRef.current === impressionKey) return
@@ -161,10 +184,11 @@ export default function Camp() {
     recordEvent('recommendation_impression', 'team', hackathonFilter === 'all' ? 'all' : hackathonFilter, {
       page: 'camp',
       statusFilter,
+      ownerFilter,
       resultCount: prioritizedTeams.length,
       teamCodes: prioritizedTeams.slice(0, 20).map((team) => team.teamCode)
     })
-  }, [hackathonFilter, hasLoadError, isLoading, prioritizedTeams, recordEvent, statusFilter])
+  }, [effectiveIsLoading, hackathonFilter, hasLoadError, ownerFilter, prioritizedTeams, recordEvent, statusFilter])
 
   const handleToggleOpen = (teamCode: string, currentIsOpen: boolean) => {
     mutation.mutate(
@@ -197,7 +221,8 @@ export default function Camp() {
       page: 'camp',
       position: position > 0 ? position : null,
       hackathonFilter,
-      statusFilter
+      statusFilter,
+      ownerFilter
     })
     recordEvent('team_detail_open', 'team', teamCode, {
       page: 'camp'
@@ -315,6 +340,24 @@ export default function Camp() {
     setParams(nextParams)
   }
 
+  const updateOwnerFilter = (nextOwner: "all" | "leader") => {
+    recordEvent('team_filter', 'team', nextOwner, {
+      filterType: 'owner',
+      filterValue: nextOwner
+    })
+
+    const nextParams = new URLSearchParams(params)
+
+    if (nextOwner === "all") {
+      nextParams.delete("owner")
+    } else {
+      nextParams.set("owner", nextOwner)
+    }
+
+    nextParams.delete("team")
+    setParams(nextParams)
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Navigation & Header */}
@@ -388,7 +431,7 @@ export default function Camp() {
                 onClick={() => updateStatusFilter("all")}
                 className="rounded-full"
               >
-                전체 ({teams?.length || 0})
+                전체 ({sourceTeams.length})
               </Button>
               <Button
                 size="sm"
@@ -408,10 +451,33 @@ export default function Camp() {
               </Button>
             </div>
           </div>
+
+          <div className="space-y-1">
+            <p className="text-xs text-gray-500">소유 구분</p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant={ownerFilter === "all" ? "default" : "outline"}
+                onClick={() => updateOwnerFilter("all")}
+                className="rounded-full"
+              >
+                전체 팀
+              </Button>
+              <Button
+                size="sm"
+                variant={ownerFilter === "leader" ? "default" : "outline"}
+                onClick={() => updateOwnerFilter("leader")}
+                className="rounded-full"
+                disabled={!currentUserId}
+              >
+                내 팀
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {isLoading ? (
+      {effectiveIsLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-64 bg-gray-50 rounded-3xl animate-pulse" />
@@ -429,8 +495,8 @@ export default function Camp() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {prioritizedTeams.map((team) => {
-            const isAuthor = user && user.id === team.leaderId
-            const isMember = !!user && team.members.some((member) => member.userId === user.id)
+            const isAuthor = !!currentUserId && currentUserId === team.leaderId
+            const isMember = !!currentUserId && team.members.some((member) => member.userId === currentUserId)
             
             return (
               <Card 
