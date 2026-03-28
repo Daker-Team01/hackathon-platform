@@ -1,26 +1,122 @@
+import { useMemo } from "react"
 import { useSearchParams, useNavigate, Link } from "react-router-dom"
 import { 
   Users, MessageSquare, Plus, ArrowLeft, Filter, 
   Settings, Edit, Lock, Unlock, ExternalLink, Shield
 } from "lucide-react"
 
-import { useTeams, useUpdateTeam } from "../hooks/useTeams"
+import { useTeam, useTeams, useUpdateTeam } from "../hooks/useTeams"
 import { useUser } from "../contexts/UserContext"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { normalizedHackathons } from "@/lib/hackathonData"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog"
 
 export default function Camp() {
   const navigate = useNavigate()
-  const [params] = useSearchParams()
-  const slug = params.get("hackathon") || undefined
+  const [params, setParams] = useSearchParams()
+  const hackathonFilter = params.get("hackathon") || "all"
+  const statusFilterParam = params.get("status")
+  const statusFilter = statusFilterParam === "open" || statusFilterParam === "closed" ? statusFilterParam : "all"
+  const slug = hackathonFilter === "all" ? undefined : hackathonFilter
+  const selectedTeamCode = params.get("team") || ""
 
   const { data: teams, isLoading } = useTeams(slug)
+  const { data: selectedTeamDetail, isLoading: isSelectedTeamLoading } = useTeam(selectedTeamCode)
   const mutation = useUpdateTeam()
   const { user } = useUser()
+  const currentUserId = user?.id || ""
+
+  const hackathonTitleMap = useMemo(
+    () => new Map(normalizedHackathons.map((hackathon) => [hackathon.slug, hackathon.title] as const)),
+    []
+  )
+  const selectableHackathons = useMemo(
+    () => normalizedHackathons.filter((hackathon) => hackathon.status !== "ended"),
+    []
+  )
+
+  const selectedTeam = selectedTeamDetail || teams?.find((team) => team.teamCode === selectedTeamCode)
+
+  const filteredTeams = useMemo(() => {
+    const source = teams || []
+
+    if (statusFilter === "open") {
+      return source.filter((team) => team.isOpen)
+    }
+
+    if (statusFilter === "closed") {
+      return source.filter((team) => !team.isOpen)
+    }
+
+    return source
+  }, [teams, statusFilter])
+
+  const prioritizedTeams = useMemo(() => {
+    return [...filteredTeams].sort((left, right) => {
+      const leftMine = !!currentUserId && (left.leaderId === currentUserId || left.members.some((member) => member.userId === currentUserId))
+      const rightMine = !!currentUserId && (right.leaderId === currentUserId || right.members.some((member) => member.userId === currentUserId))
+
+      if (leftMine === rightMine) return 0
+      return leftMine ? -1 : 1
+    })
+  }, [filteredTeams, currentUserId])
+
+  const openCount = useMemo(() => (teams || []).filter((team) => team.isOpen).length, [teams])
+  const closedCount = useMemo(() => (teams || []).filter((team) => !team.isOpen).length, [teams])
+
+  const getHackathonLabel = (hackathonSlug?: string) => {
+    if (!hackathonSlug) return "일반 프로젝트"
+    return hackathonTitleMap.get(hackathonSlug) || hackathonSlug
+  }
 
   const handleToggleOpen = (teamCode: string, currentIsOpen: boolean) => {
     mutation.mutate({ teamCode, updates: { isOpen: !currentIsOpen } })
+  }
+
+  const openTeamDetail = (teamCode: string) => {
+    const nextParams = new URLSearchParams(params)
+    nextParams.set("team", teamCode)
+    setParams(nextParams)
+  }
+
+  const closeTeamDetail = () => {
+    const nextParams = new URLSearchParams(params)
+    nextParams.delete("team")
+    setParams(nextParams)
+  }
+
+  const updateHackathonFilter = (nextHackathonSlug: string) => {
+    const nextParams = new URLSearchParams(params)
+
+    if (nextHackathonSlug === "all") {
+      nextParams.delete("hackathon")
+    } else {
+      nextParams.set("hackathon", nextHackathonSlug)
+    }
+
+    nextParams.delete("team")
+    setParams(nextParams)
+  }
+
+  const updateStatusFilter = (nextStatus: "all" | "open" | "closed") => {
+    const nextParams = new URLSearchParams(params)
+
+    if (nextStatus === "all") {
+      nextParams.delete("status")
+    } else {
+      nextParams.set("status", nextStatus)
+    }
+
+    nextParams.delete("team")
+    setParams(nextParams)
   }
 
   return (
@@ -53,18 +149,70 @@ export default function Camp() {
         <p className="text-gray-600 text-lg max-w-2xl font-medium">
           함께 혁신을 만들어갈 최고의 팀원을 찾아보세요.
         </p>
-        
-        {slug && (
-          <div className="mt-6 flex items-center gap-2">
-            <Badge variant="secondary" className="bg-blue-50 text-blue-700 px-4 py-1.5 border-blue-100 flex items-center gap-2 text-sm">
-              <Filter className="w-3 h-3" />
-              해커톤: {slug}
-            </Badge>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/camp')} className="text-gray-400 hover:text-gray-600 text-xs">
+
+        <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-4">
+          <div className="flex items-center gap-2 text-sm font-bold text-gray-600">
+            <Filter className="w-4 h-4" />
+            팀 필터
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-center">
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">해커톤</p>
+              <select
+                value={hackathonFilter}
+                onChange={(event) => updateHackathonFilter(event.target.value)}
+                className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                <option value="all">전체 해커톤</option>
+                {selectableHackathons.map((hackathon) => (
+                  <option key={hackathon.slug} value={hackathon.slug}>
+                    {hackathon.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/camp')}
+              className="text-gray-400 hover:text-gray-600 text-xs md:mt-5"
+            >
               필터 해제
             </Button>
           </div>
-        )}
+
+          <div className="space-y-1">
+            <p className="text-xs text-gray-500">모집 상태</p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant={statusFilter === "all" ? "default" : "outline"}
+                onClick={() => updateStatusFilter("all")}
+                className="rounded-full"
+              >
+                전체 ({teams?.length || 0})
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === "open" ? "default" : "outline"}
+                onClick={() => updateStatusFilter("open")}
+                className="rounded-full"
+              >
+                모집중 ({openCount})
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === "closed" ? "default" : "outline"}
+                onClick={() => updateStatusFilter("closed")}
+                className="rounded-full"
+              >
+                모집마감 ({closedCount})
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {isLoading ? (
@@ -75,12 +223,22 @@ export default function Camp() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {teams?.map((team) => {
+          {prioritizedTeams.map((team) => {
             const isAuthor = user && user.id === team.leaderId
+            const isMember = !!user && team.members.some((member) => member.userId === user.id)
             
             return (
               <Card 
                 key={team.teamCode} 
+                role="button"
+                tabIndex={0}
+                onClick={() => openTeamDetail(team.teamCode)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault()
+                    openTeamDetail(team.teamCode)
+                  }
+                }}
                 className={`p-8 border-0 shadow-xl bg-white rounded-3xl hover:shadow-2xl transition-all duration-300 group relative overflow-hidden`}
               >
                 {/* Status Badge Overlays */}
@@ -94,6 +252,11 @@ export default function Camp() {
                       내 팀
                     </Badge>
                   )}
+                  {!isAuthor && isMember && (
+                    <Badge className="bg-violet-600 text-white border-0 shadow-sm">
+                      내 소속팀
+                    </Badge>
+                  )}
                 </div>
 
                 {/* Content */}
@@ -101,7 +264,7 @@ export default function Camp() {
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-bold text-gray-300 tracking-widest uppercase">{team.teamCode}</span>
                     <span className="text-gray-200">•</span>
-                    <span className="text-xs font-bold text-blue-500 uppercase tracking-widest">{team.hackathonSlug || '일반 프로젝트'}</span>
+                    <span className="text-xs font-bold text-blue-500 uppercase tracking-widest">{getHackathonLabel(team.hackathonSlug)}</span>
                   </div>
                   <h3 className="text-2xl font-black text-gray-900 group-hover:text-blue-600 transition-colors flex items-center gap-3 mb-4">
                     {team.name}
@@ -127,7 +290,11 @@ export default function Camp() {
                   </div>
                 </div>
                 
-                <div className="flex flex-wrap items-center gap-3 pt-6 border-t border-gray-50 mt-auto">
+                <div
+                  className="flex flex-wrap items-center gap-3 pt-6 border-t border-gray-50 mt-auto"
+                  onClick={(event) => event.stopPropagation()}
+                  onKeyDown={(event) => event.stopPropagation()}
+                >
                   {team.contact.url && (
                     <a href={team.contact.url} target="_blank" rel="noopener noreferrer" className="flex-grow sm:flex-grow-0">
                       <Button className="w-full bg-blue-50 text-blue-600 hover:bg-blue-100 border-0 rounded-xl font-bold">
@@ -171,11 +338,115 @@ export default function Camp() {
         </div>
       )}
 
-      {!isLoading && teams?.length === 0 && (
+      <Dialog open={!!selectedTeamCode} onOpenChange={(isOpen) => (!isOpen ? closeTeamDetail() : undefined)}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedTeam?.name || "팀 정보"}
+              {selectedTeam ? (
+                <span className="text-sm text-gray-500 font-medium">({selectedTeam.memberCount}/{selectedTeam.maxMembers}명)</span>
+              ) : null}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedTeam
+                ? `${selectedTeam.teamCode} · ${getHackathonLabel(selectedTeam.hackathonSlug)}`
+                : "팀 정보를 불러오는 중입니다."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {isSelectedTeamLoading ? (
+            <div className="text-sm text-gray-500 py-2">팀 정보를 불러오는 중입니다...</div>
+          ) : !selectedTeam ? (
+            <div className="text-sm text-red-500 py-2">팀 정보를 찾을 수 없습니다.</div>
+          ) : (
+            <div className="space-y-6">
+              <div>
+                <h4 className="text-sm font-bold text-gray-500 mb-2">팀 소개</h4>
+                <p className="text-gray-700 leading-relaxed">{selectedTeam.intro || "소개가 없습니다."}</p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-gray-500 mb-2">모집 상태</h4>
+                <Badge className={`${selectedTeam.isOpen ? 'bg-emerald-500' : 'bg-red-500'} text-white border-0`}>
+                  {selectedTeam.isOpen ? "모집중" : "모집마감"}
+                </Badge>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-gray-500 mb-2">모집 포지션</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTeam.lookingFor.length > 0 ? (
+                    selectedTeam.lookingFor.map((role) => (
+                      <Badge key={role} variant="outline" className="bg-gray-50 text-gray-700">
+                        {role}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-400 italic">모집 중인 포지션이 없습니다.</span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-gray-500 mb-2">팀원 목록</h4>
+                {selectedTeam.members.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedTeam.members.map((member) => (
+                      <div key={member.userId} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+                        <div>
+                          <p className="font-semibold text-gray-900">{member.userName}</p>
+                          <p className="text-xs text-gray-500">{member.userId}</p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="secondary" className="mb-1">
+                            {member.role === 'LEADER' ? '팀장' : '팀원'}
+                          </Badge>
+                          <p className="text-xs text-gray-500">
+                            참여일: {new Date(member.joinedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">아직 등록된 팀원이 없습니다.</p>
+                )}
+              </div>
+
+              {selectedTeam.contact.url ? (
+                <div className="pt-1">
+                  <a href={selectedTeam.contact.url} target="_blank" rel="noopener noreferrer">
+                    <Button className="w-full bg-blue-600 text-white hover:bg-blue-700">
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      연락 링크 열기
+                    </Button>
+                  </a>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {!isLoading && (teams?.length || 0) === 0 && (
         <div className="text-center py-32 bg-gray-50/50 border-2 border-dashed border-gray-100 rounded-[3rem]">
           <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 mb-2">모집 중인 팀이 없습니다.</h3>
           <p className="text-gray-500 mb-8">첫 번째로 팀 모집글을 작성해보세요!</p>
+          <Link to="/camp/new">
+            <Button className="bg-[#3B82F6] text-white rounded-xl px-8 py-6 text-lg font-bold shadow-xl">
+              <Plus className="w-5 h-5 mr-2" />
+              팀 모집글 생성하기
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {!isLoading && (teams?.length || 0) > 0 && filteredTeams.length === 0 && (
+        <div className="text-center py-32 bg-gray-50/50 border-2 border-dashed border-gray-100 rounded-[3rem]">
+          <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-900 mb-2">조건에 맞는 팀이 없습니다.</h3>
+          <p className="text-gray-500 mb-8">필터를 바꾸거나 팀 모집글을 작성해보세요!</p>
           <Link to="/camp/new">
             <Button className="bg-[#3B82F6] text-white rounded-xl px-8 py-6 text-lg font-bold shadow-xl">
               <Plus className="w-5 h-5 mr-2" />
