@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { 
   getTeams, 
+  getTeamsByLeaderId,
   updateTeam, 
   getTeamByCode, 
   deleteTeam, 
@@ -23,10 +24,19 @@ import {
 import type { Team, TeamInvite, TeamRequest } from "../types/team"
 import { useLog } from "../contexts/LogContext"
 
-export const useTeams = (hackathonSlug?: string) => {
+export const useTeams = (hackathonSlug?: string, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ["teams", hackathonSlug],
-    queryFn: () => getTeams(hackathonSlug)
+    queryFn: () => getTeams(hackathonSlug),
+    enabled: options?.enabled ?? true
+  })
+}
+
+export const useTeamsByLeader = (leaderId: string, options?: { enabled?: boolean }) => {
+  return useQuery({
+    queryKey: ["teams", "leader", leaderId],
+    queryFn: () => getTeamsByLeaderId(leaderId),
+    enabled: (options?.enabled ?? true) && !!leaderId
   })
 }
 
