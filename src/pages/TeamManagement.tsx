@@ -62,16 +62,21 @@ export default function TeamManagement() {
   const handleSendNotice = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.userId) return;
-    if (!teamNotice.trim()) {
+    const trimmedNotice = teamNotice.trim();
+    if (!trimmedNotice) {
       alert('공지 내용을 입력해주세요.');
       return;
     }
+
+    const preview = `[${team.name}] : ${trimmedNotice}`;
+    const shouldSend = window.confirm(`아래 내용으로 팀 공지를 전송할까요?\n\n${preview}`);
+    if (!shouldSend) return;
 
     noticeMutation.mutate(
       {
         teamCode: team.teamCode,
         senderId: user.userId,
-        content: teamNotice,
+        content: trimmedNotice,
       },
       {
         onSuccess: () => {

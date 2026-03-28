@@ -6,7 +6,8 @@ import { useRespondToInvite } from '../../hooks/useTeams'
 import ChatRoomList from './ChatRoomList'
 import ChatMessages from './ChatMessages'
 import ChatInput from './ChatInput'
-import { GENERAL_ROOM_ID } from '../../utils/chatStorage'
+
+const CHATBOT_ROOM_ID = 'chatbot'
 
 type Props = {
   open: boolean
@@ -15,17 +16,19 @@ type Props = {
 
 export default function ChatPanel({ open, onClose }: Props) {
   const { isLoggedIn, user } = useUser()
-  const { chatData, supabaseRooms, addMessage, addSupabaseMessage, leaveDirectRoom, markRoomSeen } = useChat()
+  const { chatData, supabaseRooms, roomActivityAt, unreadRoomCounts, addMessage, addSupabaseMessage, leaveDirectRoom, markRoomSeen } = useChat()
   const respondMutation = useRespondToInvite()
-  const [selectedRoomId, setSelectedRoomId] = useState(GENERAL_ROOM_ID)
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false)
   const [panelWidth, setPanelWidth] = useState(500)
+  const supabaseRoomIds = new Set(supabaseRooms.map((room) => room.id))
 
   // 패널이 열릴 때 현재 DM 방을 읽음 처리
   useEffect(() => {
     if (!open) return
-    const isDirect = supabaseRooms.some((r) => r.id === selectedRoomId && r.room_type === 'direct')
-    if (isDirect) markRoomSeen(selectedRoomId)
+    if (selectedRoomId && supabaseRoomIds.has(selectedRoomId)) {
+      markRoomSeen(selectedRoomId)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
   const [panelHeight, setPanelHeight] = useState(760)
@@ -83,23 +86,73 @@ export default function ChatPanel({ open, onClose }: Props) {
   // 채팅 데이터 없으면 아무것도 렌더링하지 않음
   if (!chatData) return null
 
-  const supabaseRoomIds = new Set(supabaseRooms.map((room) => room.id))
   const directRoomIds = new Set(supabaseRooms.filter((r) => r.room_type === 'direct').map((r) => r.id))
   const supabaseGeneralRoomId = supabaseRooms.find((room) => room.room_type === 'general')?.id
   const mergedRooms = [...chatData.rooms]
+
+  if (!mergedRooms.some((room) => room.id === CHATBOT_ROOM_ID)) {
+    mergedRooms.push({ id: CHATBOT_ROOM_ID, name: '🤖 챗봇', unreadCount: 0 })
+  }
+
   supabaseRooms.forEach((room) => {
     if (!mergedRooms.some((r) => r.id === room.id)) {
       mergedRooms.push({ id: room.id, name: room.name, unreadCount: 0 })
     }
   })
+  const mergedRoomsWithUnread = mergedRooms.map((room) => ({
+    ...room,
+    unreadCount: unreadRoomCounts[room.id] ?? 0
+  }))
 
-  // 로그인 안 했을 때는 챗봇/일반방만 노출
-  const allowedRoomIds = isLoggedIn ? mergedRooms.map(r => r.id) : [GENERAL_ROOM_ID, '4']
-  const filteredRooms = mergedRooms.filter(r => allowedRoomIds.includes(r.id))
-  // 선택된 방이 허용되지 않으면 일반방으로 강제
-  const safeSelectedRoomId = allowedRoomIds.includes(selectedRoomId)
+  const allowedRoomIds = isLoggedIn
+    ? mergedRoomsWithUnread.map((room) => room.id)
+    : [CHATBOT_ROOM_ID]
+  const filteredRooms = mergedRoomsWithUnread.filter(r => allowedRoomIds.includes(r.id))
+
+  const getPinnedRank = (room: { id: string; name: string }) => {
+    if (room.name === '공지') return 0
+    if (room.name === '일반') return 1
+    if (room.id === CHATBOT_ROOM_ID) return 2
+    return 99
+  }
+
+  const sortedRooms = [...filteredRooms].sort((left, right) => {
+    const leftRank = getPinnedRank(left)
+    const rightRank = getPinnedRank(right)
+
+    const leftPinned = leftRank !== 99
+    const rightPinned = rightRank !== 99
+
+    if (leftPinned && rightPinned) {
+      return leftRank - rightRank
+    }
+    if (leftPinned) return -1
+    if (rightPinned) return 1
+
+    const leftActivity = roomActivityAt[left.id] ?? 0
+    const rightActivity = roomActivityAt[right.id] ?? 0
+    return rightActivity - leftActivity
+  })
+
+  const fallbackRoomId = isLoggedIn
+    ? (supabaseGeneralRoomId ?? allowedRoomIds[0] ?? CHATBOT_ROOM_ID)
+    : CHATBOT_ROOM_ID
+  const safeSelectedRoomId = selectedRoomId && allowedRoomIds.includes(selectedRoomId)
     ? selectedRoomId
-    : (isLoggedIn ? (supabaseGeneralRoomId ?? allowedRoomIds[0] ?? GENERAL_ROOM_ID) : GENERAL_ROOM_ID)
+    : fallbackRoomId
+
+  useEffect(() => {
+    if (!safeSelectedRoomId || safeSelectedRoomId !== CHATBOT_ROOM_ID) return
+    const messages = chatData.messages[CHATBOT_ROOM_ID] || []
+    if (messages.length > 0) return
+
+    addMessage(CHATBOT_ROOM_ID, {
+      id: `chatbot-welcome-${Date.now()}`,
+      user: 'Chatbot',
+      text: '안녕하세요! 저는 해커톤 플랫폼 챗봇입니다. 궁금한 내용을 물어보세요.',
+      timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    })
+  }, [addMessage, chatData.messages, safeSelectedRoomId])
 
   const handleInviteResponse = (inviteId: string, status: 'ACCEPTED' | 'REJECTED') => {
     const actionLabel = status === 'ACCEPTED' ? '수락' : '거절'
@@ -110,41 +163,38 @@ export default function ChatPanel({ open, onClose }: Props) {
   }
 
   const handleSendMessage = async (text: string) => {
-    if (supabaseRoomIds.has(safeSelectedRoomId)) {
-      if (!user) return
-      addSupabaseMessage(safeSelectedRoomId, user.userId, user.nickname, text).catch((error) => {
-        console.error('Failed to send Supabase message:', error)
+    if (!safeSelectedRoomId) return
+
+    if (safeSelectedRoomId === CHATBOT_ROOM_ID) {
+      const timestamp = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+      addMessage(CHATBOT_ROOM_ID, {
+        id: `chatbot-user-${Date.now()}`,
+        user: 'You',
+        text,
+        timestamp
       })
-      return
-    }
 
-    const timestamp = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-    const uniqueId = Date.now().toString()
-    const userMessage = {
-      id: uniqueId,
-      user: 'You',
-      text,
-      timestamp
-    }
-    addMessage(safeSelectedRoomId, userMessage)
-
-    if (safeSelectedRoomId === '4') {
       setIsWaitingForResponse(true)
       try {
         const botResponse = await generateChatbotResponseWithFallback(text, user ?? undefined)
         const botAction = getChatbotAction(text)
-        const botMessage = {
-          id: (Date.now() + 1).toString(),
+        addMessage(CHATBOT_ROOM_ID, {
+          id: `chatbot-bot-${Date.now()}`,
           user: 'Chatbot',
           text: botResponse,
           timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
           action: botAction
-        }
-        addMessage(safeSelectedRoomId, botMessage)
+        })
       } finally {
         setIsWaitingForResponse(false)
       }
+      return
     }
+
+    if (!supabaseRoomIds.has(safeSelectedRoomId) || !user) return
+    addSupabaseMessage(safeSelectedRoomId, user.userId, user.nickname, text).catch((error) => {
+      console.error('Failed to send Supabase message:', error)
+    })
   }
 
   return (
@@ -215,18 +265,17 @@ export default function ChatPanel({ open, onClose }: Props) {
             backgroundColor: '#FFFFFF'
           }}>
             <ChatRoomList
-              rooms={filteredRooms}
-              selectedRoomId={safeSelectedRoomId}
+              rooms={sortedRooms}
+              selectedRoomId={safeSelectedRoomId ?? ''}
               directRoomIds={directRoomIds}
               onSelectRoom={(rid) => {
                 if (!allowedRoomIds.includes(rid)) return
                 setSelectedRoomId(rid)
-                const isDirect = directRoomIds.has(rid)
-                if (isDirect) markRoomSeen(rid)
+                if (supabaseRoomIds.has(rid)) markRoomSeen(rid)
               }}
               onLeaveRoom={async (roomId) => {
                 await leaveDirectRoom(roomId)
-                if (selectedRoomId === roomId) setSelectedRoomId(GENERAL_ROOM_ID)
+                if (selectedRoomId === roomId) setSelectedRoomId(null)
               }}
             />
             <div style={{
@@ -235,16 +284,33 @@ export default function ChatPanel({ open, onClose }: Props) {
               flexDirection: 'column',
               backgroundColor: '#FFFFFF'
             }}>
-              <ChatMessages
-                messages={chatData.messages[safeSelectedRoomId] || []}
-                onInviteResponse={handleInviteResponse}
-                respondingInviteId={respondMutation.isPending ? (respondMutation.variables?.inviteId ?? null) : null}
-              />
-              <ChatInput 
-                onSend={handleSendMessage} 
-                isLoading={safeSelectedRoomId === '4' && isWaitingForResponse}
-                isChatbot={safeSelectedRoomId === '4'}
-              />
+              {safeSelectedRoomId ? (
+                <>
+                  <ChatMessages
+                    messages={chatData.messages[safeSelectedRoomId] || []}
+                    onInviteResponse={handleInviteResponse}
+                    respondingInviteId={respondMutation.isPending ? (respondMutation.variables?.inviteId ?? null) : null}
+                  />
+                  <ChatInput
+                    onSend={handleSendMessage}
+                    isLoading={safeSelectedRoomId === CHATBOT_ROOM_ID && isWaitingForResponse}
+                    isChatbot={safeSelectedRoomId === CHATBOT_ROOM_ID}
+                  />
+                </>
+              ) : (
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 24,
+                  color: '#64748b',
+                  fontSize: 14,
+                  textAlign: 'center'
+                }}>
+                  {isLoggedIn ? '참여 중인 채팅방이 없습니다.' : '로그인 후 Supabase 채팅방을 이용할 수 있습니다.'}
+                </div>
+              )}
             </div>
           </div>
         </div>
