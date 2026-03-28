@@ -9,9 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { allUsers, useUser } from '../contexts/UserContext'
 import { normalizedHackathons as hackathonData } from '../lib/hackathonData'
 import { useDmRequests } from '../contexts/DmRequestContext'
+import { useChat } from '../contexts/ChatContext'
 
 interface RankingUser {
   rank: number
+  id: string
   userId: string
   nickname: string
   points: number
@@ -39,17 +41,91 @@ const FILTER_SHOW_LIMIT = 8
 function UserInfoModal({ user, open, onClose }: { user: RankingUser | null; open: boolean; onClose: () => void }) {
   const { user: currentUser } = useUser()
   const { sendDmRequest, hasSentPendingRequest } = useDmRequests()
+  const { getOrCreateDirectRoomWithUser, findDirectRoomWithUser } = useChat()
+  const [isLoading, setIsLoading] = useState(false)
+  const [existingDirectRoomId, setExistingDirectRoomId] = useState<string | null>(null)
+
+  const normalizeIdentity = (value?: string | null) => (value ?? '').trim().toLowerCase()
+  const targetUserId = user?.userId ?? ''
+  const targetUserInternalId = user?.id ?? ''
+  const isSelf = currentUser
+    ? [normalizeIdentity(currentUser.userId), normalizeIdentity(currentUser.id)].some(
+        (currentIdentity) =>
+          currentIdentity.length > 0 &&
+          (currentIdentity === normalizeIdentity(targetUserId) || currentIdentity === normalizeIdentity(targetUserInternalId))
+      )
+    : false
+  const alreadySent = currentUser && targetUserId ? hasSentPendingRequest(currentUser.userId, targetUserId) : false
+
+  useEffect(() => {
+    if (!open || !currentUser || !user || isSelf) {
+      setExistingDirectRoomId(null)
+      return
+    }
+
+    let cancelled = false
+
+    void findDirectRoomWithUser(currentUser.userId, user.userId)
+      .then((roomId) => {
+        if (!cancelled) {
+          setExistingDirectRoomId(roomId)
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to resolve direct room in Rankings modal:', error)
+        if (!cancelled) {
+          setExistingDirectRoomId(null)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentUser, findDirectRoomWithUser, isSelf, open, user])
+
+  const hasExistingDirectRoom = Boolean(existingDirectRoomId)
+
+  const handleChatRequest = async () => {
+    if (!currentUser || !user) return
+    try {
+      setIsLoading(true)
+      await sendDmRequest(currentUser.userId, currentUser.nickname, user.userId, user.nickname)
+      alert('채팅 신청을 보냈습니다!')
+    } catch (error) {
+      console.error('Failed to send chat request:', error)
+      alert(error instanceof Error ? error.message : '채팅 신청 전송에 실패했습니다.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleNavigateToChat = async () => {
+    if (!currentUser || !user) return
+    setIsLoading(true)
+    try {
+      const roomId = await getOrCreateDirectRoomWithUser(
+        currentUser.userId,
+        currentUser.nickname,
+        user.userId,
+        user.nickname
+      )
+      if (roomId) {
+        // sessionStorage에 room id 저장해서 ChatPanel이 감지하도록
+        sessionStorage.setItem('nextDirectRoomId', roomId)
+        // ChatPanel을 open하도록 신호
+        sessionStorage.setItem('openChatPanel', 'true')
+        // 커스텀 이벤트 발생 (같은 탭에서 변경사항 감지용)
+        window.dispatchEvent(new Event('sessionStorageChanged'))
+        onClose()
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   if (!user) return null
 
   const activityPct = Math.round(user.activityScore * 100)
-  const isSelf = currentUser?.userId === user.userId
-  const alreadySent = currentUser ? hasSentPendingRequest(currentUser.userId, user.userId) : false
-
-  const handleChatRequest = () => {
-    if (!currentUser) return
-    sendDmRequest(currentUser.userId, currentUser.nickname, user.userId, user.nickname)
-  }
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -157,19 +233,32 @@ function UserInfoModal({ user, open, onClose }: { user: RankingUser | null; open
             </div>
           )}
 
-          {/* 쳄팅 신청 버튼 */}
+          {/* 채팅 버튼 */}
           {currentUser && !isSelf && (
-            <Button
-              onClick={handleChatRequest}
-              disabled={alreadySent}
-              variant={alreadySent ? 'outline' : 'default'}
-              className={`w-full mt-1 gap-2 ${
-                alreadySent ? 'text-gray-400 border-gray-200' : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-              }`}
-            >
-              <MessageCircle className="w-4 h-4" />
-              {alreadySent ? '✓ 체팅 신청함' : '채팅 신청하기'}
-            </Button>
+            <>
+              {hasExistingDirectRoom ? (
+                <Button
+                  onClick={handleNavigateToChat}
+                  disabled={isLoading}
+                  className="w-full mt-1 gap-2 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {isLoading ? '로딩 중...' : '채팅방으로 이동하기'}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleChatRequest}
+                  disabled={alreadySent || isLoading}
+                  variant={alreadySent ? 'outline' : 'default'}
+                  className={`w-full mt-1 gap-2 ${
+                    alreadySent || isLoading ? 'text-gray-400 border-gray-200' : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  }`}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {isLoading ? '전송 중...' : alreadySent ? '✓ 채팅 신청함' : '채팅 신청하기'}
+                </Button>
+              )}
+            </>
           )}
         </div>
       </DialogContent>
@@ -242,6 +331,7 @@ export default function Rankings() {
 
       const toEntry = (user: typeof sorted[0], index: number, pointMultiplier: number): RankingUser => ({
         rank: index + 1,
+        id: user.id,
         userId: user.userId,
         nickname: user.nickname,
         points: Math.floor(user.points * pointMultiplier),

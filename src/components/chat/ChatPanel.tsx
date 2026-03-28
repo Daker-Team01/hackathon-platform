@@ -9,6 +9,7 @@ import ChatMessages from './ChatMessages'
 import ChatInput from './ChatInput'
 
 const CHATBOT_ROOM_ID = 'chatbot'
+const NEXT_DIRECT_ROOM_ID_KEY = 'nextDirectRoomId'
 
 type Props = {
   open: boolean
@@ -24,6 +25,15 @@ export default function ChatPanel({ open, onClose }: Props) {
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false)
   const [panelWidth, setPanelWidth] = useState(500)
   const supabaseRoomIds = new Set(supabaseRooms.map((room) => room.id))
+
+  // sessionStorage에서 자동으로 선택할 room id 확인
+  useEffect(() => {
+    const nextRoomId = sessionStorage.getItem(NEXT_DIRECT_ROOM_ID_KEY)
+    if (nextRoomId) {
+      setSelectedRoomId(nextRoomId)
+      sessionStorage.removeItem(NEXT_DIRECT_ROOM_ID_KEY)
+    }
+  }, [])
 
   // 패널이 열릴 때 현재 DM 방을 읽음 처리
   useEffect(() => {

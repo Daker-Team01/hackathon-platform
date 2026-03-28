@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode, useEffect, useRef } from 'react'
+import { supabase } from '../lib/supabase'
 import {
   clearLegacyChatStorage,
   createEmptyChatData,
@@ -48,6 +49,8 @@ type ChatContextType = {
   addGeneralSystemMessage: (content: string) => Promise<void>
   addSupabaseMessage: (roomId: string, userId: string, nickname: string, content: string) => Promise<void>
   openDirectRoom: (fromUserId: string, fromNickname: string, toUserId: string, toNickname: string) => Promise<string | null>
+  findDirectRoomWithUser: (userId1: string, userId2: string) => Promise<string | null>
+  getOrCreateDirectRoomWithUser: (userId1: string, nickname1: string, userId2: string, nickname2: string) => Promise<string | null>
   leaveDirectRoom: (roomId: string) => Promise<void>
   markRoomSeen: (roomId: string) => void
   initializeChatData: (username: string, displayName?: string, supabaseUserId?: string) => void
@@ -621,6 +624,65 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     if (userId) setLastSeenAt(userId, roomId, new Date().toISOString())
   }
 
+  // 두 유저가 함께 속한 활성 direct room 탐색
+  const findDirectRoomWithUser = async (userId1: string, userId2: string): Promise<string | null> => {
+    if (!userId1 || !userId2 || userId1 === userId2) return null
+
+    try {
+      const { data: commonRooms, error } = await supabase
+        .from('chat_members')
+        .select('room_id')
+        .eq('user_id', userId1)
+
+      if (error) throw error
+
+      if (commonRooms && commonRooms.length > 0) {
+        const roomIds = commonRooms.map((r) => r.room_id)
+        const { data: directRooms } = await supabase
+          .from('chat_rooms')
+          .select('*')
+          .in('id', roomIds)
+          .eq('room_type', 'direct')
+          .eq('is_active', true)
+
+        if (directRooms && directRooms.length > 0) {
+          for (const room of directRooms) {
+            const { data: members } = await supabase
+              .from('chat_members')
+              .select('user_id')
+              .eq('room_id', room.id)
+              .eq('user_id', userId2)
+
+            if (members && members.length > 0) {
+              return room.id
+            }
+          }
+        }
+      }
+
+      return null
+    } catch (error) {
+      console.error('Failed to find direct room:', error)
+      return null
+    }
+  }
+
+  // 두 유저 간의 DM 방 찾거나 생성
+  const getOrCreateDirectRoomWithUser = async (userId1: string, nickname1: string, userId2: string, nickname2: string): Promise<string | null> => {
+    try {
+      const existingRoomId = await findDirectRoomWithUser(userId1, userId2)
+      if (existingRoomId) {
+        return existingRoomId
+      }
+
+      const newRoomId = await openDirectRoom(userId1, nickname1, userId2, nickname2)
+      return newRoomId
+    } catch (error) {
+      console.error('Failed to get or create direct room:', error)
+      return null
+    }
+  }
+
   const openDirectRoom = async (
     fromUserId: string,
     fromNickname: string,
@@ -698,6 +760,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         addGeneralSystemMessage,
         addSupabaseMessage,
         openDirectRoom,
+        findDirectRoomWithUser,
+        getOrCreateDirectRoomWithUser,
         leaveDirectRoom,
         markRoomSeen,
         initializeChatData,
