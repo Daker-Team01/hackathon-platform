@@ -86,6 +86,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const membershipUnsubscribeRef = useRef<(() => void) | null>(null)
   const teamRoomLifecycleUnsubscribeRef = useRef<(() => void) | null>(null)
   const teamChatMappingUnsubscribeRef = useRef<(() => void) | null>(null)
+  const roomSyncIntervalRef = useRef<number | null>(null)
   const supabaseRoomIdsRef = useRef<Set<string>>(new Set())
   const supabaseRoomsRef = useRef<SupabaseChatRoom[]>([])
   const currentSupabaseUserIdRef = useRef<string>('')
@@ -394,12 +395,25 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     // Supabase 채팅방 로드 (기본은 username, 있으면 userId 우선)
     currentSupabaseUserIdRef.current = resolvedUserId
+
+    if (roomSyncIntervalRef.current !== null) {
+      window.clearInterval(roomSyncIntervalRef.current)
+      roomSyncIntervalRef.current = null
+    }
+
     void (async () => {
       await ensureGeneralRoomForUser(resolvedUserId, displayName)
       await ensureNoticeRoomForUser(resolvedUserId, displayName)
       await flushGeneralNotificationQueueToSupabase(resolvedUserId, displayName)
       await loadSupabaseRooms(resolvedUserId)
     })()
+
+    // Realtime 누락/지연 대비: 주기적으로 방/메시지 동기화
+    roomSyncIntervalRef.current = window.setInterval(() => {
+      const currentUserId = currentSupabaseUserIdRef.current
+      if (!currentUserId) return
+      void loadSupabaseRooms(currentUserId)
+    }, 3000)
 
     // 유저의 chat_members 변경(초대 수락/강퇴 등)을 실시간 반영
     if (membershipUnsubscribeRef.current) {
@@ -457,6 +471,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     if (teamChatMappingUnsubscribeRef.current) {
       teamChatMappingUnsubscribeRef.current()
       teamChatMappingUnsubscribeRef.current = null
+    }
+
+    if (roomSyncIntervalRef.current !== null) {
+      window.clearInterval(roomSyncIntervalRef.current)
+      roomSyncIntervalRef.current = null
     }
 
     teamChatMappingUnsubscribeRef.current = subscribeToTeamChatMappingChanges(
@@ -543,6 +562,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       if (teamChatMappingUnsubscribeRef.current) {
         teamChatMappingUnsubscribeRef.current()
         teamChatMappingUnsubscribeRef.current = null
+      }
+      if (roomSyncIntervalRef.current !== null) {
+        window.clearInterval(roomSyncIntervalRef.current)
+        roomSyncIntervalRef.current = null
       }
       supabaseRoomIdsRef.current = new Set()
       supabaseRoomsRef.current = []

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { router } from '../../router/router'
+import { useUser } from '../../contexts/UserContext'
 import type { ChatMessage } from '../../utils/chatStorage'
 
 type Props = {
@@ -51,11 +52,31 @@ const formatMessage = (text: string): string => {
 const INVITE_STATUS_META = {
   PENDING: { label: '응답 대기', backgroundColor: '#fef3c7', color: '#92400e' },
   ACCEPTED: { label: '수락됨', backgroundColor: '#dcfce7', color: '#166534' },
-  REJECTED: { label: '거절됨', backgroundColor: '#fee2e2', color: '#991b1b' }
+  REJECTED: { label: '거절됨', backgroundColor: '#fee2e2', color: '#991b1b' },
+  CANCELED: { label: '취소됨', backgroundColor: '#e2e8f0', color: '#334155' }
 } as const
 
 export default function ChatMessages({ messages, onInviteResponse, respondingInviteId }: Props) {
+  const { user: currentUser } = useUser()
+  const currentUserId = currentUser?.userId ?? ''
   const containerRef = useRef<HTMLDivElement>(null)
+
+  const senderBubblePalette = [
+    { background: '#EEF2FF', border: '#C7D2FE', color: '#1E1B4B' },
+    { background: '#ECFDF3', border: '#BBF7D0', color: '#052E16' },
+    { background: '#FEF3C7', border: '#FDE68A', color: '#78350F' },
+    { background: '#FCE7F3', border: '#F9A8D4', color: '#831843' },
+    { background: '#E0F2FE', border: '#7DD3FC', color: '#0C4A6E' },
+    { background: '#F3E8FF', border: '#D8B4FE', color: '#581C87' }
+  ]
+
+  const getSenderStyle = (key: string) => {
+    let hash = 0
+    for (let i = 0; i < key.length; i += 1) {
+      hash = (hash * 31 + key.charCodeAt(i)) >>> 0
+    }
+    return senderBubblePalette[hash % senderBubblePalette.length]
+  }
 
   // 새 메시지가 추가될 때 자동으로 밑으로 스크롤
   useEffect(() => {
@@ -89,12 +110,18 @@ export default function ChatMessages({ messages, onInviteResponse, respondingInv
           💬 메시지를 입력하세요
         </div>
       ) : (
-        messages.map((msg) => (
+        messages.map((msg) => {
+          const isMine = (currentUserId.length > 0 && msg.userId === currentUserId) || msg.user === 'You'
+          const senderKey = msg.userId || msg.user || 'unknown'
+          const senderStyle = getSenderStyle(senderKey)
+          const inviteStatusMeta = msg.invite ? INVITE_STATUS_META[msg.invite.status] : null
+
+          return (
           <div
             key={msg.id}
             style={{
               display: "flex",
-              justifyContent: msg.user === "You" ? "flex-end" : "flex-start",
+              justifyContent: isMine ? "flex-end" : "flex-start",
               marginBottom: 4
             }}
           >
@@ -102,18 +129,18 @@ export default function ChatMessages({ messages, onInviteResponse, respondingInv
               maxWidth: "75%",
               padding: "12px 14px",
               borderRadius: 12,
-              background: msg.user === "You"
-                ? "linear-gradient(135deg, #3B82F6 0%, #0EA5E9 100%)"
-                : (msg.invite ? "#EFF6FF" : "#F1F5F9"),
-              color: msg.user === "You" ? "#FFFFFF" : "#0f172a",
-              border: msg.user === "You" ? "none" : "1px solid #E2E8F0",
+              background: isMine
+                ? "linear-gradient(135deg, #2563EB 0%, #0EA5E9 100%)"
+                : (msg.invite ? '#EFF6FF' : senderStyle.background),
+              color: isMine ? "#FFFFFF" : senderStyle.color,
+              border: isMine ? "none" : `1px solid ${msg.invite ? '#BFDBFE' : senderStyle.border}`,
               boxShadow: "0 2px 8px rgba(15, 23, 42, 0.08)",
               wordWrap: "break-word"
             }}>
               <div style={{
                 fontSize: 12,
                 marginBottom: 6,
-                opacity: msg.user === "You" ? 0.9 : 0.65,
+                opacity: isMine ? 0.9 : 0.7,
                 fontWeight: 500
               }}>
                 {msg.user} · {msg.timestamp}
@@ -135,11 +162,11 @@ export default function ChatMessages({ messages, onInviteResponse, respondingInv
                       borderRadius: 999,
                       fontSize: 11,
                       fontWeight: 700,
-                      backgroundColor: INVITE_STATUS_META[msg.invite.status].backgroundColor,
-                      color: INVITE_STATUS_META[msg.invite.status].color
+                      backgroundColor: inviteStatusMeta?.backgroundColor ?? '#e2e8f0',
+                      color: inviteStatusMeta?.color ?? '#334155'
                     }}
                   >
-                    {INVITE_STATUS_META[msg.invite.status].label}
+                    {inviteStatusMeta?.label ?? '상태 미정'}
                   </span>
 
                   {msg.invite.status === 'PENDING' && onInviteResponse && (
@@ -209,7 +236,7 @@ export default function ChatMessages({ messages, onInviteResponse, respondingInv
               )}
             </div>
           </div>
-        ))
+        )})
       )}
     </div>
   )
