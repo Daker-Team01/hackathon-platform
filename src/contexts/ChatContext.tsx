@@ -29,6 +29,7 @@ import {
   subscribeToUserMemberships,
   subscribeToDmRoomMembers,
   ensureGeneralRoomForUser,
+  ensureNoticeRoomForUser,
   fetchUserChatRooms,
   fetchRoomMessages,
   sendSystemMessage,
@@ -351,6 +352,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     if (isSupabaseUser) {
       void (async () => {
         await ensureGeneralRoomForUser(resolvedUserId, displayName)
+        await ensureNoticeRoomForUser(resolvedUserId, displayName)
         await flushGeneralNotificationQueueToSupabase(resolvedUserId, displayName)
         await loadSupabaseRooms(resolvedUserId)
       })()

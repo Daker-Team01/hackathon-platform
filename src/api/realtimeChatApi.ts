@@ -133,12 +133,17 @@ export const createChatRoom = async (
 /**
  * 활성 일반 채팅방 1개 조회
  */
-export const fetchGeneralChatRoom = async (): Promise<SupabaseChatRoom | null> => {
+export const fetchPersonalChannelRoom = async (
+  userId: string,
+  roomName: '일반' | '공지'
+): Promise<SupabaseChatRoom | null> => {
   try {
     const { data, error } = await supabase
       .from('chat_rooms')
       .select('*')
       .eq('room_type', 'general')
+      .eq('created_by', userId)
+      .eq('name', roomName)
       .eq('is_active', true)
       .order('created_at', { ascending: true })
       .limit(1)
@@ -147,23 +152,24 @@ export const fetchGeneralChatRoom = async (): Promise<SupabaseChatRoom | null> =
     if (!data || data.length === 0) return null
     return data[0] as SupabaseChatRoom
   } catch (error) {
-    console.error('Failed to fetch general chat room:', error)
+    console.error(`Failed to fetch personal ${roomName} room:`, error)
     return null
   }
 }
 
 /**
- * 유저의 일반 채팅방 접근 보장 (방 생성 + 멤버 활성화)
+ * 유저의 개인 채널 접근 보장 (방 생성 + 멤버 활성화)
  */
-export const ensureGeneralRoomForUser = async (
+export const ensurePersonalChannelRoomForUser = async (
   userId: string,
-  nickname: string
+  nickname: string,
+  roomName: '일반' | '공지'
 ): Promise<SupabaseChatRoom | null> => {
   try {
-    let room = await fetchGeneralChatRoom()
+    let room = await fetchPersonalChannelRoom(userId, roomName)
 
     if (!room) {
-      room = await createChatRoom('일반', 'general', undefined, 'system')
+      room = await createChatRoom(roomName, 'general', undefined, userId)
     }
 
     if (!room) return null
@@ -171,9 +177,23 @@ export const ensureGeneralRoomForUser = async (
     await addChatMember(room.id, userId, nickname)
     return room
   } catch (error) {
-    console.error('Failed to ensure general room for user:', error)
+    console.error(`Failed to ensure personal ${roomName} room for user:`, error)
     return null
   }
+}
+
+export const ensureGeneralRoomForUser = async (
+  userId: string,
+  nickname: string
+): Promise<SupabaseChatRoom | null> => {
+  return ensurePersonalChannelRoomForUser(userId, nickname, '일반')
+}
+
+export const ensureNoticeRoomForUser = async (
+  userId: string,
+  nickname: string
+): Promise<SupabaseChatRoom | null> => {
+  return ensurePersonalChannelRoomForUser(userId, nickname, '공지')
 }
 
 /**
@@ -801,6 +821,13 @@ export const fetchUserChatRooms = async (userId: string) => {
       .map((row) => (row as { chat_rooms?: SupabaseChatRoom | SupabaseChatRoom[] }).chat_rooms)
       .flatMap((room) => (Array.isArray(room) ? room : room ? [room] : []))
       .filter((room): room is SupabaseChatRoom => Boolean(room))
+      .filter((room) => {
+        if (room.room_type !== 'general') return true
+        if (room.name === '일반' || room.name === '공지') {
+          return room.created_by === userId
+        }
+        return true
+      })
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
 
     return rooms
