@@ -8,6 +8,7 @@ import {
   addChatMember,
   removeChatMember,
   addTeamMembersToChatRoom,
+  ensureNoticeRoomForUser,
   sendSystemMessage,
   deactivateTeamChatRoom
 } from "./realtimeChatApi"
@@ -583,4 +584,25 @@ export const kickMember = async (teamCode: string, userId: string): Promise<Team
   )
 
   return team
+}
+
+export const sendTeamNotice = async (teamCode: string, senderId: string, content: string): Promise<void> => {
+  const trimmedContent = content.trim()
+  if (!trimmedContent) {
+    throw new Error('공지 내용을 입력해주세요.')
+  }
+
+  const team = await getTeamByCodeFromDb(teamCode)
+  if (!team) throw new Error('Team not found')
+  if (team.leaderId !== senderId) throw new Error('팀장만 공지를 보낼 수 있습니다.')
+
+  const message = `[${team.name}] : ${trimmedContent}`
+
+  await Promise.all(
+    team.members.map(async (member) => {
+      const room = await ensureNoticeRoomForUser(member.userId, member.userName)
+      if (!room) return
+      await sendSystemMessage(room.id, message)
+    })
+  )
 }

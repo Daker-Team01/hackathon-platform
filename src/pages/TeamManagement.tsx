@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTeam, useKickMember, useInviteUser, useTeamInvites } from '../hooks/useTeams';
+import { useTeam, useKickMember, useInviteUser, useSendTeamNotice, useTeamInvites } from '../hooks/useTeams';
 import { useUser, allUsers } from '../contexts/UserContext';
 import { useState } from 'react';
 import { Button } from '../components/ui/button';
@@ -12,13 +12,15 @@ export default function TeamManagement() {
   const { data: invites } = useTeamInvites(teamCode || '');
   const kickMutation = useKickMember();
   const inviteMutation = useInviteUser();
+  const noticeMutation = useSendTeamNotice();
 
   const [inviteUserName, setInviteUserName] = useState('');
+  const [teamNotice, setTeamNotice] = useState('');
 
   if (isLoading) return <div className="p-8">Loading...</div>;
   if (!team) return <div className="p-8 text-center text-muted-foreground">Team not found.</div>;
 
-  const isLeader = team.leaderId === user?.id;
+  const isLeader = team.leaderId === user?.userId;
 
   const handleKick = (userId: string) => {
     if (window.confirm('정말 이 팀원을 내보내시겠습니까?')) {
@@ -56,6 +58,32 @@ export default function TeamManagement() {
       }
     });
   };
+
+  const handleSendNotice = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.userId) return;
+    if (!teamNotice.trim()) {
+      alert('공지 내용을 입력해주세요.');
+      return;
+    }
+
+    noticeMutation.mutate(
+      {
+        teamCode: team.teamCode,
+        senderId: user.userId,
+        content: teamNotice,
+      },
+      {
+        onSuccess: () => {
+          alert('팀 공지를 보냈습니다.');
+          setTeamNotice('');
+        },
+        onError: (error) => {
+          alert(error instanceof Error ? error.message : '팀 공지 전송에 실패했습니다.');
+        }
+      }
+    )
+  }
 
   const inputClasses = "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
 
@@ -102,6 +130,23 @@ export default function TeamManagement() {
 
       {isLeader && (
         <section className="p-6 border rounded-xl bg-background space-y-6">
+          <div className="space-y-3">
+            <h2 className="text-xl font-semibold">팀 공지 보내기</h2>
+            <form onSubmit={handleSendNotice} className="space-y-3">
+              <textarea
+                placeholder="팀원 전체의 공지 채팅방으로 보낼 메세지를 입력하세요"
+                value={teamNotice}
+                onChange={(e) => setTeamNotice(e.target.value)}
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              <div className="flex justify-end">
+                <Button type="submit" disabled={noticeMutation.isPending}>
+                  {noticeMutation.isPending ? '전송 중...' : '공지 보내기'}
+                </Button>
+              </div>
+            </form>
+          </div>
+
           <h2 className="text-xl font-semibold">새 팀원 초대</h2>
           <form onSubmit={handleInvite} className="flex gap-2">
             <input 

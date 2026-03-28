@@ -10,7 +10,8 @@ import {
   getInvitesByTeam, 
   clearResolvedInvitesForUser,
   respondToInvite, 
-  kickMember 
+  kickMember,
+  sendTeamNotice
 } from "../api/teamApi"
 import type { Team, TeamInvite } from "../types/team"
 import { useLog } from "../contexts/LogContext"
@@ -137,5 +138,12 @@ export const useKickMember = () => {
       queryClient.invalidateQueries({ queryKey: ["teams"] })
       queryClient.invalidateQueries({ queryKey: ["team", variables.teamCode] })
     }
+  })
+}
+
+export const useSendTeamNotice = () => {
+  return useMutation({
+    mutationFn: ({ teamCode, senderId, content }: { teamCode: string; senderId: string; content: string }) =>
+      sendTeamNotice(teamCode, senderId, content)
   })
 }
