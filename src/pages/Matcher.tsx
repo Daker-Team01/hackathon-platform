@@ -45,7 +45,7 @@ type RawTeam = (typeof teamsData)[number]
 
 const sourceTypeOptions: Array<{ value: DocType; label: string; icon: typeof Users }> = [
   { value: 'team', label: '팀 기준으로 팀원 찾기', icon: Users },
-  { value: 'user', label: '팀원 기준으로 팀 찾기', icon: UserRound },
+  { value: 'user', label: '나와 맞는 팀 찾기', icon: UserRound },
 ]
 
 const formatList = (values?: string[]) => {
@@ -155,15 +155,15 @@ export default function Matcher() {
     void loadDocuments()
   }, [])
 
-  const sourceDocuments = useMemo(
-    () => documents.filter((doc) => doc.type === 'user'),
-    [documents],
-  )
-
-  const selectedSource = useMemo(
-    () => sourceDocuments.find((doc) => doc.source_id === selectedSourceId) ?? null,
-    [selectedSourceId, sourceDocuments],
-  )
+  const selectedSource = useMemo(() => {
+    if (sourceType === 'team') {
+      // 팀 모드: profile_documents에서 해당 팀 조회
+      return documents.find((doc) => doc.type === 'team' && doc.source_id === selectedSourceId) ?? null
+    } else {
+      // 유저 모드: profile_documents에서 내 프로필 조회
+      return documents.find((doc) => doc.type === 'user' && doc.source_id === selectedSourceId) ?? null
+    }
+  }, [selectedSourceId, documents, sourceType])
 
   const targetType: DocType = sourceType === 'team' ? 'user' : 'team'
 
@@ -192,18 +192,13 @@ export default function Matcher() {
         recordEvent('matcher_profile_select', sourceType, firstTeamCode, { actionType: 'autoSelect' })
       }
     } else {
-      // 유저 모드: sourceDocuments 기준
-      if (sourceDocuments.length === 0) {
-        setSelectedSourceId('')
-        return
-      }
-      if (!sourceDocuments.some((doc) => doc.source_id === selectedSourceId)) {
-        const firstSourceId = sourceDocuments[0].source_id
-        setSelectedSourceId(firstSourceId)
-        recordEvent('matcher_profile_select', sourceType, firstSourceId, { actionType: 'autoSelect' })
+      // 유저 모드: 로그인 유저 자동 설정
+      if (user?.userId && selectedSourceId !== user.userId) {
+        setSelectedSourceId(user.userId)
+        recordEvent('matcher_profile_select', sourceType, user.userId, { actionType: 'autoSelect' })
       }
     }
-  }, [selectedSourceId, sourceDocuments, sourceType, myLeaderTeams, recordEvent])
+  }, [selectedSourceId, sourceType, myLeaderTeams, user?.userId, recordEvent])
 
   const runMatch = async () => {
     if (!selectedSource) return
@@ -301,7 +296,7 @@ export default function Matcher() {
                       </div>
                       <div>
                         <div className="font-semibold text-slate-900">{option.label}</div>
-                        <div className="text-xs text-slate-500">{option.value === 'team' ? '팀 기준 추천' : '팀원 기준 추천'}</div>
+                        <div className="text-xs text-slate-500">{option.value === 'team' ? '팀 기준 추천' : '내 기준 추천'}</div>
                       </div>
                     </button>
                   )
@@ -309,10 +304,10 @@ export default function Matcher() {
               </div>
             </div>
 
-            <div>
-              <p className="mb-2 text-sm font-semibold text-slate-700">선택한 프로필</p>
-              {sourceType === 'team' ? (
-                myLeaderTeams.length === 0 ? (
+            {sourceType === 'team' && (
+              <div>
+                <p className="mb-2 text-sm font-semibold text-slate-700">선택한 팀</p>
+                {myLeaderTeams.length === 0 ? (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                     선택 가능한 팀이 없습니다. 팀장으로 소속된 팀만 선택할 수 있습니다.
                   </div>
@@ -328,32 +323,13 @@ export default function Matcher() {
                   >
                     {myLeaderTeams.map((team) => (
                       <option key={team.teamCode} value={team.teamCode}>
-                        {team.name} ({team.teamCode})
+                        {team.name}
                       </option>
                     ))}
                   </select>
-                )
-              ) : (
-                <select
-                  value={selectedSourceId}
-                  onChange={(event) => {
-                    const newSourceId = event.target.value
-                    setSelectedSourceId(newSourceId)
-                    recordEvent('matcher_profile_select', sourceType, newSourceId, { actionType: 'profileSelect' })
-                  }}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-[#3B82F6]/40 focus:ring-4 focus:ring-[#3B82F6]/10"
-                >
-                  {sourceDocuments.map((doc) => {
-                    const label = userMap.get(doc.source_id)?.nickname ?? doc.source_id
-                    return (
-                      <option key={doc.source_id} value={doc.source_id}>
-                        {label} ({doc.source_id})
-                      </option>
-                    )
-                  })}
-                </select>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             <div>
               <p className="mb-2 text-sm font-semibold text-slate-700">해커톤 필터</p>
@@ -402,21 +378,45 @@ export default function Matcher() {
 
         <div className="space-y-8">
           <Card className="border border-slate-200/80 bg-white p-7 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#3B82F6]">선택한 프로필</p>
-                <h2 className="text-2xl font-bold text-slate-900">선택한 프로필</h2>
-              </div>
-              {selectedSource && (
-                <Badge className="rounded-full bg-[#3B82F6]/10 px-3 py-1 text-[#2563EB] hover:bg-[#3B82F6]/10">
-                  {selectedSource.type === 'team' ? '팀' : '팀원'} · {selectedSource.source_id}
-                </Badge>
-              )}
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-slate-900">{sourceType === 'user' ? '내 프로필' : '선택한 팀'}</h2>
+              <p className="text-sm text-slate-600 mt-1">
+                {sourceType === 'user' ? '나와 잘 맞는 팀을 찾아드려요' : '매칭 기준이 될 팀이에요'}
+              </p>
             </div>
 
             {loadingDocs ? (
               <p className="text-sm text-slate-500">추천 데이터를 불러오는 중입니다.</p>
+            ) : sourceType === 'team' ? (
+              // 팀 모드: myLeaderTeams에서 선택된 팀 표시
+              (() => {
+                const selectedTeam = myLeaderTeams.find((t) => t.teamCode === selectedSourceId)
+                return selectedTeam ? (
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+                    <div className="mb-4 flex flex-wrap items-center gap-2">
+                      {selectedTeam.hackathonSlug && (
+                        <Badge className="rounded-full bg-[#EAF6FF] px-3 py-1 text-[#2563EB] hover:bg-[#EAF6FF]">
+                          {selectedTeam.hackathonSlug}
+                        </Badge>
+                      )}
+                      <Badge className={`rounded-full px-3 py-1 hover:bg-transparent ${selectedTeam.isOpen ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
+                        {selectedTeam.isOpen ? '모집중' : '모집 마감'}
+                      </Badge>
+                    </div>
+                    <div className="space-y-2 text-sm text-slate-600">
+                      <p><span className="font-semibold text-slate-900">팀명</span> {selectedTeam.name}</p>
+                      <p><span className="font-semibold text-slate-900">소개</span> {selectedTeam.intro || '상세 정보 없음'}</p>
+                      <p><span className="font-semibold text-slate-900">모집 역할</span> {formatList(selectedTeam.lookingFor)}</p>
+                      <p><span className="font-semibold text-slate-900">팀원</span> {selectedTeam.memberCount}/{selectedTeam.maxMembers}명</p>
+                      <p><span className="font-semibold text-slate-900">태그</span> {formatList(selectedTeam.tags)}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">왼쪽에서 팀을 선택해주세요.</p>
+                )
+              })()
             ) : selectedSource ? (
+              // 유저 모드: profile_documents에서 내 프로필 표시
               <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
                 <div className="mb-4 flex flex-wrap items-center gap-2">
                   <Badge className="rounded-full bg-white px-3 py-1 text-slate-600 hover:bg-white">
@@ -427,16 +427,11 @@ export default function Matcher() {
                       {selectedSource.hackathon_slug}
                     </Badge>
                   )}
-                  {selectedSource.type === 'team' && selectedSource.is_open !== null && (
-                    <Badge className={`rounded-full px-3 py-1 hover:bg-transparent ${selectedSource.is_open ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
-                      {selectedSource.is_open ? '모집중' : '모집 마감'}
-                    </Badge>
-                  )}
                 </div>
                 <SourceSummary doc={selectedSource} userMap={userMap} teamMap={teamMap} />
               </div>
             ) : (
-              <p className="text-sm text-slate-500">왼쪽에서 기준이 될 프로필을 골라주세요.</p>
+              <p className="text-sm text-slate-500">로그인이 필요합니다.</p>
             )}
           </Card>
 

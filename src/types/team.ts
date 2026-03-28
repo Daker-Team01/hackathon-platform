@@ -43,6 +43,7 @@ export interface Team {
   maxMembers: number
   members: TeamMember[]
   lookingFor: string[]
+  tags?: string[]
   contact: {
     type: string
     url: string
