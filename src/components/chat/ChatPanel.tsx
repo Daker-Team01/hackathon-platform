@@ -158,7 +158,14 @@ export default function ChatPanel({ open, onClose }: Props) {
     const actionLabel = status === 'ACCEPTED' ? '수락' : '거절'
 
     if (window.confirm(`이 팀 초대를 ${actionLabel}하시겠습니까?`)) {
-      respondMutation.mutate({ inviteId, status })
+      respondMutation.mutate(
+        { inviteId, status },
+        {
+          onError: (error) => {
+            alert(error instanceof Error ? error.message : '초대 처리에 실패했습니다.')
+          }
+        }
+      )
     }
   }
 

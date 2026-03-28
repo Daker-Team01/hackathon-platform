@@ -110,8 +110,9 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
       respondMutation.mutate(
         { inviteId, status },
         {
-          onError: () => {
+          onError: (error) => {
             setHiddenInviteIds((prev) => prev.filter((id) => id !== inviteId))
+            alert(error instanceof Error ? error.message : '초대 처리에 실패했습니다.')
           }
         }
       );

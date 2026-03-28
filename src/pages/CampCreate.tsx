@@ -74,6 +74,9 @@ export default function CampCreate() {
       onSuccess: () => {
         const finalSlug = (hackathonSlug && hackathonSlug !== "none") ? hackathonSlug : ""
         navigate(finalSlug ? `/camp?hackathon=${finalSlug}` : "/camp")
+      },
+      onError: (error) => {
+        alert(error instanceof Error ? error.message : "팀 생성에 실패했습니다.")
       }
     })
   }

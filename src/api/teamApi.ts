@@ -214,6 +214,29 @@ const getTeamByCodeFromDb = async (teamCode: string): Promise<Team | undefined> 
   return mapSupabaseTeamToTeam(data as SupabaseTeamRow)
 }
 
+const ensureLeaderHasNoTeamInHackathon = async (
+  leaderId: string,
+  hackathonSlug?: string,
+  excludeTeamCode?: string
+) => {
+  if (!hackathonSlug) return
+
+  const { data, error } = await supabase
+    .from("teams")
+    .select("team_code")
+    .eq("leader_id", leaderId)
+    .eq("hackathon_slug", hackathonSlug)
+
+  if (error) {
+    throw error
+  }
+
+  const duplicated = (data || []).some((team) => team.team_code !== excludeTeamCode)
+  if (duplicated) {
+    throw new Error("이미 해당 해커톤으로 만든 팀이 있어 중복 생성할 수 없습니다.")
+  }
+}
+
 export const getTeams = async (hackathonSlug?: string): Promise<Team[]> => {
   const { data, error } = await supabase
     .from("teams")
@@ -246,6 +269,9 @@ export const createTeam = async (
 ): Promise<Team> => {
   const { leaderName, ...teamData } = team
   const nowIso = new Date().toISOString()
+
+  await ensureLeaderHasNoTeamInHackathon(team.leaderId, team.hackathonSlug)
+
   const newTeam: Team = {
     teamCode: `T-${Date.now().toString().slice(-6)}`,
     createdAt: nowIso,
@@ -325,9 +351,9 @@ export const updateTeam = async (
   teamCode: string,
   updates: Partial<Omit<Team, "teamCode" | "createdAt">>
 ): Promise<Team> => {
-  const { error: currentError } = await supabase
+  const { data: currentTeamRow, error: currentError } = await supabase
     .from("teams")
-    .select("team_code")
+    .select("team_code, leader_id, hackathon_slug")
     .eq("team_code", teamCode)
     .single()
 
@@ -337,6 +363,15 @@ export const updateTeam = async (
     }
     throw currentError
   }
+
+  const currentLeaderId = (currentTeamRow as { leader_id: string }).leader_id
+  const currentHackathonSlug = (currentTeamRow as { hackathon_slug?: string | null }).hackathon_slug || undefined
+  const targetLeaderId = updates.leaderId ?? currentLeaderId
+  const targetHackathonSlug = Object.prototype.hasOwnProperty.call(updates, "hackathonSlug")
+    ? updates.hackathonSlug
+    : currentHackathonSlug
+
+  await ensureLeaderHasNoTeamInHackathon(targetLeaderId, targetHackathonSlug, teamCode)
 
   const payload: Record<string, unknown> = {
     last_updated_at: new Date().toISOString()
@@ -786,6 +821,26 @@ export const respondToInvite = async (inviteId: string, status: 'ACCEPTED' | 'RE
 
   const currentInvite = mapSupabaseInviteToInvite(inviteRow as SupabaseInviteRow)
   if (currentInvite.status !== 'PENDING') throw new Error("Invite already processed")
+
+  // 같은 해커톤 내 중복 팀 참여 방지 (초대 수락 경로)
+  if (status === 'ACCEPTED') {
+    const targetTeam = await getTeamByCodeFromDb(currentInvite.teamId)
+    if (!targetTeam) {
+      throw new Error("Team not found")
+    }
+
+    if (targetTeam.hackathonSlug) {
+      const teamsInHackathon = await getTeams(targetTeam.hackathonSlug)
+      const joinedTeam = teamsInHackathon.find((team) =>
+        team.teamCode !== targetTeam.teamCode &&
+        (team.leaderId === currentInvite.invitedUserId || team.members.some((member) => member.userId === currentInvite.invitedUserId))
+      )
+
+      if (joinedTeam) {
+        throw new Error("같은 해커톤에는 한 팀만 가입할 수 있습니다.")
+      }
+    }
+  }
 
   const { data: updatedRow, error: updateError } = await supabase
     .from("team_invites")
