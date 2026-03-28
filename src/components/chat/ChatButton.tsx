@@ -48,8 +48,9 @@ export default function ChatButton({ onClick, open, unreadCount = 0 }: Props) {
             right: -2,
             backgroundColor: '#ef4444',
             color: 'white',
-            borderRadius: '50%',
-            width: 20,
+            borderRadius: 999,
+            minWidth: 20,
+            padding: '0 4px',
             height: 20,
             fontSize: 10,
             fontWeight: 700,
@@ -60,7 +61,7 @@ export default function ChatButton({ onClick, open, unreadCount = 0 }: Props) {
             pointerEvents: 'none'
           }}
         >
-          {unreadCount > 99 ? '99+' : unreadCount}
+          +{unreadCount > 99 ? '99' : unreadCount}
         </span>
       )}
     </button>

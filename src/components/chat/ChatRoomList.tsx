@@ -18,6 +18,31 @@ export default function ChatRoomList({ rooms, selectedRoomId, onSelectRoom, dire
   const [confirmRoomId, setConfirmRoomId] = useState<string | null>(null)
   const confirmRoom = confirmRoomId ? rooms.find((r) => r.id === confirmRoomId) : null
 
+  const resolvePinnedStyle = (room: ChatRoom) => {
+    if (room.name === '공지') {
+      return {
+        backgroundColor: '#fff7ed',
+        borderLeftColor: '#f97316'
+      }
+    }
+
+    if (room.name === '일반') {
+      return {
+        backgroundColor: '#eff6ff',
+        borderLeftColor: '#3b82f6'
+      }
+    }
+
+    if (room.id === 'chatbot') {
+      return {
+        backgroundColor: '#ecfdf5',
+        borderLeftColor: '#10b981'
+      }
+    }
+
+    return null
+  }
+
   return (
     <div style={{
       width: 180,
@@ -27,26 +52,57 @@ export default function ChatRoomList({ rooms, selectedRoomId, onSelectRoom, dire
     }}>
       {rooms.map((room) => {
         const isDirect = directRoomIds?.has(room.id)
+        const pinnedStyle = resolvePinnedStyle(room)
+        const isSelected = selectedRoomId === room.id
+        const rowBackground = isSelected
+          ? '#e0e7ff'
+          : (pinnedStyle?.backgroundColor ?? 'transparent')
+        const rowBorderLeftColor = isSelected
+          ? '#4f46e5'
+          : (pinnedStyle?.borderLeftColor ?? 'transparent')
+
         return (
           <div
             key={room.id}
             onClick={() => onSelectRoom(room.id)}
             style={{
-              padding: '10px 10px 10px 12px',
+              padding: room.unreadCount > 0 ? '28px 10px 10px 12px' : '10px 10px 10px 12px',
               borderBottom: "1px solid #eee",
               cursor: "pointer",
-              backgroundColor: selectedRoomId === room.id ? "#e0e7ff" : "transparent",
-              borderLeft: selectedRoomId === room.id ? "3px solid #4f46e5" : "3px solid transparent",
+              backgroundColor: rowBackground,
+              borderLeft: `3px solid ${rowBorderLeftColor}`,
+              position: 'relative',
               display: "flex",
               alignItems: "center",
               gap: 4,
               justifyContent: "space-between"
             }}
           >
+            {room.unreadCount > 0 && (
+              <div style={{
+                position: 'absolute',
+                top: 6,
+                left: 8,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: 24,
+                height: 18,
+                padding: '0 6px',
+                borderRadius: 999,
+                backgroundColor: '#ef4444',
+                color: 'white',
+                fontSize: 10,
+                fontWeight: 700,
+                lineHeight: 1
+              }}>
+                +{room.unreadCount > 99 ? '99' : room.unreadCount}
+              </div>
+            )}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{
                 fontSize: 13,
-                fontWeight: selectedRoomId === room.id ? "bold" : "normal",
+                fontWeight: isSelected ? "bold" : "normal",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -54,21 +110,6 @@ export default function ChatRoomList({ rooms, selectedRoomId, onSelectRoom, dire
               }}>
                 {room.name}
               </div>
-              {room.unreadCount > 0 && (
-                <div style={{
-                  display: "inline-flex",
-                  backgroundColor: "#ef4444",
-                  color: "white",
-                  borderRadius: "50%",
-                  width: 18,
-                  height: 18,
-                  fontSize: 11,
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}>
-                  {room.unreadCount}
-                </div>
-              )}
             </div>
             {isDirect && onLeaveRoom && (
               <button
