@@ -27,6 +27,7 @@ import {
   subscribeToDmRoomMembers,
   ensureGeneralRoomForUser,
   ensureNoticeRoomForUser,
+  cleanupDuplicatePersonalGeneralRooms,
   fetchUserChatRooms,
   fetchRoomMessages,
   sendSystemMessage,
@@ -89,6 +90,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const supabaseRoomsRef = useRef<SupabaseChatRoom[]>([])
   const currentSupabaseUserIdRef = useRef<string>('')
   const loadSupabaseRoomsRequestIdRef = useRef(0)
+  const cleanedPersonalGeneralRoomsRef = useRef<Set<string>>(new Set())
   const [unreadRoomCountsState, setUnreadRoomCountsState] = useState<Record<string, number>>({})
   const activeRoomIdRef = useRef<string | null>(null)
 
@@ -144,6 +146,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     try {
       setIsLoadingRooms(true)
+
+      if (!cleanedPersonalGeneralRoomsRef.current.has(userId)) {
+        await cleanupDuplicatePersonalGeneralRooms(userId)
+        cleanedPersonalGeneralRoomsRef.current.add(userId)
+      }
+
       let rooms = await fetchUserChatRooms(userId)
 
       if (isStale()) return
@@ -517,6 +525,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     supabaseRoomIdsRef.current = new Set()
     supabaseRoomsRef.current = []
     currentSupabaseUserIdRef.current = ''
+    cleanedPersonalGeneralRoomsRef.current.clear()
   }
 
   useEffect(() => {
@@ -538,6 +547,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       supabaseRoomIdsRef.current = new Set()
       supabaseRoomsRef.current = []
       currentSupabaseUserIdRef.current = ''
+      cleanedPersonalGeneralRoomsRef.current.clear()
       setRoomActivityAt({})
       setUnreadRoomCountsState({})
       activeRoomIdRef.current = null
@@ -633,6 +643,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         .from('chat_members')
         .select('room_id')
         .eq('user_id', userId1)
+        .eq('is_active', true)
 
       if (error) throw error
 
@@ -652,6 +663,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               .select('user_id')
               .eq('room_id', room.id)
               .eq('user_id', userId2)
+              .eq('is_active', true)
 
             if (members && members.length > 0) {
               return room.id
