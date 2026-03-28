@@ -152,6 +152,14 @@ export default function ChatPanel({ open, onClose }: Props) {
   const safeSelectedRoomId = selectedRoomId && allowedRoomIds.includes(selectedRoomId)
     ? selectedRoomId
     : fallbackRoomId
+  const selectedSupabaseRoom = safeSelectedRoomId
+    ? supabaseRooms.find((room) => room.id === safeSelectedRoomId)
+    : undefined
+  const isReadOnlyGeneralRoom = Boolean(
+    selectedSupabaseRoom &&
+    selectedSupabaseRoom.room_type === 'general' &&
+    (selectedSupabaseRoom.name === '공지' || selectedSupabaseRoom.name === '일반')
+  )
 
   useEffect(() => {
     if (!safeSelectedRoomId || safeSelectedRoomId !== CHATBOT_ROOM_ID) return
@@ -183,6 +191,7 @@ export default function ChatPanel({ open, onClose }: Props) {
 
   const handleSendMessage = async (text: string) => {
     if (!safeSelectedRoomId) return
+    if (isReadOnlyGeneralRoom) return
 
     if (safeSelectedRoomId === CHATBOT_ROOM_ID) {
       const normalizedText = text.trim()
@@ -330,11 +339,26 @@ export default function ChatPanel({ open, onClose }: Props) {
                     onInviteResponse={handleInviteResponse}
                     respondingInviteId={respondMutation.isPending ? (respondMutation.variables?.inviteId ?? null) : null}
                   />
-                  <ChatInput
-                    onSend={handleSendMessage}
-                    isLoading={safeSelectedRoomId === CHATBOT_ROOM_ID && isWaitingForResponse}
-                    isChatbot={safeSelectedRoomId === CHATBOT_ROOM_ID}
-                  />
+                  {isReadOnlyGeneralRoom ? (
+                    <div
+                      style={{
+                        borderTop: '1px solid #e5e7eb',
+                        backgroundColor: '#f8fafc',
+                        color: '#64748b',
+                        fontSize: 13,
+                        padding: '12px 14px',
+                        textAlign: 'center'
+                      }}
+                    >
+                      공지/일반 채팅방은 읽기 전용입니다.
+                    </div>
+                  ) : (
+                    <ChatInput
+                      onSend={handleSendMessage}
+                      isLoading={safeSelectedRoomId === CHATBOT_ROOM_ID && isWaitingForResponse}
+                      isChatbot={safeSelectedRoomId === CHATBOT_ROOM_ID}
+                    />
+                  )}
                 </>
               ) : (
                 <div style={{
