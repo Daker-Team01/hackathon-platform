@@ -1,13 +1,40 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ChatButton from './components/chat/ChatButton'
 import ChatPanel from './components/chat/ChatPanel'
 import Navbar from './components/Navbar'
 import { useChat } from './contexts/ChatContext'
 
+const OPEN_CHAT_PANEL_KEY = 'openChatPanel'
+
 export default function App({ children }: { children: React.ReactNode }) {
   const [chatOpen, setChatOpen] = useState(false)
   const [authCardOpen, setAuthCardOpen] = useState(false)
   const { unreadTotalCount } = useChat()
+
+  // sessionStorage 변화를 감시하여 ChatPanel 자동 열기
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const shouldOpen = sessionStorage.getItem(OPEN_CHAT_PANEL_KEY)
+      if (shouldOpen) {
+        setChatOpen(true)
+        sessionStorage.removeItem(OPEN_CHAT_PANEL_KEY)
+      }
+    }
+
+    // 커스텀 이벤트 감시 (같은 탭에서의 변경)
+    window.addEventListener('sessionStorageChanged', handleStorageChange)
+    
+    // storage 이벤트 감시 (다른 탭에서의 변경)
+    window.addEventListener('storage', handleStorageChange)
+    
+    // 초기 로드 시 확인
+    handleStorageChange()
+
+    return () => {
+      window.removeEventListener('sessionStorageChanged', handleStorageChange)
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [])
 
   return (
     <div className="relative min-h-screen overflow-hidden">

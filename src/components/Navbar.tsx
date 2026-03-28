@@ -7,7 +7,7 @@ import LoginForm from './profile/LoginForm'
 import UserProfile from './profile/UserProfile'
 import NotificationPanel from './profile/NotificationPanel'
 import { useUserInvites } from '../hooks/useTeams'
-import { useDmRequests } from '../contexts/DmRequestContext'
+import { useDmRequests, useSetupDmRequestSubscription } from '../contexts/DmRequestContext'
 import { useChat } from '../contexts/ChatContext'
 import { loadAnnouncedNotificationIds, loadSeenNotificationIds, saveAnnouncedNotificationIds, saveSeenNotificationIds } from '../utils/profileNotifications'
 
@@ -25,6 +25,7 @@ export default function Navbar({
   const { isLoggedIn, user } = useUser()
   const { data: invites } = useUserInvites(user?.id || '')
   const { getPendingForUser } = useDmRequests()
+  const setupDmSubscription = useSetupDmRequestSubscription()
   const { addGeneralSystemMessage } = useChat()
   const authCardRef = useRef<HTMLDivElement>(null)
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1400)
@@ -107,6 +108,11 @@ export default function Navbar({
 
   useEffect(() => {
     if (!user?.userId) return
+    setupDmSubscription(user.userId)
+  }, [setupDmSubscription, user?.userId])
+
+  useEffect(() => {
+    if (!user?.userId) return
 
     const currentNotificationIds = new Set(notificationIds)
     const nextSeenIds = seenNotificationIds.filter((id) => currentNotificationIds.has(id))
@@ -133,7 +139,14 @@ export default function Navbar({
       }))
       .filter((item) => !announcedNotificationIds.includes(item.id))
 
-    const newNotifications = [...newInviteIds]
+    const newDmRequestIds = dmRequests
+      .map((request) => ({
+        id: `dm:${request.id}`,
+        text: `알림: ${request.fromNickname}님이 1:1 채팅을 신청했습니다.`
+      }))
+      .filter((item) => !announcedNotificationIds.includes(item.id))
+
+    const newNotifications = [...newInviteIds, ...newDmRequestIds]
 
     if (newNotifications.length === 0) return
 
@@ -146,7 +159,7 @@ export default function Navbar({
     const nextAnnouncedIds = Array.from(new Set([...announcedNotificationIds, ...newNotifications.map((item) => item.id)]))
     setAnnouncedNotificationIds(nextAnnouncedIds)
     saveAnnouncedNotificationIds(user.userId, nextAnnouncedIds)
-  }, [addGeneralSystemMessage, announcedNotificationIds, pendingInvites, user?.userId])
+  }, [addGeneralSystemMessage, announcedNotificationIds, dmRequests, pendingInvites, user?.userId])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

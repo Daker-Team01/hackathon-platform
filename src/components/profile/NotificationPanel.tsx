@@ -6,7 +6,7 @@ import {
   usePendingTeamRequestsForLeader,
   useRespondToTeamRequest
 } from '../../hooks/useTeams';
-import { useDmRequests } from '../../contexts/DmRequestContext';
+import { useDmRequests, useSetupDmRequestSubscription } from '../../contexts/DmRequestContext';
 import { useChat } from '../../contexts/ChatContext';
 import { useLog } from '../../contexts/LogContext';
 import { loadSeenNotificationIds, saveSeenNotificationIds } from '../../utils/profileNotifications'
@@ -25,6 +25,7 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
   const respondTeamRequestMutation = useRespondToTeamRequest();
   const { recordEvent } = useLog();
   const { getPendingForUser, respondToRequest } = useDmRequests();
+  const setupDmSubscription = useSetupDmRequestSubscription();
   const { openDirectRoom } = useChat();
 
   // DM 요청 목록 (현재 유저가 받은 것)
@@ -32,7 +33,12 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
   const [internalSeenNotificationIds, setInternalSeenNotificationIds] = useState<string[]>([])
   const [hiddenInviteIds, setHiddenInviteIds] = useState<string[]>([])
   const [hiddenTeamRequestIds, setHiddenTeamRequestIds] = useState<string[]>([])
+  const [hiddenDmRequestIds, setHiddenDmRequestIds] = useState<string[]>([])
   const dmRequests = useMemo(() => (user ? getPendingForUser(user.userId) : []), [getPendingForUser, user]);
+  const visibleDmRequests = useMemo(
+    () => dmRequests.filter((request) => !hiddenDmRequestIds.includes(request.id)),
+    [dmRequests, hiddenDmRequestIds]
+  )
 
   // 아직 결정하지 않은(PENDING) 알림만 유지
   const pendingInvites = (invites || []).filter(
@@ -45,9 +51,9 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
     () => [
       ...pendingInvites.map((invite) => `invite:${invite.id}`),
       ...visiblePendingTeamRequests.map((request) => `teamRequest:${request.id}`),
-      ...dmRequests.map((request) => `dm:${request.id}`)
+      ...visibleDmRequests.map((request) => `dm:${request.id}`)
     ],
-    [dmRequests, pendingInvites, visiblePendingTeamRequests]
+    [pendingInvites, visibleDmRequests, visiblePendingTeamRequests]
   )
   const unreadNotificationIds = useMemo(
     () => notificationIds.filter((id) => !(controlledSeenNotificationIds ?? internalSeenNotificationIds).includes(id)),
@@ -79,6 +85,12 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
     }
   }, [controlledSeenNotificationIds, user?.userId])
 
+  // Supabase Realtime DM 요청 구독 설정
+  useEffect(() => {
+    if (!user?.userId) return
+    setupDmSubscription(user.userId)
+  }, [user?.userId, setupDmSubscription])
+
   useEffect(() => {
     if (!user?.userId) return
 
@@ -96,7 +108,7 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
 
   if (!user || isLoading) return null;
 
-  if (pendingInvites.length === 0 && visiblePendingTeamRequests.length === 0 && dmRequests.length === 0) return null;
+  if (pendingInvites.length === 0 && visiblePendingTeamRequests.length === 0 && visibleDmRequests.length === 0) return null;
 
   const markAllAsSeen = () => {
     if (!user) return
@@ -136,16 +148,28 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
 
   const handleDmRespond = async (requestId: string, status: 'ACCEPTED' | 'REJECTED') => {
     if (!user) return;
+    const req = visibleDmRequests.find((r) => r.id === requestId);
+    if (!req) return;
+
+    setHiddenDmRequestIds((prev) => Array.from(new Set([...prev, requestId])))
+
     if (status === 'REJECTED') {
-      respondToRequest(requestId, user.userId, 'REJECTED');
+      try {
+        await respondToRequest(requestId, user.userId, 'REJECTED');
+      } catch (error) {
+        setHiddenDmRequestIds((prev) => prev.filter((id) => id !== requestId))
+        alert(error instanceof Error ? error.message : '채팅 신청 처리에 실패했습니다.')
+      }
       return;
     }
-    const req = dmRequests.find((r) => r.id === requestId);
-    if (!req) return;
+
     setDmAccepting(requestId);
     try {
       await openDirectRoom(req.fromUserId, req.fromNickname, user.userId, user.nickname);
-      respondToRequest(requestId, user.userId, 'ACCEPTED');
+      await respondToRequest(requestId, user.userId, 'ACCEPTED');
+    } catch (error) {
+      setHiddenDmRequestIds((prev) => prev.filter((id) => id !== requestId))
+      alert(error instanceof Error ? error.message : '채팅 신청 처리에 실패했습니다.')
     } finally {
       setDmAccepting(null);
     }
@@ -192,9 +216,9 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
       <div style={{ margin: '0 0 12px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
           🔔 알림
-          {(pendingInvites.length + visiblePendingTeamRequests.length + dmRequests.length) > 0 && (
+          {(pendingInvites.length + visiblePendingTeamRequests.length + visibleDmRequests.length) > 0 && (
             <span style={{ backgroundColor: unreadCount > 0 ? '#ef4444' : '#94a3b8', color: 'white', fontSize: 10, padding: '2px 6px', borderRadius: 10 }}>
-              {unreadCount > 0 ? `N ${unreadCount}` : pendingInvites.length + visiblePendingTeamRequests.length + dmRequests.length}
+              {unreadCount > 0 ? `N ${unreadCount}` : pendingInvites.length + visiblePendingTeamRequests.length + visibleDmRequests.length}
             </span>
           )}
         </h3>
@@ -302,7 +326,7 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
         })}
 
         {/* 채팅 신청 알림 */}
-        {dmRequests.map((req) => {
+        {visibleDmRequests.map((req) => {
           const notificationId = `dm:${req.id}`
 
           return (
