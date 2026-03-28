@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { useCreateTeam } from "../hooks/useTeams"
 import { useUser } from "../contexts/UserContext"
+import { useLog } from "../contexts/LogContext"
 import type { Hackathon } from "../types/hackathon"
 import { Button } from "../components/ui/button"
 import { Label } from "../components/ui/label"
@@ -24,6 +25,7 @@ export default function CampCreate() {
   const [params] = useSearchParams()
   const initialHackathonSlug = params.get("hackathon") || ""
   const { user, isLoggedIn } = useUser()
+  const { recordEvent } = useLog()
   const mutation = useCreateTeam()
   const allHackathons = useMemo(() => getHackathonsFromStorage(), [])
   const hackathons = useMemo(() => allHackathons.filter(h => h.status !== "ended"), [allHackathons])
@@ -46,6 +48,13 @@ export default function CampCreate() {
     }
   }, [isLoggedIn, navigate])
 
+  useEffect(() => {
+    recordEvent('page_view', 'page', '/camp/new', {
+      page: 'camp_create',
+      initialHackathonSlug: initialHackathonSlug || null
+    })
+  }, [initialHackathonSlug, recordEvent])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -55,6 +64,13 @@ export default function CampCreate() {
       alert("팀명과 소개는 필수입니다.")
       return
     }
+
+    recordEvent('team_create_attempt', 'team', name, {
+      hackathonSlug: (hackathonSlug && hackathonSlug !== "none") ? hackathonSlug : null,
+      isOpen,
+      maxMembers,
+      lookingForCount: lookingFor ? lookingFor.split(",").map((v) => v.trim()).filter(Boolean).length : 0
+    })
 
     mutation.mutate({
       name,
@@ -76,6 +92,12 @@ export default function CampCreate() {
         navigate(finalSlug ? `/camp?hackathon=${finalSlug}` : "/camp")
       },
       onError: (error) => {
+        recordEvent('api_error', 'team', name || 'unknown_team', {
+          api: 'createTeam',
+          action: 'team_create_attempt',
+          hackathonSlug: (hackathonSlug && hackathonSlug !== "none") ? hackathonSlug : null,
+          message: error instanceof Error ? error.message : 'unknown_error'
+        })
         alert(error instanceof Error ? error.message : "팀 생성에 실패했습니다.")
       }
     })

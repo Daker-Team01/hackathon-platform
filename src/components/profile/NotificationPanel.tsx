@@ -8,6 +8,7 @@ import {
 } from '../../hooks/useTeams';
 import { useDmRequests } from '../../contexts/DmRequestContext';
 import { useChat } from '../../contexts/ChatContext';
+import { useLog } from '../../contexts/LogContext';
 import { loadSeenNotificationIds, saveSeenNotificationIds } from '../../utils/profileNotifications'
 
 type Props = {
@@ -22,6 +23,7 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
   const { data: pendingTeamRequests = [] } = usePendingTeamRequestsForLeader(user?.id || '');
   const respondMutation = useRespondToInvite();
   const respondTeamRequestMutation = useRespondToTeamRequest();
+  const { recordEvent } = useLog();
   const { getPendingForUser, respondToRequest } = useDmRequests();
   const { openDirectRoom } = useChat();
 
@@ -110,8 +112,21 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
       respondMutation.mutate(
         { inviteId, status },
         {
+          onSuccess: () => {
+            recordEvent('invite_response', 'team', inviteId, {
+              status,
+              source: 'notification_panel'
+            })
+          },
           onError: (error) => {
             setHiddenInviteIds((prev) => prev.filter((id) => id !== inviteId))
+            recordEvent('api_error', 'team', inviteId, {
+              api: 'respondToInvite',
+              action: 'invite_response',
+              status,
+              source: 'notification_panel',
+              message: error instanceof Error ? error.message : 'unknown_error'
+            })
             alert(error instanceof Error ? error.message : '초대 처리에 실패했습니다.')
           }
         }
@@ -147,8 +162,25 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
         status
       },
       {
+        onSuccess: () => {
+          const request = pendingTeamRequests.find((item) => item.id === requestId)
+          recordEvent('team_request_result', 'team', request?.teamId ?? requestId, {
+            requestId,
+            requestType: request?.requestType ?? null,
+            requesterUserId: request?.requesterUserId ?? null,
+            status,
+            source: 'notification_panel'
+          })
+        },
         onError: (error) => {
           setHiddenTeamRequestIds((prev) => prev.filter((id) => id !== requestId))
+          recordEvent('api_error', 'team', requestId, {
+            api: 'respondToTeamRequest',
+            action: 'team_request_result',
+            status,
+            source: 'notification_panel',
+            message: error instanceof Error ? error.message : 'unknown_error'
+          })
           alert(error instanceof Error ? error.message : '요청 처리에 실패했습니다.')
         }
       }
