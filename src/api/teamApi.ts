@@ -264,6 +264,21 @@ export const getTeamByCode = async (code: string): Promise<Team | undefined> => 
   }
 }
 
+export const getTeamsByLeaderId = async (leaderId: string): Promise<Team[]> => {
+  const { data, error } = await supabase
+    .from("teams")
+    .select("*")
+    .eq("leader_id", leaderId)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Failed to fetch teams by leader:", error)
+    return []
+  }
+
+  return (data || []).map((row) => mapSupabaseTeamToTeam(row as SupabaseTeamRow))
+}
+
 export const createTeam = async (
   team: Omit<Team, "teamCode" | "createdAt" | "members"> & { leaderName?: string }
 ): Promise<Team> => {
