@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useUser } from '../../contexts/UserContext';
-import { useUserInvites, useRespondToInvite, useClearResolvedInvitesForUser } from '../../hooks/useTeams';
+import {
+  useUserInvites,
+  useRespondToInvite,
+  usePendingTeamRequestsForLeader,
+  useRespondToTeamRequest
+} from '../../hooks/useTeams';
 import { useDmRequests } from '../../contexts/DmRequestContext';
 import { useChat } from '../../contexts/ChatContext';
 import { loadSeenNotificationIds, saveSeenNotificationIds } from '../../utils/profileNotifications'
@@ -14,25 +19,33 @@ type Props = {
 export default function NotificationPanel({ onUnreadCountChange, seenNotificationIds: controlledSeenNotificationIds, onSeenNotificationIdsChange }: Props) {
   const { user } = useUser();
   const { data: invites, isLoading } = useUserInvites(user?.id || '');
+  const { data: pendingTeamRequests = [] } = usePendingTeamRequestsForLeader(user?.id || '');
   const respondMutation = useRespondToInvite();
-  const clearResolvedMutation = useClearResolvedInvitesForUser();
+  const respondTeamRequestMutation = useRespondToTeamRequest();
   const { getPendingForUser, respondToRequest } = useDmRequests();
   const { openDirectRoom } = useChat();
 
   // DM 요청 목록 (현재 유저가 받은 것)
   const [dmAccepting, setDmAccepting] = useState<string | null>(null);
   const [internalSeenNotificationIds, setInternalSeenNotificationIds] = useState<string[]>([])
-  const dmRequests = user ? getPendingForUser(user.userId) : [];
+  const [hiddenInviteIds, setHiddenInviteIds] = useState<string[]>([])
+  const [hiddenTeamRequestIds, setHiddenTeamRequestIds] = useState<string[]>([])
+  const dmRequests = useMemo(() => (user ? getPendingForUser(user.userId) : []), [getPendingForUser, user]);
 
   // 아직 결정하지 않은(PENDING) 알림만 유지
-  const pendingInvites = invites?.filter(inv => inv.status === 'PENDING') || [];
-  const hasResolvedInvites = invites?.some((inv) => inv.status !== 'PENDING') || false;
+  const pendingInvites = (invites || []).filter(
+    (inv) => inv.status === 'PENDING' && !hiddenInviteIds.includes(inv.id)
+  );
+  const visiblePendingTeamRequests = pendingTeamRequests.filter(
+    (request) => !hiddenTeamRequestIds.includes(request.id)
+  )
   const notificationIds = useMemo(
     () => [
       ...pendingInvites.map((invite) => `invite:${invite.id}`),
+      ...visiblePendingTeamRequests.map((request) => `teamRequest:${request.id}`),
       ...dmRequests.map((request) => `dm:${request.id}`)
     ],
-    [dmRequests, pendingInvites]
+    [dmRequests, pendingInvites, visiblePendingTeamRequests]
   )
   const unreadNotificationIds = useMemo(
     () => notificationIds.filter((id) => !(controlledSeenNotificationIds ?? internalSeenNotificationIds).includes(id)),
@@ -42,7 +55,7 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
 
   const activeSeenNotificationIds = controlledSeenNotificationIds ?? internalSeenNotificationIds
 
-  const updateSeenIds = (ids: string[]) => {
+  const updateSeenIds = useCallback((ids: string[]) => {
     if (!user?.userId) return
 
     if (controlledSeenNotificationIds === undefined) {
@@ -51,15 +64,7 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
 
     onSeenNotificationIdsChange?.(ids)
     saveSeenNotificationIds(user.userId, ids)
-  }
-
-  useEffect(() => {
-    if (!user?.id || !hasResolvedInvites || clearResolvedMutation.isPending) return;
-
-    if (hasResolvedInvites) {
-      clearResolvedMutation.mutate(user.id);
-    }
-  }, [clearResolvedMutation, hasResolvedInvites, user?.id]);
+  }, [controlledSeenNotificationIds, onSeenNotificationIdsChange, user?.userId])
 
   useEffect(() => {
     if (!user?.userId) {
@@ -70,7 +75,7 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
     if (controlledSeenNotificationIds === undefined) {
       setInternalSeenNotificationIds(loadSeenNotificationIds(user.userId))
     }
-  }, [user?.userId])
+  }, [controlledSeenNotificationIds, user?.userId])
 
   useEffect(() => {
     if (!user?.userId) return
@@ -81,7 +86,7 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
     if (normalizedSeenIds.length !== activeSeenNotificationIds.length) {
       updateSeenIds(normalizedSeenIds)
     }
-  }, [activeSeenNotificationIds, notificationIds, user?.userId])
+  }, [activeSeenNotificationIds, notificationIds, updateSeenIds, user?.userId])
 
   useEffect(() => {
     onUnreadCountChange?.(user ? unreadCount : 0)
@@ -89,7 +94,7 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
 
   if (!user || isLoading) return null;
 
-  if (pendingInvites.length === 0 && dmRequests.length === 0) return null;
+  if (pendingInvites.length === 0 && visiblePendingTeamRequests.length === 0 && dmRequests.length === 0) return null;
 
   const markAllAsSeen = () => {
     if (!user) return
@@ -101,7 +106,15 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
 
   const handleRespond = (inviteId: string, status: 'ACCEPTED' | 'REJECTED') => {
     if (window.confirm(`초대를 ${status === 'ACCEPTED' ? '수락' : '거절'}하시겠습니까?`)) {
-      respondMutation.mutate({ inviteId, status });
+      setHiddenInviteIds((prev) => Array.from(new Set([...prev, inviteId])))
+      respondMutation.mutate(
+        { inviteId, status },
+        {
+          onError: () => {
+            setHiddenInviteIds((prev) => prev.filter((id) => id !== inviteId))
+          }
+        }
+      );
     }
   };
 
@@ -122,14 +135,33 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
     }
   };
 
+  const handleTeamRequestRespond = (requestId: string, status: 'APPROVED' | 'REJECTED') => {
+    if (!user) return
+
+    setHiddenTeamRequestIds((prev) => Array.from(new Set([...prev, requestId])))
+    respondTeamRequestMutation.mutate(
+      {
+        requestId,
+        reviewerUserId: user.id,
+        status
+      },
+      {
+        onError: (error) => {
+          setHiddenTeamRequestIds((prev) => prev.filter((id) => id !== requestId))
+          alert(error instanceof Error ? error.message : '요청 처리에 실패했습니다.')
+        }
+      }
+    )
+  }
+
   return (
     <div style={{ marginBottom: 16, padding: 14, border: '1px solid #fbcfe8', borderRadius: 12, backgroundColor: '#fffafc' }}>
       <div style={{ margin: '0 0 12px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
           🔔 알림
-          {(pendingInvites.length + dmRequests.length) > 0 && (
+          {(pendingInvites.length + visiblePendingTeamRequests.length + dmRequests.length) > 0 && (
             <span style={{ backgroundColor: unreadCount > 0 ? '#ef4444' : '#94a3b8', color: 'white', fontSize: 10, padding: '2px 6px', borderRadius: 10 }}>
-              {unreadCount > 0 ? `N ${unreadCount}` : pendingInvites.length + dmRequests.length}
+              {unreadCount > 0 ? `N ${unreadCount}` : pendingInvites.length + visiblePendingTeamRequests.length + dmRequests.length}
             </span>
           )}
         </h3>
@@ -188,6 +220,53 @@ export default function NotificationPanel({ onUnreadCountChange, seenNotificatio
             </div>
           </div>
         )})}
+
+        {/* 팀 가입/탈퇴 요청 알림 (팀장용) */}
+        {visiblePendingTeamRequests.map((request) => {
+          const notificationId = `teamRequest:${request.id}`
+
+          return (
+            <div
+              key={request.id}
+              style={{
+                backgroundColor: isUnread(notificationId) ? '#ecfeff' : '#f0fdfa',
+                padding: 12,
+                borderRadius: 8,
+                border: isUnread(notificationId) ? '1px solid #06b6d4' : '1px solid #99f6e4',
+                boxShadow: isUnread(notificationId) ? '0 0 0 3px rgba(6, 182, 212, 0.12)' : 'none'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                <p style={{ margin: 0, fontSize: 12, color: '#0e7490', fontWeight: 700 }}>팀 요청</p>
+                {isUnread(notificationId) && (
+                  <span style={{ backgroundColor: '#0891b2', color: 'white', fontSize: 10, padding: '2px 6px', borderRadius: 999 }}>
+                    NEW
+                  </span>
+                )}
+              </div>
+              <p style={{ margin: '0 0 8px 0', fontSize: 14 }}>
+                <strong>{request.requesterUserName}</strong>님이 <strong>{request.teamName}</strong> 팀에
+                {' '}{request.requestType === 'JOIN' ? '가입' : '탈퇴'} 요청을 보냈습니다.
+              </p>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  onClick={() => handleTeamRequestRespond(request.id, 'APPROVED')}
+                  disabled={respondTeamRequestMutation.isPending}
+                  style={{ flex: 1, backgroundColor: '#10b981', color: 'white', border: 'none', padding: '6px', borderRadius: 4, fontSize: 13, cursor: 'pointer' }}
+                >
+                  승인
+                </button>
+                <button
+                  onClick={() => handleTeamRequestRespond(request.id, 'REJECTED')}
+                  disabled={respondTeamRequestMutation.isPending}
+                  style={{ flex: 1, backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '6px', borderRadius: 4, fontSize: 13, cursor: 'pointer' }}
+                >
+                  거절
+                </button>
+              </div>
+            </div>
+          )
+        })}
 
         {/* 채팅 신청 알림 */}
         {dmRequests.map((req) => {

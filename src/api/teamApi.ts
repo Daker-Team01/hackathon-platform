@@ -1,4 +1,4 @@
-import type { Team, TeamInvite, TeamMember } from "../types/team"
+import type { Team, TeamInvite, TeamMember, TeamRequest } from "../types/team"
 import userDummyData from "../data/user_dummy_data.json"
 import { supabase } from "../lib/supabase"
 import { enqueueGeneralChatNotification } from '../utils/generalChatNotifications'
@@ -40,7 +40,20 @@ type SupabaseInviteRow = {
   team_name: string
   invited_user_id: string
   invited_user_name: string
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED'
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELED'
+  created_at: string
+}
+
+type SupabaseTeamRequestRow = {
+  id: string
+  team_id: string
+  team_name: string
+  request_type: 'JOIN' | 'LEAVE'
+  requester_user_id: string
+  requester_user_name: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELED'
+  reviewed_by: string | null
+  reviewed_at: string | null
   created_at: string
 }
 
@@ -169,6 +182,19 @@ const mapSupabaseInviteToInvite = (row: SupabaseInviteRow): TeamInvite => ({
   invitedUserName: row.invited_user_name,
   status: row.status,
   createdAt: row.created_at
+})
+
+const mapSupabaseRequestToRequest = (row: SupabaseTeamRequestRow): TeamRequest => ({
+  id: row.id,
+  teamId: row.team_id,
+  teamName: row.team_name,
+  requestType: row.request_type,
+  requesterUserId: row.requester_user_id,
+  requesterUserName: row.requester_user_name,
+  status: row.status,
+  createdAt: row.created_at,
+  reviewedBy: row.reviewed_by,
+  reviewedAt: row.reviewed_at
 })
 
 const getTeamByCodeFromDb = async (teamCode: string): Promise<Team | undefined> => {
@@ -409,6 +435,298 @@ export const inviteUser = async (invite: Omit<TeamInvite, "id" | "status" | "cre
   return newInvite
 }
 
+export const cancelInvite = async (inviteId: string): Promise<TeamInvite> => {
+  const { data: inviteRow, error: inviteError } = await supabase
+    .from("team_invites")
+    .select("*")
+    .eq("id", inviteId)
+    .single()
+
+  if (inviteError) {
+    if (inviteError.code === "PGRST116") throw new Error("Invite not found")
+    throw inviteError
+  }
+
+  const currentInvite = mapSupabaseInviteToInvite(inviteRow as SupabaseInviteRow)
+  if (currentInvite.status !== 'PENDING') {
+    throw new Error("Pending invite only can be canceled")
+  }
+
+  const { data: updatedRow, error: updateError } = await supabase
+    .from("team_invites")
+    .update({ status: 'CANCELED' })
+    .eq("id", inviteId)
+    .select("*")
+    .single()
+
+  if (updateError) throw updateError
+
+  const updatedInvite = mapSupabaseInviteToInvite(updatedRow as SupabaseInviteRow)
+  announceGeneralToUser(updatedInvite.invitedUserId, `${updatedInvite.teamName} 팀 초대장이 취소되었습니다.`)
+  return updatedInvite
+}
+
+export const createTeamRequest = async (payload: {
+  teamId: string
+  requestType: 'JOIN' | 'LEAVE'
+  requesterUserId: string
+  requesterUserName: string
+}): Promise<TeamRequest> => {
+  const team = await getTeamByCodeFromDb(payload.teamId)
+  if (!team) throw new Error("Team not found")
+
+  const isMember = team.members.some((member) => member.userId === payload.requesterUserId)
+
+  if (payload.requestType === 'JOIN') {
+    if (isMember) throw new Error("이미 팀에 소속되어 있습니다.")
+    if (!team.isOpen) throw new Error("모집 마감 팀에는 가입 신청할 수 없습니다.")
+    if (team.memberCount >= team.maxMembers) throw new Error("정원이 가득 찼습니다.")
+  }
+
+  if (payload.requestType === 'LEAVE') {
+    if (team.leaderId === payload.requesterUserId) throw new Error("팀장은 탈퇴 요청할 수 없습니다.")
+    if (!isMember) throw new Error("팀원만 탈퇴 요청할 수 있습니다.")
+  }
+
+  const { data: existingRows, error: existingError } = await supabase
+    .from("team_requests")
+    .select("id")
+    .eq("team_id", payload.teamId)
+    .eq("request_type", payload.requestType)
+    .eq("requester_user_id", payload.requesterUserId)
+    .eq("status", "PENDING")
+
+  if (existingError) throw existingError
+  if ((existingRows || []).length > 0) throw new Error("이미 처리 대기 중인 요청이 있습니다.")
+
+  const nowIso = new Date().toISOString()
+  const { data, error } = await supabase
+    .from("team_requests")
+    .insert({
+      team_id: payload.teamId,
+      team_name: team.name,
+      request_type: payload.requestType,
+      requester_user_id: payload.requesterUserId,
+      requester_user_name: payload.requesterUserName,
+      status: 'PENDING',
+      created_at: nowIso
+    })
+    .select("*")
+    .single()
+
+  if (error) throw error
+
+  const request = mapSupabaseRequestToRequest(data as SupabaseTeamRequestRow)
+  const requestLabel = request.requestType === 'JOIN' ? '가입' : '탈퇴'
+  announceGeneralToUser(team.leaderId, `${request.requesterUserName}님이 ${team.name} 팀 ${requestLabel} 요청을 보냈습니다.`)
+
+  return request
+}
+
+export const cancelTeamRequest = async (requestId: string, requesterUserId: string): Promise<TeamRequest> => {
+  const { data: row, error: fetchError } = await supabase
+    .from("team_requests")
+    .select("*")
+    .eq("id", requestId)
+    .single()
+
+  if (fetchError) {
+    if (fetchError.code === "PGRST116") throw new Error("요청을 찾을 수 없습니다.")
+    throw fetchError
+  }
+
+  const request = mapSupabaseRequestToRequest(row as SupabaseTeamRequestRow)
+  if (request.requesterUserId !== requesterUserId) throw new Error("요청 취소 권한이 없습니다.")
+  if (request.status !== 'PENDING') throw new Error("대기 중 요청만 취소할 수 있습니다.")
+
+  const { data: updatedRow, error: updateError } = await supabase
+    .from("team_requests")
+    .update({ status: 'CANCELED' })
+    .eq("id", requestId)
+    .select("*")
+    .single()
+
+  if (updateError) throw updateError
+
+  const updatedRequest = mapSupabaseRequestToRequest(updatedRow as SupabaseTeamRequestRow)
+  const team = await getTeamByCodeFromDb(updatedRequest.teamId)
+  if (team?.leaderId) {
+    announceGeneralToUser(team.leaderId, `${updatedRequest.requesterUserName}님이 ${team.name} 팀 요청을 취소했습니다.`)
+  }
+
+  return updatedRequest
+}
+
+export const getTeamRequestsByTeam = async (teamId: string): Promise<TeamRequest[]> => {
+  const { data, error } = await supabase
+    .from("team_requests")
+    .select("*")
+    .eq("team_id", teamId)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Failed to fetch team requests by team:", error)
+    return []
+  }
+
+  return (data || []).map((row) => mapSupabaseRequestToRequest(row as SupabaseTeamRequestRow))
+}
+
+export const getTeamRequestsForUser = async (userId: string): Promise<TeamRequest[]> => {
+  const { data, error } = await supabase
+    .from("team_requests")
+    .select("*")
+    .eq("requester_user_id", userId)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Failed to fetch team requests for user:", error)
+    return []
+  }
+
+  return (data || []).map((row) => mapSupabaseRequestToRequest(row as SupabaseTeamRequestRow))
+}
+
+export const getPendingTeamRequestsForLeader = async (leaderId: string): Promise<TeamRequest[]> => {
+  const { data: ownedTeams, error: teamError } = await supabase
+    .from("teams")
+    .select("team_code")
+    .eq("leader_id", leaderId)
+
+  if (teamError) {
+    console.error("Failed to fetch leader teams:", teamError)
+    return []
+  }
+
+  const teamCodes = (ownedTeams || []).map((team) => team.team_code).filter(Boolean)
+  if (!teamCodes.length) return []
+
+  const { data, error } = await supabase
+    .from("team_requests")
+    .select("*")
+    .eq("status", "PENDING")
+    .in("team_id", teamCodes)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Failed to fetch pending team requests for leader:", error)
+    return []
+  }
+
+  return (data || []).map((row) => mapSupabaseRequestToRequest(row as SupabaseTeamRequestRow))
+}
+
+export const respondToTeamRequest = async (
+  requestId: string,
+  reviewerUserId: string,
+  status: 'APPROVED' | 'REJECTED'
+): Promise<TeamRequest> => {
+  const { data: row, error: fetchError } = await supabase
+    .from("team_requests")
+    .select("*")
+    .eq("id", requestId)
+    .single()
+
+  if (fetchError) {
+    if (fetchError.code === "PGRST116") throw new Error("요청을 찾을 수 없습니다.")
+    throw fetchError
+  }
+
+  const request = mapSupabaseRequestToRequest(row as SupabaseTeamRequestRow)
+  if (request.status !== 'PENDING') throw new Error("이미 처리된 요청입니다.")
+
+  const team = await getTeamByCodeFromDb(request.teamId)
+  if (!team) throw new Error("Team not found")
+  if (team.leaderId !== reviewerUserId) throw new Error("팀장만 요청을 처리할 수 있습니다.")
+
+  if (status === 'APPROVED' && request.requestType === 'JOIN') {
+    if (!team.isOpen) throw new Error("모집 마감 팀에는 가입 승인할 수 없습니다.")
+    if (team.memberCount >= team.maxMembers) throw new Error("정원이 가득 찼습니다.")
+
+    if (team.hackathonSlug) {
+      const teamsInHackathon = await getTeams(team.hackathonSlug)
+      const joinedTeam = teamsInHackathon.find((target) =>
+        target.teamCode !== team.teamCode &&
+        (target.leaderId === request.requesterUserId || target.members.some((member) => member.userId === request.requesterUserId))
+      )
+
+      if (joinedTeam) {
+        throw new Error("같은 해커톤에는 한 팀만 가입할 수 있습니다.")
+      }
+    }
+
+    const alreadyMember = team.members.some((member) => member.userId === request.requesterUserId)
+    if (!alreadyMember) {
+      const newMember: TeamMember = {
+        userId: request.requesterUserId,
+        userName: request.requesterUserName,
+        role: 'MEMBER',
+        joinedAt: new Date().toISOString()
+      }
+
+      const nextMembers = [...team.members, newMember]
+      await updateTeam(team.teamCode, {
+        members: nextMembers,
+        memberCount: nextMembers.length
+      })
+
+      try {
+        const roomId = await ensureSupabaseTeamChatRoom(team)
+        if (roomId) {
+          await addChatMember(roomId, request.requesterUserId, request.requesterUserName)
+          await sendSystemMessage(roomId, `${request.requesterUserName}님이 ${team.name} 팀 채팅방에 참여했습니다.`)
+        }
+      } catch (error) {
+        console.error('Failed to add member to Supabase chat room (team request):', error)
+      }
+    }
+  }
+
+  if (status === 'APPROVED' && request.requestType === 'LEAVE') {
+    if (request.requesterUserId === team.leaderId) throw new Error("팀장은 탈퇴 승인 대상이 아닙니다.")
+    const targetMember = team.members.find((member) => member.userId === request.requesterUserId)
+    if (!targetMember) throw new Error("이미 팀에서 나간 사용자입니다.")
+
+    const nextMembers = team.members.filter((member) => member.userId !== request.requesterUserId)
+    await updateTeam(team.teamCode, {
+      members: nextMembers,
+      memberCount: nextMembers.length
+    })
+
+    try {
+      const room = await fetchTeamChatRoom(team.teamCode)
+      if (room) {
+        await removeChatMember(room.id, request.requesterUserId)
+        await sendSystemMessage(room.id, `${request.requesterUserName}님이 ${team.name} 팀에서 탈퇴했습니다.`)
+      }
+    } catch (error) {
+      console.error('Failed to remove member from Supabase chat room (team leave request):', error)
+    }
+  }
+
+  const nowIso = new Date().toISOString()
+  const { data: updatedRow, error: updateError } = await supabase
+    .from("team_requests")
+    .update({
+      status,
+      reviewed_by: reviewerUserId,
+      reviewed_at: nowIso
+    })
+    .eq("id", requestId)
+    .select("*")
+    .single()
+
+  if (updateError) throw updateError
+
+  const updatedRequest = mapSupabaseRequestToRequest(updatedRow as SupabaseTeamRequestRow)
+  announceGeneralToUser(
+    updatedRequest.requesterUserId,
+    `${updatedRequest.teamName} 팀 ${updatedRequest.requestType === 'JOIN' ? '가입' : '탈퇴'} 요청이 ${status === 'APPROVED' ? '승인' : '거절'}되었습니다.`
+  )
+
+  return updatedRequest
+}
+
 export const getInvitesForUser = async (userId: string): Promise<TeamInvite[]> => {
   const { data, error } = await supabase
     .from("team_invites")
@@ -435,21 +753,8 @@ export const clearResolvedInvitesForUser = async (userId: string): Promise<numbe
     throw fetchError
   }
 
-  const ids = (resolvedRows || []).map((row) => row.id)
-  if (!ids.length) {
-    return 0
-  }
-
-  const { error: deleteError } = await supabase
-    .from("team_invites")
-    .delete()
-    .in("id", ids)
-
-  if (deleteError) {
-    throw deleteError
-  }
-
-  return ids.length
+  // 이력 보존 정책: resolved 초대는 삭제하지 않는다.
+  return (resolvedRows || []).length
 }
 
 export const getInvitesByTeam = async (teamId: string): Promise<TeamInvite[]> => {

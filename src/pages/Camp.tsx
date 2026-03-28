@@ -5,7 +5,14 @@ import {
   Settings, Edit, Lock, Unlock, ExternalLink, Shield
 } from "lucide-react"
 
-import { useTeam, useTeams, useUpdateTeam } from "../hooks/useTeams"
+import {
+  useCancelTeamRequest,
+  useCreateTeamRequest,
+  useTeam,
+  useTeamRequestsForUser,
+  useTeams,
+  useUpdateTeam
+} from "../hooks/useTeams"
 import { useUser } from "../contexts/UserContext"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -28,10 +35,13 @@ export default function Camp() {
   const slug = hackathonFilter === "all" ? undefined : hackathonFilter
   const selectedTeamCode = params.get("team") || ""
 
+  const { user } = useUser()
   const { data: teams, isLoading } = useTeams(slug)
   const { data: selectedTeamDetail, isLoading: isSelectedTeamLoading } = useTeam(selectedTeamCode)
+  const { data: myRequests = [] } = useTeamRequestsForUser(user?.id || "")
   const mutation = useUpdateTeam()
-  const { user } = useUser()
+  const createTeamRequestMutation = useCreateTeamRequest()
+  const cancelTeamRequestMutation = useCancelTeamRequest()
   const currentUserId = user?.id || ""
 
   const hackathonTitleMap = useMemo(
@@ -44,6 +54,27 @@ export default function Camp() {
   )
 
   const selectedTeam = selectedTeamDetail || teams?.find((team) => team.teamCode === selectedTeamCode)
+  const selectedTeamHackathonStatus = selectedTeam?.hackathonSlug
+    ? normalizedHackathons.find((hackathon) => hackathon.slug === selectedTeam.hackathonSlug)?.status
+    : undefined
+  const isRequestAllowedByHackathonStatus = selectedTeamHackathonStatus !== "ended"
+  const isSelectedTeamMember = !!selectedTeam && !!currentUserId && selectedTeam.members.some((member) => member.userId === currentUserId)
+  const isSelectedTeamLeader = !!selectedTeam && !!currentUserId && selectedTeam.leaderId === currentUserId
+  const pendingJoinRequest = myRequests.find(
+    (request) => request.teamId === selectedTeamCode && request.requestType === 'JOIN' && request.status === 'PENDING'
+  )
+  const pendingLeaveRequest = myRequests.find(
+    (request) => request.teamId === selectedTeamCode && request.requestType === 'LEAVE' && request.status === 'PENDING'
+  )
+  const hasJoinedAnotherTeamInSameHackathon = useMemo(() => {
+    if (!selectedTeam?.hackathonSlug || !currentUserId) return false
+
+    return (teams || []).some((team) => {
+      if (!team.hackathonSlug || team.hackathonSlug !== selectedTeam.hackathonSlug) return false
+      if (team.teamCode === selectedTeam.teamCode) return false
+      return team.leaderId === currentUserId || team.members.some((member) => member.userId === currentUserId)
+    })
+  }, [currentUserId, selectedTeam?.hackathonSlug, selectedTeam?.teamCode, teams])
 
   const filteredTeams = useMemo(() => {
     const source = teams || []
@@ -91,6 +122,43 @@ export default function Camp() {
     const nextParams = new URLSearchParams(params)
     nextParams.delete("team")
     setParams(nextParams)
+  }
+
+  const handleCreateRequest = (requestType: 'JOIN' | 'LEAVE') => {
+    if (!selectedTeam || !user) return
+
+    createTeamRequestMutation.mutate(
+      {
+        teamId: selectedTeam.teamCode,
+        requestType,
+        requesterUserId: user.id,
+        requesterUserName: user.nickname
+      },
+      {
+        onSuccess: () => {
+          alert(requestType === 'JOIN' ? '가입 신청을 보냈습니다.' : '탈퇴 신청을 보냈습니다.')
+        },
+        onError: (error) => {
+          alert(error instanceof Error ? error.message : '요청 처리에 실패했습니다.')
+        }
+      }
+    )
+  }
+
+  const handleCancelRequest = (requestId: string) => {
+    if (!user) return
+
+    cancelTeamRequestMutation.mutate(
+      { requestId, requesterUserId: user.id },
+      {
+        onSuccess: () => {
+          alert('요청을 취소했습니다.')
+        },
+        onError: (error) => {
+          alert(error instanceof Error ? error.message : '요청 취소에 실패했습니다.')
+        }
+      }
+    )
   }
 
   const updateHackathonFilter = (nextHackathonSlug: string) => {
@@ -423,6 +491,66 @@ export default function Camp() {
                   </a>
                 </div>
               ) : null}
+
+              <div className="space-y-3 border-t border-gray-100 pt-4">
+                <h4 className="text-sm font-bold text-gray-500">가입/탈퇴 요청</h4>
+
+                {!user ? (
+                  <p className="text-sm text-gray-500">요청 기능은 로그인 후 사용할 수 있습니다.</p>
+                ) : !isRequestAllowedByHackathonStatus ? (
+                  <p className="text-sm text-gray-500">종료된 해커톤 팀은 가입/탈퇴 요청이 불가능합니다.</p>
+                ) : isSelectedTeamLeader ? (
+                  <p className="text-sm text-gray-500">팀장은 탈퇴 요청을 보낼 수 없습니다.</p>
+                ) : isSelectedTeamMember ? (
+                  pendingLeaveRequest ? (
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Button disabled className="sm:w-auto w-full">탈퇴 요청 대기중</Button>
+                      <Button
+                        variant="outline"
+                        className="sm:w-auto w-full"
+                        disabled={cancelTeamRequestMutation.isPending}
+                        onClick={() => handleCancelRequest(pendingLeaveRequest.id)}
+                      >
+                        요청 취소
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      className="w-full sm:w-auto"
+                      disabled={createTeamRequestMutation.isPending}
+                      onClick={() => handleCreateRequest('LEAVE')}
+                    >
+                      팀 탈퇴 신청
+                    </Button>
+                  )
+                ) : pendingJoinRequest ? (
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button disabled className="sm:w-auto w-full">가입 요청 대기중</Button>
+                    <Button
+                      variant="outline"
+                      className="sm:w-auto w-full"
+                      disabled={cancelTeamRequestMutation.isPending}
+                      onClick={() => handleCancelRequest(pendingJoinRequest.id)}
+                    >
+                      요청 취소
+                    </Button>
+                  </div>
+                ) : !selectedTeam.isOpen ? (
+                  <p className="text-sm text-gray-500">모집 마감 팀은 가입 신청이 불가능합니다.</p>
+                ) : selectedTeam.memberCount >= selectedTeam.maxMembers ? (
+                  <p className="text-sm text-gray-500">정원이 가득 차 가입 신청이 불가능합니다.</p>
+                ) : hasJoinedAnotherTeamInSameHackathon ? (
+                  <p className="text-sm text-gray-500">같은 해커톤에는 한 팀만 가입할 수 있습니다.</p>
+                ) : (
+                  <Button
+                    className="w-full sm:w-auto"
+                    disabled={createTeamRequestMutation.isPending}
+                    onClick={() => handleCreateRequest('JOIN')}
+                  >
+                    가입 신청
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>

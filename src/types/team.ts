@@ -1,4 +1,6 @@
-export type InviteStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+export type InviteStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELED';
+export type TeamRequestType = 'JOIN' | 'LEAVE';
+export type TeamRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELED';
 
 export interface TeamMember {
   userId: string;
@@ -15,6 +17,19 @@ export interface TeamInvite {
   invitedUserName: string;
   status: InviteStatus;
   createdAt: string;
+}
+
+export interface TeamRequest {
+  id: string
+  teamId: string
+  teamName: string
+  requestType: TeamRequestType
+  requesterUserId: string
+  requesterUserName: string
+  status: TeamRequestStatus
+  createdAt: string
+  reviewedAt?: string | null
+  reviewedBy?: string | null
 }
 
 export interface Team {

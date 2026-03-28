@@ -1,5 +1,14 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTeam, useKickMember, useInviteUser, useSendTeamNotice, useTeamInvites } from '../hooks/useTeams';
+import {
+  useTeam,
+  useKickMember,
+  useInviteUser,
+  useSendTeamNotice,
+  useTeamInvites,
+  useCancelInvite,
+  useRespondToTeamRequest,
+  useTeamRequestsByTeam
+} from '../hooks/useTeams';
 import { useUser, allUsers } from '../contexts/UserContext';
 import { useState } from 'react';
 import { Button } from '../components/ui/button';
@@ -10,8 +19,11 @@ export default function TeamManagement() {
   const { user } = useUser();
   const { data: team, isLoading } = useTeam(teamCode || '');
   const { data: invites } = useTeamInvites(teamCode || '');
+  const { data: teamRequests } = useTeamRequestsByTeam(teamCode || '');
   const kickMutation = useKickMember();
   const inviteMutation = useInviteUser();
+  const cancelInviteMutation = useCancelInvite();
+  const respondToTeamRequestMutation = useRespondToTeamRequest();
   const noticeMutation = useSendTeamNotice();
 
   const [inviteUserName, setInviteUserName] = useState('');
@@ -81,6 +93,31 @@ export default function TeamManagement() {
         onError: (error) => {
           alert(error instanceof Error ? error.message : '팀 공지 전송에 실패했습니다.');
         }
+      }
+    )
+  }
+
+  const handleCancelInvite = (inviteId: string) => {
+    if (!window.confirm('대기중인 초대를 취소하시겠습니까?')) return
+
+    cancelInviteMutation.mutate(inviteId, {
+      onSuccess: () => alert('초대를 취소했습니다.'),
+      onError: (error) => alert(error instanceof Error ? error.message : '초대 취소에 실패했습니다.')
+    })
+  }
+
+  const handleRespondTeamRequest = (requestId: string, status: 'APPROVED' | 'REJECTED') => {
+    if (!user?.userId) return
+
+    respondToTeamRequestMutation.mutate(
+      {
+        requestId,
+        reviewerUserId: user.userId,
+        status
+      },
+      {
+        onSuccess: () => alert(`요청을 ${status === 'APPROVED' ? '승인' : '거절'}했습니다.`),
+        onError: (error) => alert(error instanceof Error ? error.message : '요청 처리에 실패했습니다.')
       }
     )
   }
@@ -163,7 +200,7 @@ export default function TeamManagement() {
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">보낸 초대 현황</h3>
             {invites && invites.length > 0 ? (
               <ul className="divide-y border rounded-md">
-                {[...invites].reverse().map((inv) => (
+                {invites.map((inv) => (
                   <li key={inv.id} className="p-3 flex justify-between items-center bg-background">
                     <div>
                       <span className="font-medium">{inv.invitedUserName}</span>
@@ -173,10 +210,22 @@ export default function TeamManagement() {
                       <span className={`text-xs font-bold px-2 py-1 rounded-full ${
                         inv.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 
                         inv.status === 'ACCEPTED' ? 'bg-emerald-100 text-emerald-700' : 
-                        'bg-red-100 text-red-700'
+                        inv.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                        'bg-slate-100 text-slate-700'
                       }`}>
                         {inv.status}
                       </span>
+                      {inv.status === 'PENDING' && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCancelInvite(inv.id)}
+                          disabled={cancelInviteMutation.isPending}
+                        >
+                          취소
+                        </Button>
+                      )}
                       <span className="text-[10px] text-muted-foreground">
                         {new Date(inv.createdAt).toLocaleString()}
                       </span>
@@ -186,6 +235,64 @@ export default function TeamManagement() {
               </ul>
             ) : (
               <p className="text-sm text-muted-foreground">보낸 초대가 없습니다.</p>
+            )}
+          </div>
+
+          <div className="space-y-3 pt-4 border-t">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">가입/탈퇴 요청</h3>
+            {teamRequests && teamRequests.length > 0 ? (
+              <ul className="divide-y border rounded-md">
+                {teamRequests.map((request) => (
+                  <li key={request.id} className="p-3 flex flex-col gap-2 bg-background sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-medium">
+                        {request.requesterUserName}
+                        <span className="text-xs text-muted-foreground ml-2">({request.requesterUserId})</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {request.requestType === 'JOIN' ? '가입 요청' : '탈퇴 요청'} · {new Date(request.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                        request.status === 'PENDING'
+                          ? 'bg-amber-100 text-amber-700'
+                          : request.status === 'APPROVED'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : request.status === 'REJECTED'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-slate-100 text-slate-700'
+                      }`}>
+                        {request.status}
+                      </span>
+
+                      {request.status === 'PENDING' && (
+                        <>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleRespondTeamRequest(request.id, 'APPROVED')}
+                            disabled={respondToTeamRequestMutation.isPending}
+                          >
+                            승인
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRespondTeamRequest(request.id, 'REJECTED')}
+                            disabled={respondToTeamRequestMutation.isPending}
+                          >
+                            거절
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">들어온 요청이 없습니다.</p>
             )}
           </div>
         </section>

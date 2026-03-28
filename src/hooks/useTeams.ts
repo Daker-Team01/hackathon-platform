@@ -11,9 +11,16 @@ import {
   clearResolvedInvitesForUser,
   respondToInvite, 
   kickMember,
-  sendTeamNotice
+  sendTeamNotice,
+  cancelInvite,
+  createTeamRequest,
+  cancelTeamRequest,
+  getTeamRequestsByTeam,
+  getTeamRequestsForUser,
+  getPendingTeamRequestsForLeader,
+  respondToTeamRequest
 } from "../api/teamApi"
-import type { Team, TeamInvite } from "../types/team"
+import type { Team, TeamInvite, TeamRequest } from "../types/team"
 import { useLog } from "../contexts/LogContext"
 
 export const useTeams = (hackathonSlug?: string) => {
@@ -76,6 +83,17 @@ export const useInviteUser = () => {
     mutationFn: (invite: Omit<TeamInvite, "id" | "status" | "createdAt">) => inviteUser(invite),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["invites", "team", variables.teamId] })
+    }
+  })
+}
+
+export const useCancelInvite = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (inviteId: string) => cancelInvite(inviteId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["invites", "team", data.teamId] })
+      queryClient.invalidateQueries({ queryKey: ["invites", "user", data.invitedUserId] })
     }
   })
 }
@@ -145,5 +163,74 @@ export const useSendTeamNotice = () => {
   return useMutation({
     mutationFn: ({ teamCode, senderId, content }: { teamCode: string; senderId: string; content: string }) =>
       sendTeamNotice(teamCode, senderId, content)
+  })
+}
+
+export const useCreateTeamRequest = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (request: {
+      teamId: string
+      requestType: 'JOIN' | 'LEAVE'
+      requesterUserId: string
+      requesterUserName: string
+    }) => createTeamRequest(request),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["teamRequests", "team", data.teamId] })
+      queryClient.invalidateQueries({ queryKey: ["teamRequests", "user", data.requesterUserId] })
+      queryClient.invalidateQueries({ queryKey: ["teams"] })
+      queryClient.invalidateQueries({ queryKey: ["team", data.teamId] })
+    }
+  })
+}
+
+export const useCancelTeamRequest = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ requestId, requesterUserId }: { requestId: string; requesterUserId: string }) =>
+      cancelTeamRequest(requestId, requesterUserId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["teamRequests", "team", data.teamId] })
+      queryClient.invalidateQueries({ queryKey: ["teamRequests", "user", data.requesterUserId] })
+    }
+  })
+}
+
+export const useTeamRequestsByTeam = (teamId: string) => {
+  return useQuery<TeamRequest[]>({
+    queryKey: ["teamRequests", "team", teamId],
+    queryFn: () => getTeamRequestsByTeam(teamId),
+    enabled: !!teamId
+  })
+}
+
+export const useTeamRequestsForUser = (userId: string) => {
+  return useQuery<TeamRequest[]>({
+    queryKey: ["teamRequests", "user", userId],
+    queryFn: () => getTeamRequestsForUser(userId),
+    enabled: !!userId
+  })
+}
+
+export const usePendingTeamRequestsForLeader = (leaderId: string) => {
+  return useQuery<TeamRequest[]>({
+    queryKey: ["teamRequests", "leader", leaderId],
+    queryFn: () => getPendingTeamRequestsForLeader(leaderId),
+    enabled: !!leaderId
+  })
+}
+
+export const useRespondToTeamRequest = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ requestId, reviewerUserId, status }: { requestId: string; reviewerUserId: string; status: 'APPROVED' | 'REJECTED' }) =>
+      respondToTeamRequest(requestId, reviewerUserId, status),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["teamRequests", "team", data.teamId] })
+      queryClient.invalidateQueries({ queryKey: ["teamRequests", "user", data.requesterUserId] })
+      queryClient.invalidateQueries({ queryKey: ["teams"] })
+      queryClient.invalidateQueries({ queryKey: ["team", data.teamId] })
+    }
   })
 }
