@@ -36,8 +36,13 @@ export default function Camp() {
   const selectedTeamCode = params.get("team") || ""
 
   const { user } = useUser()
-  const { data: teams, isLoading } = useTeams(slug)
-  const { data: selectedTeamDetail, isLoading: isSelectedTeamLoading } = useTeam(selectedTeamCode)
+  const { data: teams, isLoading, isError: isTeamsError, error: teamsError } = useTeams(slug)
+  const {
+    data: selectedTeamDetail,
+    isLoading: isSelectedTeamLoading,
+    isError: isSelectedTeamError,
+    error: selectedTeamError
+  } = useTeam(selectedTeamCode)
   const { data: myRequests = [] } = useTeamRequestsForUser(user?.id || "")
   const mutation = useUpdateTeam()
   const createTeamRequestMutation = useCreateTeamRequest()
@@ -74,7 +79,7 @@ export default function Camp() {
       if (team.teamCode === selectedTeam.teamCode) return false
       return team.leaderId === currentUserId || team.members.some((member) => member.userId === currentUserId)
     })
-  }, [currentUserId, selectedTeam?.hackathonSlug, selectedTeam?.teamCode, teams])
+  }, [currentUserId, selectedTeam, teams])
 
   const filteredTeams = useMemo(() => {
     const source = teams || []
@@ -102,6 +107,11 @@ export default function Camp() {
 
   const openCount = useMemo(() => (teams || []).filter((team) => team.isOpen).length, [teams])
   const closedCount = useMemo(() => (teams || []).filter((team) => !team.isOpen).length, [teams])
+  const hasLoadError = isTeamsError || (Boolean(selectedTeamCode) && isSelectedTeamError)
+  const loadErrorMessage =
+    (teamsError instanceof Error ? teamsError.message : null) ||
+    (selectedTeamError instanceof Error ? selectedTeamError.message : null) ||
+    '데이터를 불러오는 중 오류가 발생했습니다.'
 
   const getHackathonLabel = (hackathonSlug?: string) => {
     if (!hackathonSlug) return "일반 프로젝트"
@@ -289,6 +299,15 @@ export default function Camp() {
             <div key={i} className="h-64 bg-gray-50 rounded-3xl animate-pulse" />
           ))}
         </div>
+      ) : hasLoadError ? (
+        <Card className="p-12 text-center bg-red-50 border-red-100">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-red-900 mb-2">오류가 발생했습니다</h2>
+          <p className="text-red-700 mb-6">{loadErrorMessage}</p>
+          <Button variant="destructive" onClick={() => window.location.reload()}>
+            다시 시도
+          </Button>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {prioritizedTeams.map((team) => {
@@ -307,7 +326,7 @@ export default function Camp() {
                     openTeamDetail(team.teamCode)
                   }
                 }}
-                className={`p-8 border-0 shadow-xl bg-white rounded-3xl hover:shadow-2xl transition-all duration-300 group relative overflow-hidden`}
+                className={`p-8 border-0 shadow-xl bg-white rounded-3xl hover:shadow-2xl transition-all duration-300 group relative overflow-hidden cursor-pointer`}
               >
                 {/* Status Badge Overlays */}
                 <div className="absolute top-0 right-0 p-6 flex gap-2">
@@ -424,6 +443,10 @@ export default function Camp() {
 
           {isSelectedTeamLoading ? (
             <div className="text-sm text-gray-500 py-2">팀 정보를 불러오는 중입니다...</div>
+          ) : isSelectedTeamError ? (
+            <div className="text-sm text-red-500 py-2">
+              {selectedTeamError instanceof Error ? selectedTeamError.message : '팀 정보를 불러오는 중 오류가 발생했습니다.'}
+            </div>
           ) : !selectedTeam ? (
             <div className="text-sm text-red-500 py-2">팀 정보를 찾을 수 없습니다.</div>
           ) : (
@@ -556,7 +579,7 @@ export default function Camp() {
         </DialogContent>
       </Dialog>
 
-      {!isLoading && (teams?.length || 0) === 0 && (
+      {!isLoading && !hasLoadError && (teams?.length || 0) === 0 && (
         <div className="text-center py-32 bg-gray-50/50 border-2 border-dashed border-gray-100 rounded-[3rem]">
           <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 mb-2">모집 중인 팀이 없습니다.</h3>
@@ -570,7 +593,7 @@ export default function Camp() {
         </div>
       )}
 
-      {!isLoading && (teams?.length || 0) > 0 && filteredTeams.length === 0 && (
+      {!isLoading && !hasLoadError && (teams?.length || 0) > 0 && filteredTeams.length === 0 && (
         <div className="text-center py-32 bg-gray-50/50 border-2 border-dashed border-gray-100 rounded-[3rem]">
           <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 mb-2">조건에 맞는 팀이 없습니다.</h3>

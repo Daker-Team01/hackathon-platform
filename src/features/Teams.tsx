@@ -42,6 +42,9 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
   const myAvailableTeams = (allTeams || []).filter(
     (team) => team.leaderId === user?.id && team.hackathonSlug !== hackathonSlug
   )
+  const hasMyTeamInHackathon = (allTeams || []).some(
+    (team) => team.leaderId === user?.id && team.hackathonSlug === hackathonSlug
+  )
 
   function handleOpenCreateNotice() {
     setNoticeConfirmed(false)
@@ -58,6 +61,12 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
   }
 
   function handleApplyWithTeam(teamCode: string) {
+    if (hasMyTeamInHackathon) {
+      alert('이미 해당 해커톤으로 만든 팀이 있어 중복 신청할 수 없습니다.')
+      setApplyModalOpen(false)
+      return
+    }
+
     updateMutation.mutate(
       {
         teamCode,
@@ -69,6 +78,9 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
           setApplyModalOpen(false)
           // 로그 수집: hackathon_join
           recordEvent('hackathon_join', 'hackathon', hackathonSlug, { teamCode })
+        },
+        onError: (error) => {
+          alert(error instanceof Error ? error.message : '참여 신청에 실패했습니다.')
         }
       }
     )
@@ -76,7 +88,14 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
 
   const handleRespond = (inviteId: string, status: 'ACCEPTED' | 'REJECTED') => {
     if (window.confirm(`초대를 ${status === 'ACCEPTED' ? '수락' : '거절'}하시겠습니까? 한번 선택하면 변경할 수 없습니다.`)) {
-      respondMutation.mutate({ inviteId, status })
+      respondMutation.mutate(
+        { inviteId, status },
+        {
+          onError: (error) => {
+            alert(error instanceof Error ? error.message : '초대 처리에 실패했습니다.')
+          }
+        }
+      )
     }
   }
 
@@ -102,7 +121,7 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
             >
               새 팀 생성하기
             </button>
-            {user && myAvailableTeams && myAvailableTeams.length > 0 && (
+            {user && myAvailableTeams && myAvailableTeams.length > 0 && !hasMyTeamInHackathon && (
               <button
                 type="button"
                 onClick={() => setApplyModalOpen(true)}
@@ -119,6 +138,11 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
               >
                 내 팀으로 신청하기 ({myAvailableTeams.length})
               </button>
+            )}
+            {user && hasMyTeamInHackathon && (
+              <span className="text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
+                이미 이 해커톤에 참여 중인 내 팀이 있어 중복 신청할 수 없습니다.
+              </span>
             )}
           </>
         ) : (
