@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { useLog } from '@/contexts/LogContext'
+import { useUser } from '@/contexts/UserContext'
+import { getTeamsByLeaderId } from '@/api/teamApi'
+import type { Team } from '@/types/team'
 import teamsData from '../data/team_dummy_data.json'
 import usersData from '../data/user_dummy_data.json'
 
@@ -92,6 +95,11 @@ function SourceSummary({
 
 export default function Matcher() {
   const { recordEvent } = useLog()
+  const { user } = useUser()
+
+  // 내가 팀장인 팀 목록 (DB에서 조회)
+  const [myLeaderTeams, setMyLeaderTeams] = useState<Team[]>([])
+
   const userMap = useMemo(
     () => new Map(usersData.map((item) => [item.userId, item] as const)),
     [],
@@ -110,6 +118,19 @@ export default function Matcher() {
   const [loadingDocs, setLoadingDocs] = useState(true)
   const [loadingMatches, setLoadingMatches] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // 내가 팀장인 팀 목록 조회
+  useEffect(() => {
+    if (!user?.userId) {
+      setMyLeaderTeams([])
+      return
+    }
+    const loadMyTeams = async () => {
+      const teams = await getTeamsByLeaderId(user.userId)
+      setMyLeaderTeams(teams)
+    }
+    void loadMyTeams()
+  }, [user?.userId])
 
   useEffect(() => {
     const loadDocuments = async () => {
@@ -135,8 +156,8 @@ export default function Matcher() {
   }, [])
 
   const sourceDocuments = useMemo(
-    () => documents.filter((doc) => doc.type === sourceType),
-    [documents, sourceType],
+    () => documents.filter((doc) => doc.type === 'user'),
+    [documents],
   )
 
   const selectedSource = useMemo(
@@ -159,17 +180,30 @@ export default function Matcher() {
   )
 
   useEffect(() => {
-    if (sourceDocuments.length === 0) {
-      setSelectedSourceId('')
-      return
+    if (sourceType === 'team') {
+      // 팀 모드: myLeaderTeams 기준
+      if (myLeaderTeams.length === 0) {
+        setSelectedSourceId('')
+        return
+      }
+      if (!myLeaderTeams.some((t) => t.teamCode === selectedSourceId)) {
+        const firstTeamCode = myLeaderTeams[0].teamCode
+        setSelectedSourceId(firstTeamCode)
+        recordEvent('matcher_profile_select', sourceType, firstTeamCode, { actionType: 'autoSelect' })
+      }
+    } else {
+      // 유저 모드: sourceDocuments 기준
+      if (sourceDocuments.length === 0) {
+        setSelectedSourceId('')
+        return
+      }
+      if (!sourceDocuments.some((doc) => doc.source_id === selectedSourceId)) {
+        const firstSourceId = sourceDocuments[0].source_id
+        setSelectedSourceId(firstSourceId)
+        recordEvent('matcher_profile_select', sourceType, firstSourceId, { actionType: 'autoSelect' })
+      }
     }
-
-    if (!sourceDocuments.some((doc) => doc.source_id === selectedSourceId)) {
-      const firstSourceId = sourceDocuments[0].source_id
-      setSelectedSourceId(firstSourceId)
-      recordEvent('matcher_profile_select', sourceType, firstSourceId, { actionType: 'autoSelect' })
-    }
-  }, [selectedSourceId, sourceDocuments, sourceType, recordEvent])
+  }, [selectedSourceId, sourceDocuments, sourceType, myLeaderTeams, recordEvent])
 
   const runMatch = async () => {
     if (!selectedSource) return
@@ -277,26 +311,48 @@ export default function Matcher() {
 
             <div>
               <p className="mb-2 text-sm font-semibold text-slate-700">선택한 프로필</p>
-              <select
-                value={selectedSourceId}
-                onChange={(event) => {
-                  const newSourceId = event.target.value
-                  setSelectedSourceId(newSourceId)
-                  recordEvent('matcher_profile_select', sourceType, newSourceId, { actionType: 'profileSelect' })
-                }}
-                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-[#3B82F6]/40 focus:ring-4 focus:ring-[#3B82F6]/10"
-              >
-                {sourceDocuments.map((doc) => {
-                  const label = doc.type === 'team'
-                    ? teamMap.get(doc.source_id)?.name ?? doc.source_id
-                    : userMap.get(doc.source_id)?.nickname ?? doc.source_id
-                  return (
-                    <option key={doc.source_id} value={doc.source_id}>
-                      {label} ({doc.source_id})
-                    </option>
-                  )
-                })}
-              </select>
+              {sourceType === 'team' ? (
+                myLeaderTeams.length === 0 ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    선택 가능한 팀이 없습니다. 팀장으로 소속된 팀만 선택할 수 있습니다.
+                  </div>
+                ) : (
+                  <select
+                    value={selectedSourceId}
+                    onChange={(event) => {
+                      const newSourceId = event.target.value
+                      setSelectedSourceId(newSourceId)
+                      recordEvent('matcher_profile_select', sourceType, newSourceId, { actionType: 'profileSelect' })
+                    }}
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-[#3B82F6]/40 focus:ring-4 focus:ring-[#3B82F6]/10"
+                  >
+                    {myLeaderTeams.map((team) => (
+                      <option key={team.teamCode} value={team.teamCode}>
+                        {team.name} ({team.teamCode})
+                      </option>
+                    ))}
+                  </select>
+                )
+              ) : (
+                <select
+                  value={selectedSourceId}
+                  onChange={(event) => {
+                    const newSourceId = event.target.value
+                    setSelectedSourceId(newSourceId)
+                    recordEvent('matcher_profile_select', sourceType, newSourceId, { actionType: 'profileSelect' })
+                  }}
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-[#3B82F6]/40 focus:ring-4 focus:ring-[#3B82F6]/10"
+                >
+                  {sourceDocuments.map((doc) => {
+                    const label = userMap.get(doc.source_id)?.nickname ?? doc.source_id
+                    return (
+                      <option key={doc.source_id} value={doc.source_id}>
+                        {label} ({doc.source_id})
+                      </option>
+                    )
+                  })}
+                </select>
+              )}
             </div>
 
             <div>
