@@ -43,18 +43,44 @@ export default function Analytics() {
   useEffect(() => {
     async function fetchAnalyticsLogs() {
       setIsFetching(true)
-      let query = supabase.from('user_logs').select('*').order('created_at', { ascending: false })
-      
-      if (filterDays !== 'all') {
-        const date = new Date()
-        date.setDate(date.getDate() - filterDays)
-        query = query.gte('created_at', date.toISOString())
+      const pageSize = 1000
+      const maxLogs = 20000
+      const allLogs: EventLog[] = []
+      let from = 0
+
+      while (allLogs.length < maxLogs) {
+        const remaining = maxLogs - allLogs.length
+        const currentPageSize = Math.min(pageSize, remaining)
+
+        let query = supabase
+          .from('user_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + currentPageSize - 1)
+
+        if (filterDays !== 'all') {
+          const date = new Date()
+          date.setDate(date.getDate() - filterDays)
+          query = query.gte('created_at', date.toISOString())
+        }
+
+        const { data, error } = await query
+        if (error) {
+          console.error('Failed to fetch analytics logs:', error)
+          break
+        }
+
+        const rows = (data || []) as EventLog[]
+        allLogs.push(...rows)
+
+        if (rows.length < currentPageSize) {
+          break
+        }
+
+        from += currentPageSize
       }
 
-      const { data, error } = await query
-      if (!error && data) {
-        setDbLogs(data as EventLog[])
-      }
+      setDbLogs(allLogs)
       setIsFetching(false)
     }
 
@@ -139,7 +165,7 @@ export default function Analytics() {
     })
 
     return Object.entries(stats)
-      .map(([_, data]) => ({ name: data.title.split(' ')[0], views: data.views, joins: data.joins, teams: data.teams }))
+      .map(([slug, data]) => ({ slug, name: data.title.split(' ')[0], views: data.views, joins: data.joins, teams: data.teams }))
       .sort((a, b) => (b.views + b.joins * 2) - (a.views + a.joins * 2))
       .slice(0, 5)
   }, [dbLogs, hackathons])
