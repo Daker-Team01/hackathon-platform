@@ -1,0 +1,1010 @@
+[
+  {
+    "slug": "hack-2",
+    "title": "서울 AI 기반 교통 혼잡 예측 해커톤",
+    "status": "ongoing",
+    "type": "AI",
+    "difficulty": "Advanced",
+    "tags": [
+      "AI",
+      "Machine Learning",
+      "Prediction"
+    ],
+    "host": {
+      "name": "핀테크이노베이션랩",
+      "organization": "핀테크이노베이션랩",
+      "logoUrl": "https://example.com/blockchain-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-03-21T00:00:00Z",
+      "endAt": "2025-03-31T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 98,
+      "teamCount": 40,
+      "submissionCount": 21
+    },
+    "prize": {
+      "totalKRW": 7500000
+    },
+    "requiredSkills": [
+      "Python",
+      "PyTorch",
+      "TensorFlow"
+    ],
+    "popularityScore": 9.2,
+    "bookmarkCount": 450
+  },
+  {
+    "slug": "hack-3",
+    "title": "세종 스마트 농업 IoT 데이터 분석 해커톤",
+    "status": "ongoing",
+    "type": "Data",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Data",
+      "Analytics",
+      "Visualization"
+    ],
+    "host": {
+      "name": "그린에너지연구센터",
+      "organization": "그린에너지연구센터",
+      "logoUrl": "https://example.com/health-tech-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-05-14T00:00:00Z",
+      "endAt": "2025-05-20T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 126,
+      "teamCount": 22,
+      "submissionCount": 21
+    },
+    "prize": {
+      "totalKRW": 6000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Pandas",
+      "SQL"
+    ],
+    "popularityScore": 8.8,
+    "bookmarkCount": 350
+  },
+  {
+    "slug": "hack-4",
+    "title": "서울 ML 활용 구조물 안정성 예측 챌린지",
+    "status": "ongoing",
+    "type": "AI",
+    "difficulty": "Advanced",
+    "tags": [
+      "AI",
+      "Machine Learning",
+      "Prediction"
+    ],
+    "host": {
+      "name": "미래AI연구소",
+      "organization": "미래AI연구소",
+      "logoUrl": "https://example.com/cybersecurity-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-01-08T00:00:00Z",
+      "endAt": "2026-01-13T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 196,
+      "teamCount": 17,
+      "submissionCount": 14
+    },
+    "prize": {
+      "totalKRW": 9000000
+    },
+    "requiredSkills": [
+      "Python",
+      "PyTorch",
+      "TensorFlow"
+    ],
+    "popularityScore": 9.5,
+    "bookmarkCount": 500
+  },
+  {
+    "slug": "hack-5",
+    "title": "세종 탄소 배출 데이터 분석 아이디어톤",
+    "status": "ongoing",
+    "type": "Environment",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Climate",
+      "Sustainability",
+      "Environment"
+    ],
+    "host": {
+      "name": "XR콘텐츠연구소",
+      "organization": "XR콘텐츠연구소",
+      "logoUrl": "https://example.com/robotics-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-05-23T00:00:00Z",
+      "endAt": "2025-06-10T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 153,
+      "teamCount": 23,
+      "submissionCount": 13
+    },
+    "prize": {
+      "totalKRW": 5500000
+    },
+    "requiredSkills": [
+      "Python",
+      "GIS",
+      "Data Analysis"
+    ],
+    "popularityScore": 8.3,
+    "bookmarkCount": 280
+  },
+  {
+    "slug": "hack-6",
+    "title": "세종 디지털 헬스케어 데이터 해커톤",
+    "status": "ongoing",
+    "type": "HealthTech",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Healthcare",
+      "Medical Data",
+      "AI"
+    ],
+    "host": {
+      "name": "XR콘텐츠연구소",
+      "organization": "XR콘텐츠연구소",
+      "logoUrl": "https://example.com/ecofriendly-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-11-15T00:00:00Z",
+      "endAt": "2025-11-23T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 107,
+      "teamCount": 18,
+      "submissionCount": 12
+    },
+    "prize": {
+      "totalKRW": 4500000
+    },
+    "requiredSkills": [
+      "Python",
+      "TensorFlow",
+      "Medical Imaging"
+    ],
+    "popularityScore": 8.0,
+    "bookmarkCount": 250
+  },
+  {
+    "slug": "hack-2-1",
+    "title": "인천 핀테크 이상거래 탐지 AI 챌린지",
+    "status": "ended",
+    "type": "FinTech",
+    "difficulty": "Advanced",
+    "tags": [
+      "Finance",
+      "Fraud Detection",
+      "Data"
+    ],
+    "host": {
+      "name": "그린에너지연구센터",
+      "organization": "그린에너지연구센터",
+      "logoUrl": "https://example.com/blockchain-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-03-17T00:00:00Z",
+      "endAt": "2025-03-29T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 177,
+      "teamCount": 26,
+      "submissionCount": 14
+    },
+    "prize": {
+      "totalKRW": 7500000
+    },
+    "requiredSkills": [
+      "Python",
+      "SQL",
+      "Machine Learning"
+    ],
+    "popularityScore": 9.2,
+    "bookmarkCount": 450
+  },
+  {
+    "slug": "hack-3-1",
+    "title": "수원 스마트시티 도시 데이터 해커톤",
+    "status": "ended",
+    "type": "SmartCity",
+    "difficulty": "Beginner",
+    "tags": [
+      "Urban",
+      "Mobility",
+      "Data"
+    ],
+    "host": {
+      "name": "그린에너지연구센터",
+      "organization": "그린에너지연구센터",
+      "logoUrl": "https://example.com/wellness-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-05-05T00:00:00Z",
+      "endAt": "2026-05-13T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 163,
+      "teamCount": 20,
+      "submissionCount": 13
+    },
+    "prize": {
+      "totalKRW": 4000000
+    },
+    "requiredSkills": [
+      "Python",
+      "GIS",
+      "Data Analysis"
+    ],
+    "popularityScore": 8.0,
+    "bookmarkCount": 250
+  },
+  {
+    "slug": "hack-4-1",
+    "title": "광주 해양 물류 최적화 데이터 챌린지",
+    "status": "ended",
+    "type": "Logistics",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Logistics",
+      "Optimization",
+      "Data"
+    ],
+    "host": {
+      "name": "스마트모빌리티랩",
+      "organization": "스마트모빌리티랩",
+      "logoUrl": "https://example.com/robotics-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-05-19T00:00:00Z",
+      "endAt": "2026-05-26T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 162,
+      "teamCount": 21,
+      "submissionCount": 11
+    },
+    "prize": {
+      "totalKRW": 6000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Optimization",
+      "Data Analysis"
+    ],
+    "popularityScore": 8.8,
+    "bookmarkCount": 350
+  },
+  {
+    "slug": "hack-5-1",
+    "title": "부산 XR 기반 교육 콘텐츠 개발 해커톤",
+    "status": "ended",
+    "type": "XR",
+    "difficulty": "Advanced",
+    "tags": [
+      "XR",
+      "3D",
+      "Immersive"
+    ],
+    "host": {
+      "name": "농업데이터연구소",
+      "organization": "농업데이터연구소",
+      "logoUrl": "https://example.com/cybersecurity-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-07-14T00:00:00Z",
+      "endAt": "2025-07-20T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 152,
+      "teamCount": 38,
+      "submissionCount": 20
+    },
+    "prize": {
+      "totalKRW": 8000000
+    },
+    "requiredSkills": [
+      "Unity",
+      "C#",
+      "3D Graphics"
+    ],
+    "popularityScore": 9.0,
+    "bookmarkCount": 400
+  },
+  {
+    "slug": "hack-6-1",
+    "title": "광주 로봇 비전 인식 AI 해커톤",
+    "status": "ended",
+    "type": "Robotics",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Robotics",
+      "Computer Vision",
+      "AI"
+    ],
+    "host": {
+      "name": "핀테크이노베이션랩",
+      "organization": "핀테크이노베이션랩",
+      "logoUrl": "https://example.com/ecotech-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-03-28T00:00:00Z",
+      "endAt": "2026-04-03T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 101,
+      "teamCount": 31,
+      "submissionCount": 12
+    },
+    "prize": {
+      "totalKRW": 5500000
+    },
+    "requiredSkills": [
+      "Python",
+      "OpenCV",
+      "ROS"
+    ],
+    "popularityScore": 8.3,
+    "bookmarkCount": 300
+  },
+  {
+    "slug": "hack-7",
+    "title": "울산 재난 대응 데이터 분석 해커톤",
+    "status": "ended",
+    "type": "Data",
+    "difficulty": "Advanced",
+    "tags": [
+      "Data",
+      "Analytics",
+      "Visualization"
+    ],
+    "host": {
+      "name": "XR콘텐츠연구소",
+      "organization": "XR콘텐츠연구소",
+      "logoUrl": "https://example.com/smartcity-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-04-25T00:00:00Z",
+      "endAt": "2025-05-10T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 108,
+      "teamCount": 22,
+      "submissionCount": 10
+    },
+    "prize": {
+      "totalKRW": 7000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Pandas",
+      "SQL"
+    ],
+    "popularityScore": 8.7,
+    "bookmarkCount": 350
+  },
+  {
+    "slug": "hack-8",
+    "title": "제주 스마트 에너지 수요 예측 챌린지",
+    "status": "ended",
+    "type": "Energy",
+    "difficulty": "Advanced",
+    "tags": [
+      "Energy",
+      "Forecasting",
+      "Data"
+    ],
+    "host": {
+      "name": "넥스트데이터랩",
+      "organization": "넥스트데이터랩",
+      "logoUrl": "https://example.com/spaceship-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-04-18T00:00:00Z",
+      "endAt": "2026-04-28T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 105,
+      "teamCount": 34,
+      "submissionCount": 17
+    },
+    "prize": {
+      "totalKRW": 6500000
+    },
+    "requiredSkills": [
+      "Python",
+      "Time Series",
+      "Data Analysis"
+    ],
+    "popularityScore": 8.9,
+    "bookmarkCount": 320
+  },
+  {
+    "slug": "hack-9",
+    "title": "세종 교통 안전 AI 분석 해커톤",
+    "status": "ended",
+    "type": "AI",
+    "difficulty": "Intermediate",
+    "tags": [
+      "AI",
+      "Machine Learning",
+      "Prediction"
+    ],
+    "host": {
+      "name": "지능형로봇연구센터",
+      "organization": "지능형로봇연구센터",
+      "logoUrl": "https://example.com/foodtech-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-07-14T00:00:00Z",
+      "endAt": "2025-07-23T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 165,
+      "teamCount": 15,
+      "submissionCount": 13
+    },
+    "prize": {
+      "totalKRW": 6800000
+    },
+    "requiredSkills": [
+      "Python",
+      "PyTorch",
+      "TensorFlow"
+    ],
+    "popularityScore": 8.6,
+    "bookmarkCount": 330
+  },
+  {
+    "slug": "hack-10",
+    "title": "울산 관광 데이터 분석 아이디어톤",
+    "status": "ended",
+    "type": "Data",
+    "difficulty": "Advanced",
+    "tags": [
+      "Data",
+      "Analytics",
+      "Visualization"
+    ],
+    "host": {
+      "name": "도시기술연구원",
+      "organization": "도시기술연구원",
+      "logoUrl": "https://example.com/vr-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-11-07T00:00:00Z",
+      "endAt": "2025-11-17T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 125,
+      "teamCount": 40,
+      "submissionCount": 19
+    },
+    "prize": {
+      "totalKRW": 7200000
+    },
+    "requiredSkills": [
+      "Python",
+      "Pandas",
+      "SQL"
+    ],
+    "popularityScore": 9.1,
+    "bookmarkCount": 380
+  },
+  {
+    "slug": "hack-11",
+    "title": "대전 도시 환경 모니터링 IoT 해커톤",
+    "status": "ended",
+    "type": "IoT",
+    "difficulty": "Intermediate",
+    "tags": [
+      "IoT",
+      "Sensor",
+      "Data"
+    ],
+    "host": {
+      "name": "도시기술연구원",
+      "organization": "도시기술연구원",
+      "logoUrl": "https://example.com/socialgood-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-08-05T00:00:00Z",
+      "endAt": "2025-08-25T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 99,
+      "teamCount": 32,
+      "submissionCount": 18
+    },
+    "prize": {
+      "totalKRW": 4500000
+    },
+    "requiredSkills": [
+      "Python",
+      "Arduino",
+      "Sensor Data"
+    ],
+    "popularityScore": 8.4,
+    "bookmarkCount": 280
+  },
+  {
+    "slug": "hack-12",
+    "title": "서울 AI 기반 농작물 생산 예측 챌린지",
+    "status": "ended",
+    "type": "AI",
+    "difficulty": "Intermediate",
+    "tags": [
+      "AI",
+      "Machine Learning",
+      "Prediction"
+    ],
+    "host": {
+      "name": "미래AI연구소",
+      "organization": "미래AI연구소",
+      "logoUrl": "https://example.com/iot-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-01-23T00:00:00Z",
+      "endAt": "2025-02-05T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 168,
+      "teamCount": 30,
+      "submissionCount": 20
+    },
+    "prize": {
+      "totalKRW": 6000000
+    },
+    "requiredSkills": [
+      "Python",
+      "PyTorch",
+      "TensorFlow"
+    ],
+    "popularityScore": 8.6,
+    "bookmarkCount": 300
+  },
+  {
+    "slug": "hack-13",
+    "title": "광주 보안 로그 이상 탐지 해커톤",
+    "status": "ended",
+    "type": "Security",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Security",
+      "Anomaly Detection",
+      "Logs"
+    ],
+    "host": {
+      "name": "디지털헬스연구소",
+      "organization": "디지털헬스연구소",
+      "logoUrl": "https://example.com/greenergy-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-05-21T00:00:00Z",
+      "endAt": "2025-05-30T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 196,
+      "teamCount": 27,
+      "submissionCount": 25
+    },
+    "prize": {
+      "totalKRW": 5500000
+    },
+    "requiredSkills": [
+      "Python",
+      "Linux",
+      "Log Analysis"
+    ],
+    "popularityScore": 8.3,
+    "bookmarkCount": 280
+  },
+  {
+    "slug": "hack-14",
+    "title": "대전 스마트 공장 데이터 분석 해커톤",
+    "status": "ended",
+    "type": "Industry",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Manufacturing",
+      "Industry",
+      "Data"
+    ],
+    "host": {
+      "name": "미래AI연구소",
+      "organization": "미래AI연구소",
+      "logoUrl": "https://example.com/mobileapp-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-06-24T00:00:00Z",
+      "endAt": "2025-07-11T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 149,
+      "teamCount": 38,
+      "submissionCount": 33
+    },
+    "prize": {
+      "totalKRW": 7000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Data Analysis",
+      "SQL"
+    ],
+    "popularityScore": 8.8,
+    "bookmarkCount": 350
+  },
+  {
+    "slug": "hack-15",
+    "title": "인천 의료 영상 분석 AI 챌린지",
+    "status": "ended",
+    "type": "HealthTech",
+    "difficulty": "Advanced",
+    "tags": [
+      "Healthcare",
+      "Medical Data",
+      "AI"
+    ],
+    "host": {
+      "name": "지능형로봇연구센터",
+      "organization": "지능형로봇연구센터",
+      "logoUrl": "https://example.com/datascience-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-08-29T00:00:00Z",
+      "endAt": "2025-09-08T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 151,
+      "teamCount": 40,
+      "submissionCount": 21
+    },
+    "prize": {
+      "totalKRW": 8000000
+    },
+    "requiredSkills": [
+      "Python",
+      "TensorFlow",
+      "Medical Imaging"
+    ],
+    "popularityScore": 9.0,
+    "bookmarkCount": 400
+  },
+  {
+    "slug": "hack-2-2",
+    "title": "서울 기후 변화 대응 데이터 해커톤",
+    "status": "upcoming",
+    "type": "Environment",
+    "difficulty": "Advanced",
+    "tags": [
+      "Climate",
+      "Sustainability",
+      "Environment"
+    ],
+    "host": {
+      "name": "미래AI연구소",
+      "organization": "미래AI연구소",
+      "logoUrl": "https://example.com/blockchain-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-06-13T00:00:00Z",
+      "endAt": "2025-07-01T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 117,
+      "teamCount": 19,
+      "submissionCount": 19
+    },
+    "prize": {
+      "totalKRW": 7000000
+    },
+    "requiredSkills": [
+      "Python",
+      "GIS",
+      "Data Analysis"
+    ],
+    "popularityScore": 8.7,
+    "bookmarkCount": 400
+  },
+  {
+    "slug": "hack-3-2",
+    "title": "수원 자율주행 데이터 분석 챌린지",
+    "status": "upcoming",
+    "type": "AI",
+    "difficulty": "Intermediate",
+    "tags": [
+      "AI",
+      "Machine Learning",
+      "Prediction"
+    ],
+    "host": {
+      "name": "XR콘텐츠연구소",
+      "organization": "XR콘텐츠연구소",
+      "logoUrl": "https://example.com/wellness-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-07-11T00:00:00Z",
+      "endAt": "2025-07-26T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 199,
+      "teamCount": 19,
+      "submissionCount": 14
+    },
+    "prize": {
+      "totalKRW": 6000000
+    },
+    "requiredSkills": [
+      "Python",
+      "PyTorch",
+      "TensorFlow"
+    ],
+    "popularityScore": 8.4,
+    "bookmarkCount": 350
+  },
+  {
+    "slug": "hack-4-2",
+    "title": "세종 스마트 교육 학습 데이터 해커톤",
+    "status": "upcoming",
+    "type": "Education",
+    "difficulty": "Advanced",
+    "tags": [
+      "Education",
+      "Learning Data",
+      "AI"
+    ],
+    "host": {
+      "name": "스마트모빌리티랩",
+      "organization": "스마트모빌리티랩",
+      "logoUrl": "https://example.com/cybersecurity-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-04-20T00:00:00Z",
+      "endAt": "2025-05-05T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 106,
+      "teamCount": 36,
+      "submissionCount": 19
+    },
+    "prize": {
+      "totalKRW": 8000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Data Analysis",
+      "NLP"
+    ],
+    "popularityScore": 8.6,
+    "bookmarkCount": 450
+  },
+  {
+    "slug": "hack-5-2",
+    "title": "광주 해양 환경 보호 데이터 챌린지",
+    "status": "upcoming",
+    "type": "Environment",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Climate",
+      "Sustainability",
+      "Environment"
+    ],
+    "host": {
+      "name": "XR콘텐츠연구소",
+      "organization": "XR콘텐츠연구소",
+      "logoUrl": "https://example.com/robotics-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-01-29T00:00:00Z",
+      "endAt": "2026-02-12T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 128,
+      "teamCount": 24,
+      "submissionCount": 11
+    },
+    "prize": {
+      "totalKRW": 5500000
+    },
+    "requiredSkills": [
+      "Python",
+      "GIS",
+      "Data Analysis"
+    ],
+    "popularityScore": 8.3,
+    "bookmarkCount": 380
+  },
+  {
+    "slug": "hack-6-2",
+    "title": "울산 공공 데이터 활용 아이디어톤",
+    "status": "upcoming",
+    "type": "Data",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Data",
+      "Analytics",
+      "Visualization"
+    ],
+    "host": {
+      "name": "농업데이터연구소",
+      "organization": "농업데이터연구소",
+      "logoUrl": "https://example.com/ecotech-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-10-08T00:00:00Z",
+      "endAt": "2025-10-24T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 179,
+      "teamCount": 18,
+      "submissionCount": 16
+    },
+    "prize": {
+      "totalKRW": 4500000
+    },
+    "requiredSkills": [
+      "Python",
+      "Pandas",
+      "SQL"
+    ],
+    "popularityScore": 8.2,
+    "bookmarkCount": 320
+  },
+  {
+    "slug": "hack-7-1",
+    "title": "서울 AI 기반 물류 수요 예측 해커톤",
+    "status": "upcoming",
+    "type": "AI",
+    "difficulty": "Advanced",
+    "tags": [
+      "AI",
+      "Machine Learning",
+      "Prediction"
+    ],
+    "host": {
+      "name": "미래AI연구소",
+      "organization": "미래AI연구소",
+      "logoUrl": "https://example.com/smartcity-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-08-08T00:00:00Z",
+      "endAt": "2025-08-25T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 132,
+      "teamCount": 27,
+      "submissionCount": 14
+    },
+    "prize": {
+      "totalKRW": 6500000
+    },
+    "requiredSkills": [
+      "Python",
+      "PyTorch",
+      "TensorFlow"
+    ],
+    "popularityScore": 8.5,
+    "bookmarkCount": 420
+  },
+  {
+    "slug": "hack-8-1",
+    "title": "광주 도시 대기질 분석 데이터 챌린지",
+    "status": "upcoming",
+    "type": "Environment",
+    "difficulty": "Advanced",
+    "tags": [
+      "Climate",
+      "Sustainability",
+      "Environment"
+    ],
+    "host": {
+      "name": "도시기술연구원",
+      "organization": "도시기술연구원",
+      "logoUrl": "https://example.com/spaceship-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-04-04T00:00:00Z",
+      "endAt": "2025-04-09T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 174,
+      "teamCount": 40,
+      "submissionCount": 31
+    },
+    "prize": {
+      "totalKRW": 7500000
+    },
+    "requiredSkills": [
+      "Python",
+      "GIS",
+      "Data Analysis"
+    ],
+    "popularityScore": 8.8,
+    "bookmarkCount": 480
+  },
+  {
+    "slug": "hack-9-1",
+    "title": "대구 스마트 헬스케어 서비스 아이디어톤",
+    "status": "upcoming",
+    "type": "HealthTech",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Healthcare",
+      "Medical Data",
+      "AI"
+    ],
+    "host": {
+      "name": "넥스트데이터랩",
+      "organization": "넥스트데이터랩",
+      "logoUrl": "https://example.com/fintech-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-09-03T00:00:00Z",
+      "endAt": "2025-09-13T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 155,
+      "teamCount": 38,
+      "submissionCount": 16
+    },
+    "prize": {
+      "totalKRW": 8500000
+    },
+    "requiredSkills": [
+      "Python",
+      "TensorFlow",
+      "Medical Imaging"
+    ],
+    "popularityScore": 8.6,
+    "bookmarkCount": 460
+  },
+  {
+    "slug": "hack-10-1",
+    "title": "수원 차세대 XR 협업 플랫폼 해커톤",
+    "status": "upcoming",
+    "type": "XR",
+    "difficulty": "Intermediate",
+    "tags": [
+      "XR",
+      "3D",
+      "Immersive"
+    ],
+    "host": {
+      "name": "그린에너지연구센터",
+      "organization": "그린에너지연구센터",
+      "logoUrl": "https://example.com/agriculture-logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-03-31T00:00:00Z",
+      "endAt": "2025-04-11T00:00:00Z"
+    },
+    "stats": {
+      "participantCount": 147,
+      "teamCount": 40,
+      "submissionCount": 17
+    },
+    "prize": {
+      "totalKRW": 6000000
+    },
+    "requiredSkills": [
+      "Unity",
+      "C#",
+      "3D Graphics"
+    ],
+    "popularityScore": 8.4,
+    "bookmarkCount": 350
+  }
+]
