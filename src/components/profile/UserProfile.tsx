@@ -2,8 +2,12 @@ import { useState } from 'react'
 import { useUser, type UserWorkStyle } from '../../contexts/UserContext'
 import { router } from '../../router/router'
 import usersData from '../../data/user_dummy_v2.json'
-import ParticipationSummary from './ParticipationSummary'
 import { useTeams } from '../../hooks/useTeams'
+
+type Props = {
+  activePanel?: 'teams' | 'interests' | null
+  onOpenPanel?: (panel: 'teams' | 'interests' | null) => void
+}
 
 const PERSONALITY_TAGS_OPTIONS = [
   '실행빠름',
@@ -120,7 +124,7 @@ const filterOptions = (options: string[], query: string, selected: string[]) => 
   })
 }
 
-export default function UserProfile() {
+export default function UserProfile({ activePanel = null, onOpenPanel }: Props) {
   const { user, logout, updateUser } = useUser()
   const { data: teams = [] } = useTeams(undefined, { enabled: !!user })
   const [isEditing, setIsEditing] = useState(false)
@@ -285,6 +289,11 @@ export default function UserProfile() {
   const handleLogout = () => {
     logout()
     router.navigate('/')
+  }
+
+  const toggleAuxPanel = (panel: 'teams' | 'interests') => {
+    if (!onOpenPanel) return
+    onOpenPanel(activePanel === panel ? null : panel)
   }
 
   return (
@@ -850,7 +859,71 @@ export default function UserProfile() {
         )}
       </div>
 
-      <ParticipationSummary />
+      <div style={{ padding: 12, backgroundColor: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <p style={{ margin: '0 0 10px 0', fontSize: 12, fontWeight: 700, color: '#334155' }}>
+          보조 창
+        </p>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => toggleAuxPanel('teams')}
+            style={{
+              padding: '8px 10px',
+              borderRadius: 8,
+              border: activePanel === 'teams' ? '1px solid #2563eb' : '1px solid #cbd5e1',
+              backgroundColor: activePanel === 'teams' ? '#eff6ff' : '#ffffff',
+              color: activePanel === 'teams' ? '#1d4ed8' : '#334155',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'background-color 0.2s, border-color 0.2s'
+            }}
+            onMouseOver={(e) => {
+              if (activePanel !== 'teams') {
+                e.currentTarget.style.backgroundColor = '#f8fafc'
+                e.currentTarget.style.borderColor = '#94a3b8'
+              }
+            }}
+            onMouseOut={(e) => {
+              if (activePanel !== 'teams') {
+                e.currentTarget.style.backgroundColor = '#ffffff'
+                e.currentTarget.style.borderColor = '#cbd5e1'
+              }
+            }}
+          >
+            참가중인 팀 열기
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleAuxPanel('interests')}
+            style={{
+              padding: '8px 10px',
+              borderRadius: 8,
+              border: activePanel === 'interests' ? '1px solid #2563eb' : '1px solid #cbd5e1',
+              backgroundColor: activePanel === 'interests' ? '#eff6ff' : '#ffffff',
+              color: activePanel === 'interests' ? '#1d4ed8' : '#334155',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'background-color 0.2s, border-color 0.2s'
+            }}
+            onMouseOver={(e) => {
+              if (activePanel !== 'interests') {
+                e.currentTarget.style.backgroundColor = '#f8fafc'
+                e.currentTarget.style.borderColor = '#94a3b8'
+              }
+            }}
+            onMouseOut={(e) => {
+              if (activePanel !== 'interests') {
+                e.currentTarget.style.backgroundColor = '#ffffff'
+                e.currentTarget.style.borderColor = '#cbd5e1'
+              }
+            }}
+          >
+            관심있는 해커톤 리스트 열기
+          </button>
+        </div>
+      </div>
 
       <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
         <button
