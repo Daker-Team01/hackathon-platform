@@ -2,7 +2,12 @@ import { useState } from 'react'
 import { useUser, type UserWorkStyle } from '../../contexts/UserContext'
 import { router } from '../../router/router'
 import usersData from '../../data/user_dummy_v2.json'
-import ParticipationSummary from './ParticipationSummary'
+import { useTeams } from '../../hooks/useTeams'
+
+type Props = {
+  activePanel?: 'teams' | 'interests' | null
+  onOpenPanel?: (panel: 'teams' | 'interests' | null) => void
+}
 
 const PERSONALITY_TAGS_OPTIONS = [
   '실행빠름',
@@ -119,8 +124,9 @@ const filterOptions = (options: string[], query: string, selected: string[]) => 
   })
 }
 
-export default function UserProfile() {
+export default function UserProfile({ activePanel = null, onOpenPanel }: Props) {
   const { user, logout, updateUser } = useUser()
+  const { data: teams = [] } = useTeams(undefined, { enabled: !!user })
   const [isEditing, setIsEditing] = useState(false)
   const [roleQuery, setRoleQuery] = useState('')
   const [personalityQuery, setPersonalityQuery] = useState('')
@@ -142,8 +148,21 @@ export default function UserProfile() {
   const personalityTags = normalizeStringArray(user.personalityTags)
   const techStack = normalizeStringArray(user.techStack)
   const preferredRoles = normalizeStringArray(user.preferredRoles)
-  const participationCount = user.participations.length
-  const ongoingParticipationCount = user.participations.filter((item) => item.status === 'ongoing').length
+  const localParticipationByTeamCode = new Map(user.participations.map((item) => [item.teamCode, item]))
+  const supabaseTeamCodes = teams
+    .filter((team) => team.members?.some((member) => member.userId === user.userId))
+    .map((team) => team.teamCode)
+
+  const mergedTeamCodes = new Set<string>([
+    ...user.participations.map((item) => item.teamCode),
+    ...supabaseTeamCodes
+  ])
+
+  const participationCount = mergedTeamCodes.size
+  const ongoingParticipationCount = [...mergedTeamCodes].filter((teamCode) => {
+    const localParticipation = localParticipationByTeamCode.get(teamCode)
+    return (localParticipation?.status ?? 'ongoing') === 'ongoing'
+  }).length
   const activityPercent = Math.round(user.activityScore * 100)
   const filteredRoleOptions = filterOptions(ALL_ROLE_OPTIONS, roleQuery, editData.preferredRoles).slice(0, 8)
   const filteredPersonalityOptions = filterOptions(
@@ -270,6 +289,11 @@ export default function UserProfile() {
   const handleLogout = () => {
     logout()
     router.navigate('/')
+  }
+
+  const toggleAuxPanel = (panel: 'teams' | 'interests') => {
+    if (!onOpenPanel) return
+    onOpenPanel(activePanel === panel ? null : panel)
   }
 
   return (
@@ -584,7 +608,7 @@ export default function UserProfile() {
           </div>
         )}
         <p style={{ margin: '10px 0 0 0', fontSize: 11, color: '#64748b' }}>
-          현재 진행 중인 해커톤 {ongoingParticipationCount}개 · 가입일 {formatDate(user.createdAt)}
+          현재 참여 중인 팀 {ongoingParticipationCount}개 · 가입일 {formatDate(user.createdAt)}
         </p>
       </div>
 
@@ -835,7 +859,71 @@ export default function UserProfile() {
         )}
       </div>
 
-      <ParticipationSummary />
+      <div style={{ padding: 12, backgroundColor: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <p style={{ margin: '0 0 10px 0', fontSize: 12, fontWeight: 700, color: '#334155' }}>
+          보조 창
+        </p>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => toggleAuxPanel('teams')}
+            style={{
+              padding: '8px 10px',
+              borderRadius: 8,
+              border: activePanel === 'teams' ? '1px solid #2563eb' : '1px solid #cbd5e1',
+              backgroundColor: activePanel === 'teams' ? '#eff6ff' : '#ffffff',
+              color: activePanel === 'teams' ? '#1d4ed8' : '#334155',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'background-color 0.2s, border-color 0.2s'
+            }}
+            onMouseOver={(e) => {
+              if (activePanel !== 'teams') {
+                e.currentTarget.style.backgroundColor = '#f8fafc'
+                e.currentTarget.style.borderColor = '#94a3b8'
+              }
+            }}
+            onMouseOut={(e) => {
+              if (activePanel !== 'teams') {
+                e.currentTarget.style.backgroundColor = '#ffffff'
+                e.currentTarget.style.borderColor = '#cbd5e1'
+              }
+            }}
+          >
+            참가중인 팀 열기
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleAuxPanel('interests')}
+            style={{
+              padding: '8px 10px',
+              borderRadius: 8,
+              border: activePanel === 'interests' ? '1px solid #2563eb' : '1px solid #cbd5e1',
+              backgroundColor: activePanel === 'interests' ? '#eff6ff' : '#ffffff',
+              color: activePanel === 'interests' ? '#1d4ed8' : '#334155',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'background-color 0.2s, border-color 0.2s'
+            }}
+            onMouseOver={(e) => {
+              if (activePanel !== 'interests') {
+                e.currentTarget.style.backgroundColor = '#f8fafc'
+                e.currentTarget.style.borderColor = '#94a3b8'
+              }
+            }}
+            onMouseOut={(e) => {
+              if (activePanel !== 'interests') {
+                e.currentTarget.style.backgroundColor = '#ffffff'
+                e.currentTarget.style.borderColor = '#cbd5e1'
+              }
+            }}
+          >
+            관심있는 해커톤 리스트 열기
+          </button>
+        </div>
+      </div>
 
       <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
         <button
