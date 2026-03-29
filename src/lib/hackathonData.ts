@@ -1,9 +1,9 @@
-import rawHackathonData from "../data/hackathon_dummy_data.json"
+import rawHackathonData from "../data/hackathon_dummy_v4.json"
 import type { Hackathon } from "../types/hackathon"
 
 type RawHackathon = (typeof rawHackathonData)[number]
 
-export const HACKATHON_DATA_VERSION = "2026-03-25-dummy-v1"
+export const HACKATHON_DATA_VERSION = "2026-03-29-dummy-v4-img1"
 
 function normalizeStatus(status: string): string {
   if (status === "ongoing" || status === "upcoming" || status === "ended") {

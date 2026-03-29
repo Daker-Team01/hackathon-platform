@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import userDummyData from '../data/user_dummy_data.json'
+import userDummyData from '../data/user_dummy_v2.json'
 import { useChat } from './ChatContext'
 
 export type UserParticipation = {
@@ -126,7 +126,8 @@ const normalizeParticipations = (value: unknown): UserParticipation[] => {
       contributionScore: toFiniteNumber(item.contributionScore),
       status: typeof item.status === 'string' ? item.status : 'unknown'
     }))
-    .filter((item) => item.hackathonSlug && item.teamCode)
+    // 팀 단위 참여를 기준으로 보기 위해 hackathonSlug 미지정 항목도 유지
+    .filter((item) => item.teamCode)
 }
 
 const normalizePointValue = (value: unknown): { total: number } => {

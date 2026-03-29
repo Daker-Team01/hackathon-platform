@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import { useUser, type UserWorkStyle } from '../../contexts/UserContext'
 import { router } from '../../router/router'
-import ParticipationSummary from './ParticipationSummary'
+import usersData from '../../data/user_dummy_v2.json'
+import { useTeams } from '../../hooks/useTeams'
+
+type Props = {
+  activePanel?: 'teams' | 'interests' | null
+  onOpenPanel?: (panel: 'teams' | 'interests' | null) => void
+}
 
 const PERSONALITY_TAGS_OPTIONS = [
   '실행빠름',
@@ -87,9 +93,44 @@ const normalizeStringArray = (value: unknown): string[] => {
   return []
 }
 
-export default function UserProfile() {
+const buildSearchOptions = (values: string[]) =>
+  Array.from(
+    new Map(values.map((value) => [value.trim().toLowerCase(), value.trim()])).values()
+  ).filter(Boolean)
+
+const ALL_ROLE_OPTIONS = buildSearchOptions([
+  ...PREFERRED_ROLE_OPTIONS,
+  ...usersData.flatMap((user) => normalizeStringArray(user.preferredRoles)),
+])
+
+const ALL_PERSONALITY_TAG_OPTIONS = buildSearchOptions([
+  ...PERSONALITY_TAGS_OPTIONS,
+  ...usersData.flatMap((user) => normalizeStringArray(user.personalityTags)),
+])
+
+const ALL_TECH_STACK_OPTIONS = buildSearchOptions([
+  ...TECH_STACK_OPTIONS,
+  ...usersData.flatMap((user) => normalizeStringArray(user.skills)),
+])
+
+const filterOptions = (options: string[], query: string, selected: string[]) => {
+  const trimmedQuery = query.trim().toLowerCase()
+  const selectedSet = new Set(selected.map((item) => item.toLowerCase()))
+
+  return options.filter((option) => {
+    if (selectedSet.has(option.toLowerCase())) return false
+    if (!trimmedQuery) return true
+    return option.toLowerCase().includes(trimmedQuery)
+  })
+}
+
+export default function UserProfile({ activePanel = null, onOpenPanel }: Props) {
   const { user, logout, updateUser } = useUser()
+  const { data: teams = [] } = useTeams(undefined, { enabled: !!user })
   const [isEditing, setIsEditing] = useState(false)
+  const [roleQuery, setRoleQuery] = useState('')
+  const [personalityQuery, setPersonalityQuery] = useState('')
+  const [techQuery, setTechQuery] = useState('')
   const [editData, setEditData] = useState({
     nickname: user?.nickname || '',
     personalityTags: normalizeStringArray(user?.personalityTags),
@@ -107,9 +148,29 @@ export default function UserProfile() {
   const personalityTags = normalizeStringArray(user.personalityTags)
   const techStack = normalizeStringArray(user.techStack)
   const preferredRoles = normalizeStringArray(user.preferredRoles)
-  const participationCount = user.participations.length
-  const ongoingParticipationCount = user.participations.filter((item) => item.status === 'ongoing').length
+  const localParticipationByTeamCode = new Map(user.participations.map((item) => [item.teamCode, item]))
+  const supabaseTeamCodes = teams
+    .filter((team) => team.members?.some((member) => member.userId === user.userId))
+    .map((team) => team.teamCode)
+
+  const mergedTeamCodes = new Set<string>([
+    ...user.participations.map((item) => item.teamCode),
+    ...supabaseTeamCodes
+  ])
+
+  const participationCount = mergedTeamCodes.size
+  const ongoingParticipationCount = [...mergedTeamCodes].filter((teamCode) => {
+    const localParticipation = localParticipationByTeamCode.get(teamCode)
+    return (localParticipation?.status ?? 'ongoing') === 'ongoing'
+  }).length
   const activityPercent = Math.round(user.activityScore * 100)
+  const filteredRoleOptions = filterOptions(ALL_ROLE_OPTIONS, roleQuery, editData.preferredRoles).slice(0, 8)
+  const filteredPersonalityOptions = filterOptions(
+    ALL_PERSONALITY_TAG_OPTIONS,
+    personalityQuery,
+    editData.personalityTags
+  ).slice(0, 8)
+  const filteredTechOptions = filterOptions(ALL_TECH_STACK_OPTIONS, techQuery, editData.techStack).slice(0, 8)
 
   const actionButtonStyle = {
     padding: '8px 12px',
@@ -148,6 +209,9 @@ export default function UserProfile() {
   }
 
   const handleCancel = () => {
+    setRoleQuery('')
+    setPersonalityQuery('')
+    setTechQuery('')
     setEditData({
       nickname: user.nickname,
       personalityTags,
@@ -225,6 +289,11 @@ export default function UserProfile() {
   const handleLogout = () => {
     logout()
     router.navigate('/')
+  }
+
+  const toggleAuxPanel = (panel: 'teams' | 'interests') => {
+    if (!onOpenPanel) return
+    onOpenPanel(activePanel === panel ? null : panel)
   }
 
   return (
@@ -370,19 +439,17 @@ export default function UserProfile() {
       <div style={{ padding: 12, backgroundColor: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
         <p style={{ margin: '0 0 8px 0', fontSize: 12, fontWeight: 600, color: '#1f2937' }}>선호 역할</p>
         {isEditing ? (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-            {PREFERRED_ROLE_OPTIONS.map((role) => {
-              const selected = editData.preferredRoles.includes(role)
-
-              return (
+          <div style={{ display: 'grid', gap: 10, marginBottom: 12 }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {editData.preferredRoles.length > 0 ? editData.preferredRoles.map((role) => (
                 <button
-                  key={role}
+                  key={`selected-role-${role}`}
                   onClick={() => togglePreferredRole(role)}
                   style={{
                     padding: '6px 10px',
-                    border: selected ? '2px solid #0891b2' : '1px solid #d1d5db',
-                    backgroundColor: selected ? '#cffafe' : '#ffffff',
-                    color: selected ? '#155e75' : '#475569',
+                    border: '2px solid #0891b2',
+                    backgroundColor: '#cffafe',
+                    color: '#155e75',
                     borderRadius: 999,
                     fontSize: 12,
                     fontWeight: 600,
@@ -391,8 +458,77 @@ export default function UserProfile() {
                 >
                   {role}
                 </button>
-              )
-            })}
+              )) : (
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>아직 선택한 역할이 없습니다.</span>
+              )}
+            </div>
+            <div style={{ display: 'grid', gap: 8 }}>
+              <input
+                type="text"
+                value={roleQuery}
+                onChange={(e) => setRoleQuery(e.target.value)}
+                placeholder="역할 검색"
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  fontSize: 12,
+                  border: '1px solid #d1d5db',
+                  borderRadius: 8,
+                  backgroundColor: '#ffffff'
+                }}
+              />
+              {roleQuery.trim().length > 0 ? (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {filteredRoleOptions.length > 0 ? filteredRoleOptions.map((role) => (
+                    <button
+                      key={`searched-role-${role}`}
+                      onClick={() => {
+                        togglePreferredRole(role)
+                        setRoleQuery('')
+                      }}
+                      style={{
+                        padding: '6px 10px',
+                        border: '1px solid #d1d5db',
+                        backgroundColor: '#ffffff',
+                        color: '#475569',
+                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {role}
+                    </button>
+                  )) : (
+                    <span style={{ fontSize: 12, color: '#94a3b8' }}>검색 결과가 없습니다.</span>
+                  )}
+                </div>
+              ) : null}
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {PREFERRED_ROLE_OPTIONS.map((role) => {
+                const selected = editData.preferredRoles.includes(role)
+
+                return (
+                  <button
+                    key={role}
+                    onClick={() => togglePreferredRole(role)}
+                    style={{
+                      padding: '6px 10px',
+                      border: selected ? '2px solid #0891b2' : '1px solid #d1d5db',
+                      backgroundColor: selected ? '#cffafe' : '#ffffff',
+                      color: selected ? '#155e75' : '#475569',
+                      borderRadius: 999,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {role}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -472,7 +608,7 @@ export default function UserProfile() {
           </div>
         )}
         <p style={{ margin: '10px 0 0 0', fontSize: 11, color: '#64748b' }}>
-          현재 진행 중인 해커톤 {ongoingParticipationCount}개 · 가입일 {formatDate(user.createdAt)}
+          현재 참여 중인 팀 {ongoingParticipationCount}개 · 가입일 {formatDate(user.createdAt)}
         </p>
       </div>
 
@@ -481,38 +617,106 @@ export default function UserProfile() {
           성격 태그 {isEditing && <span style={{fontSize: 11, color: '#6b7280'}}>({editData.personalityTags.length}/5)</span>}
         </p>
         {isEditing ? (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {PERSONALITY_TAGS_OPTIONS.map(tag => (
-              <button
-                key={tag}
-                onClick={() => togglePersonalityTag(tag)}
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {editData.personalityTags.length > 0 ? editData.personalityTags.map(tag => (
+                <button
+                  key={`selected-tag-${tag}`}
+                  onClick={() => togglePersonalityTag(tag)}
+                  style={{
+                    padding: '6px 10px',
+                    border: '2px solid #be185d',
+                    backgroundColor: '#fce7f3',
+                    color: '#be185d',
+                    borderRadius: 12,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {tag}
+                </button>
+              )) : (
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>아직 선택한 태그가 없습니다.</span>
+              )}
+            </div>
+            <div style={{ display: 'grid', gap: 8 }}>
+              <input
+                type="text"
+                value={personalityQuery}
+                onChange={(e) => setPersonalityQuery(e.target.value)}
+                placeholder="성격 태그 검색"
                 style={{
-                  padding: '6px 10px',
-                  border: editData.personalityTags.includes(tag)
-                    ? '2px solid #be185d'
-                    : '1px solid #d1d5db',
-                  backgroundColor: editData.personalityTags.includes(tag)
-                    ? '#fce7f3'
-                    : '#f9fafb',
-                  color: editData.personalityTags.includes(tag)
-                    ? '#be185d'
-                    : '#6b7280',
-                  borderRadius: 12,
+                  width: '100%',
+                  padding: '8px 10px',
                   fontSize: 12,
-                  fontWeight: 500,
-                  cursor: editData.personalityTags.length >= 5 && !editData.personalityTags.includes(tag)
-                    ? 'not-allowed'
-                    : 'pointer',
-                  opacity: editData.personalityTags.length >= 5 && !editData.personalityTags.includes(tag)
-                    ? 0.5
-                    : 1,
-                  transition: 'all 0.2s'
+                  border: '1px solid #d1d5db',
+                  borderRadius: 8,
+                  backgroundColor: '#ffffff'
                 }}
-                disabled={editData.personalityTags.length >= 5 && !editData.personalityTags.includes(tag)}
-              >
-                {tag}
-              </button>
-            ))}
+              />
+              {personalityQuery.trim().length > 0 ? (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {filteredPersonalityOptions.length > 0 ? filteredPersonalityOptions.map(tag => (
+                    <button
+                      key={`searched-tag-${tag}`}
+                      onClick={() => {
+                        togglePersonalityTag(tag)
+                        setPersonalityQuery('')
+                      }}
+                      disabled={editData.personalityTags.length >= 5}
+                      style={{
+                        padding: '6px 10px',
+                        border: '1px solid #d1d5db',
+                        backgroundColor: editData.personalityTags.length >= 5 ? '#f3f4f6' : '#ffffff',
+                        color: '#6b7280',
+                        borderRadius: 12,
+                        fontSize: 12,
+                        fontWeight: 500,
+                        cursor: editData.personalityTags.length >= 5 ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {tag}
+                    </button>
+                  )) : (
+                    <span style={{ fontSize: 12, color: '#94a3b8' }}>검색 결과가 없습니다.</span>
+                  )}
+                </div>
+              ) : null}
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {PERSONALITY_TAGS_OPTIONS.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => togglePersonalityTag(tag)}
+                  style={{
+                    padding: '6px 10px',
+                    border: editData.personalityTags.includes(tag)
+                      ? '2px solid #be185d'
+                      : '1px solid #d1d5db',
+                    backgroundColor: editData.personalityTags.includes(tag)
+                      ? '#fce7f3'
+                      : '#f9fafb',
+                    color: editData.personalityTags.includes(tag)
+                      ? '#be185d'
+                      : '#6b7280',
+                    borderRadius: 12,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: editData.personalityTags.length >= 5 && !editData.personalityTags.includes(tag)
+                      ? 'not-allowed'
+                      : 'pointer',
+                    opacity: editData.personalityTags.length >= 5 && !editData.personalityTags.includes(tag)
+                      ? 0.5
+                      : 1,
+                    transition: 'all 0.2s'
+                  }}
+                  disabled={editData.personalityTags.length >= 5 && !editData.personalityTags.includes(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -540,32 +744,99 @@ export default function UserProfile() {
           기술 스택
         </p>
         {isEditing ? (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {TECH_STACK_OPTIONS.map(tech => (
-              <button
-                key={tech}
-                onClick={() => toggleTechStack(tech)}
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {editData.techStack.length > 0 ? editData.techStack.map(tech => (
+                <button
+                  key={`selected-tech-${tech}`}
+                  onClick={() => toggleTechStack(tech)}
+                  style={{
+                    padding: '6px 10px',
+                    border: '2px solid #1e40af',
+                    backgroundColor: '#dbeafe',
+                    color: '#1e40af',
+                    borderRadius: 12,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {tech}
+                </button>
+              )) : (
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>아직 선택한 기술이 없습니다.</span>
+              )}
+            </div>
+            <div style={{ display: 'grid', gap: 8 }}>
+              <input
+                type="text"
+                value={techQuery}
+                onChange={(e) => setTechQuery(e.target.value)}
+                placeholder="기술 스택 검색"
                 style={{
-                  padding: '6px 10px',
-                  border: editData.techStack.includes(tech)
-                    ? '2px solid #1e40af'
-                    : '1px solid #d1d5db',
-                  backgroundColor: editData.techStack.includes(tech)
-                    ? '#dbeafe'
-                    : '#f9fafb',
-                  color: editData.techStack.includes(tech)
-                    ? '#1e40af'
-                    : '#6b7280',
-                  borderRadius: 12,
+                  width: '100%',
+                  padding: '8px 10px',
                   fontSize: 12,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  border: '1px solid #d1d5db',
+                  borderRadius: 8,
+                  backgroundColor: '#ffffff'
                 }}
-              >
-                {tech}
-              </button>
-            ))}
+              />
+              {techQuery.trim().length > 0 ? (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {filteredTechOptions.length > 0 ? filteredTechOptions.map(tech => (
+                    <button
+                      key={`searched-tech-${tech}`}
+                      onClick={() => {
+                        toggleTechStack(tech)
+                        setTechQuery('')
+                      }}
+                      style={{
+                        padding: '6px 10px',
+                        border: '1px solid #d1d5db',
+                        backgroundColor: '#ffffff',
+                        color: '#6b7280',
+                        borderRadius: 12,
+                        fontSize: 12,
+                        fontWeight: 500,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {tech}
+                    </button>
+                  )) : (
+                    <span style={{ fontSize: 12, color: '#94a3b8' }}>검색 결과가 없습니다.</span>
+                  )}
+                </div>
+              ) : null}
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {TECH_STACK_OPTIONS.map(tech => (
+                <button
+                  key={tech}
+                  onClick={() => toggleTechStack(tech)}
+                  style={{
+                    padding: '6px 10px',
+                    border: editData.techStack.includes(tech)
+                      ? '2px solid #1e40af'
+                      : '1px solid #d1d5db',
+                    backgroundColor: editData.techStack.includes(tech)
+                      ? '#dbeafe'
+                      : '#f9fafb',
+                    color: editData.techStack.includes(tech)
+                      ? '#1e40af'
+                      : '#6b7280',
+                    borderRadius: 12,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {tech}
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -588,7 +859,71 @@ export default function UserProfile() {
         )}
       </div>
 
-      <ParticipationSummary />
+      <div style={{ padding: 12, backgroundColor: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <p style={{ margin: '0 0 10px 0', fontSize: 12, fontWeight: 700, color: '#334155' }}>
+          보조 창
+        </p>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => toggleAuxPanel('teams')}
+            style={{
+              padding: '8px 10px',
+              borderRadius: 8,
+              border: activePanel === 'teams' ? '1px solid #2563eb' : '1px solid #cbd5e1',
+              backgroundColor: activePanel === 'teams' ? '#eff6ff' : '#ffffff',
+              color: activePanel === 'teams' ? '#1d4ed8' : '#334155',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'background-color 0.2s, border-color 0.2s'
+            }}
+            onMouseOver={(e) => {
+              if (activePanel !== 'teams') {
+                e.currentTarget.style.backgroundColor = '#f8fafc'
+                e.currentTarget.style.borderColor = '#94a3b8'
+              }
+            }}
+            onMouseOut={(e) => {
+              if (activePanel !== 'teams') {
+                e.currentTarget.style.backgroundColor = '#ffffff'
+                e.currentTarget.style.borderColor = '#cbd5e1'
+              }
+            }}
+          >
+            참가중인 팀 열기
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleAuxPanel('interests')}
+            style={{
+              padding: '8px 10px',
+              borderRadius: 8,
+              border: activePanel === 'interests' ? '1px solid #2563eb' : '1px solid #cbd5e1',
+              backgroundColor: activePanel === 'interests' ? '#eff6ff' : '#ffffff',
+              color: activePanel === 'interests' ? '#1d4ed8' : '#334155',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'background-color 0.2s, border-color 0.2s'
+            }}
+            onMouseOver={(e) => {
+              if (activePanel !== 'interests') {
+                e.currentTarget.style.backgroundColor = '#f8fafc'
+                e.currentTarget.style.borderColor = '#94a3b8'
+              }
+            }}
+            onMouseOut={(e) => {
+              if (activePanel !== 'interests') {
+                e.currentTarget.style.backgroundColor = '#ffffff'
+                e.currentTarget.style.borderColor = '#cbd5e1'
+              }
+            }}
+          >
+            관심있는 해커톤 리스트 열기
+          </button>
+        </div>
+      </div>
 
       <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
         <button

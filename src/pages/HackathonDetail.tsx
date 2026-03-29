@@ -216,7 +216,7 @@ export default function HackathonDetail() {
         <div className="mt-8 min-h-[500px]">
           <TabsContent value="overview" className="m-0 focus-visible:ring-0">
             <Card className="p-8 border-0 shadow-lg bg-white rounded-3xl">
-              <Overview />
+              <Overview hackathonSlug={hackathon.slug} />
             </Card>
           </TabsContent>
           <TabsContent value="eval" className="m-0 focus-visible:ring-0">
@@ -226,12 +226,12 @@ export default function HackathonDetail() {
           </TabsContent>
           <TabsContent value="schedule" className="m-0 focus-visible:ring-0">
             <Card className="p-8 border-0 shadow-lg bg-white rounded-3xl">
-              <Schedule />
+              <Schedule hackathonSlug={hackathon.slug} />
             </Card>
           </TabsContent>
           <TabsContent value="prize" className="m-0 focus-visible:ring-0">
             <Card className="p-8 border-0 shadow-lg bg-white rounded-3xl">
-              <Prize />
+              <Prize hackathonSlug={hackathon.slug} />
             </Card>
           </TabsContent>
           <TabsContent value="teams" className="m-0 focus-visible:ring-0">
