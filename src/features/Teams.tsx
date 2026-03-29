@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, CheckCircle2, Info, Users } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ExternalLink, Info, Users } from 'lucide-react'
 import { useTeams, useUpdateTeam, useUserInvites, useRespondToInvite } from '../hooks/useTeams'
 import { useUser } from '../contexts/UserContext'
 import { useLog } from '../contexts/LogContext'
@@ -100,47 +100,35 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
   }
 
   return (
-    <section>
-      <h2>Teams</h2>
+    <section className="space-y-6">
+      <div className="rounded-[28px] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-cyan-50 p-6 sm:p-8">
+        <p className="text-xs font-black uppercase tracking-[0.25em] text-sky-600/70">Collaboration</p>
+        <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">Teams</h2>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
+          이 해커톤에 참여 중인 팀을 확인하고, 새 팀을 만들거나 기존 내 팀으로 참여를 신청할 수 있습니다.
+        </p>
+      </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div className="flex flex-wrap items-center justify-center gap-3">
         {!isEnded ? (
           <>
-            <button
-              type="button"
+            <Button
               onClick={handleOpenCreateNotice}
-              style={{
-                backgroundColor: '#ebf8ff',
-                color: '#2b6cb0',
-                border: '1px solid #bee3f8',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
+              variant="outline"
+              className="rounded-2xl border-sky-200 bg-sky-50 px-5 py-6 font-bold text-sky-700 hover:bg-sky-100"
             >
               새 팀 생성하기
-            </button>
+            </Button>
             {user && myAvailableTeams && myAvailableTeams.length > 0 && !hasMyTeamInHackathon && (
-              <button
-                type="button"
+              <Button
                 onClick={() => setApplyModalOpen(true)}
-                style={{
-                  backgroundImage: 'linear-gradient(90deg, #3B82F6, #0EA5E9)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  boxShadow: '0 8px 20px rgba(14, 165, 233, 0.25)'
-                }}
+                className="rounded-2xl bg-gradient-to-r from-[#3B82F6] to-[#0EA5E9] px-5 py-6 font-bold text-white shadow-lg hover:opacity-95"
               >
                 내 팀으로 신청하기 ({myAvailableTeams.length})
-              </button>
+              </Button>
             )}
             {user && hasMyTeamInHackathon && (
-              <span className="text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
+              <span className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-700">
                 이미 이 해커톤에 참여 중인 내 팀이 있어 중복 신청할 수 없습니다.
               </span>
             )}
@@ -154,11 +142,17 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
       </div>
 
       {isLoading ? (
-        <p>팀 목록을 불러오는 중입니다.</p>
+        <div className="rounded-3xl border border-slate-100 bg-slate-50 p-8 text-center text-slate-600">
+          팀 목록을 불러오는 중입니다.
+        </div>
       ) : !teams || teams.length === 0 ? (
-        <p>등록된 팀이 없습니다.</p>
+        <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
+          <p className="text-base font-semibold text-slate-700">등록된 팀이 없습니다.</p>
+          <p className="mt-2 text-sm text-slate-500">첫 번째 팀을 만들어 해커톤 참여를 시작해보세요.</p>
+        </div>
       ) : (
-        teams.map((team) => {
+        <div className="grid gap-5 lg:grid-cols-2">
+        {teams.map((team) => {
           // 해당 팀에서 온 초대 중 PENDING인 것을 먼저 찾고, 없으면 가장 최근의 것을 찾음
           const teamInvites = userInvites?.filter((inv) => inv.teamId === team.teamCode) || []
           const invite =
@@ -172,78 +166,106 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
           return (
             <article
               key={team.teamCode}
-              style={{ border: '1px solid #ccc', padding: 12, marginBottom: 8, borderRadius: 8 }}
+              className="rounded-[28px] border border-slate-100 bg-gradient-to-b from-white to-slate-50 p-6 shadow-sm transition-shadow hover:shadow-lg"
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                <div>
-                  <h3>{team.name}</h3>
-                  <p>{team.intro}</p>
-                  <p>
-                    Members: {team.memberCount}/{team.maxMembers}명
+              <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="break-words text-xl font-black tracking-tight text-slate-900">{team.name}</h3>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-bold ${
+                        team.isOpen
+                          ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                          : 'border border-slate-200 bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {team.isOpen ? '모집중' : '모집마감'}
+                    </span>
+                  </div>
+
+                  <p className="mt-3 whitespace-pre-line break-words text-sm leading-7 text-slate-600">
+                    {team.intro || '팀 소개가 아직 등록되지 않았습니다.'}
                   </p>
-                  <p>Status: {team.isOpen ? '모집중' : '모집마감'}</p>
-                  <p>Looking For: {team.lookingFor.join(', ') || '-'}</p>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-4">
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-600/70">Members</p>
+                      <p className="mt-2 text-lg font-black text-slate-900">
+                        {team.memberCount}/{team.maxMembers}명
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-violet-100 bg-violet-50/70 p-4">
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-600/70">Roles Needed</p>
+                      <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-700">
+                        {team.lookingFor.join(', ') || '모집 역할 정보 없음'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {team.members.length > 0 ? (
+                    <div className="mt-5">
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Team Members</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {team.members.map((member) => (
+                          <span
+                            key={`${team.teamCode}-${member.userId}`}
+                            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                          >
+                            {member.userName} · {member.role === 'LEADER' ? '리더' : '팀원'}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-5 rounded-2xl border border-slate-100 bg-white px-4 py-4">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Contact</p>
+                    <div className="mt-2 flex items-start gap-2">
+                      <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                      <p className="break-all text-sm leading-6 text-slate-600">
+                        {team.contact.url || '연락처 정보 없음'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+                <div className="flex w-full flex-col gap-3 xl:w-44">
                   {isLeader && (
-                    <button
+                    <Button
                       onClick={() => navigate(`/team/${team.teamCode}/manage`)}
-                      style={{
-                        backgroundColor: '#3b82f6',
-                        color: 'white',
-                        border: 'none',
-                        padding: '8px 12px',
-                        borderRadius: 4,
-                        cursor: 'pointer'
-                      }}
+                      className="rounded-2xl bg-slate-900 font-bold text-white hover:bg-slate-800"
                     >
                       관리
-                    </button>
+                    </Button>
                   )}
 
                   {invite && (
-                    <div style={{ border: '1px solid #eee', padding: 8, borderRadius: 4, backgroundColor: '#f9fafb' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 'bold' }}>팀 초대</p>
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">팀 초대</p>
                       {invite.status === 'PENDING' ? (
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <button
+                        <div className="mt-3 flex gap-2">
+                          <Button
                             onClick={() => handleRespond(invite.id, 'ACCEPTED')}
                             disabled={respondMutation.isPending}
-                            style={{
-                              backgroundColor: '#10b981',
-                              color: 'white',
-                              border: 'none',
-                              padding: '4px 8px',
-                              borderRadius: 4,
-                              fontSize: '0.8rem',
-                              cursor: 'pointer'
-                            }}
+                            className="flex-1 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600"
                           >
                             수락
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => handleRespond(invite.id, 'REJECTED')}
                             disabled={respondMutation.isPending}
-                            style={{
-                              backgroundColor: '#ef4444',
-                              color: 'white',
-                              border: 'none',
-                              padding: '4px 8px',
-                              borderRadius: 4,
-                              fontSize: '0.8rem',
-                              cursor: 'pointer'
-                            }}
+                            className="flex-1 rounded-xl bg-rose-500 text-white hover:bg-rose-600"
                           >
                             거절
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <span
-                          style={{
-                            fontSize: '0.85rem',
-                            fontWeight: 'bold',
-                            color: invite.status === 'ACCEPTED' ? '#10b981' : '#ef4444'
-                          }}
+                          className={`mt-3 inline-flex rounded-full px-3 py-1.5 text-xs font-bold ${
+                            invite.status === 'ACCEPTED'
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : 'bg-rose-50 text-rose-600'
+                          }`}
                         >
                           {invite.status === 'ACCEPTED' ? '초대 수락됨' : '초대 거절됨'}
                         </span>
@@ -252,10 +274,10 @@ export default function Teams({ hackathonSlug }: TeamsProps) {
                   )}
                 </div>
               </div>
-              <p style={{ marginTop: 10, fontSize: '0.9rem', color: '#666' }}>Contact: {team.contact.url}</p>
             </article>
           )
-        })
+        })}
+        </div>
       )}
 
       {/* 팀 생성 안내 모달 */}

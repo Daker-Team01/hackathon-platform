@@ -1,4 +1,4 @@
-import rawHackathonDetailData from "../data/public_hackathon_detail.json"
+import rawHackathonDetailData from "../data/public_hackathon_detail_v4.json"
 import { normalizedHackathons } from "./hackathonData"
 
 type EvalBreakdownItem = {

@@ -1,0 +1,3212 @@
+[
+  {
+    "slug": "hack-2",
+    "title": "서울 금융 소비 패턴 데이터 분석 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "서울 금융 소비 패턴 데이터 분석 해커톤는 실제 서비스 또는 공공 영역의 데이터를 활용해 문제를 분석하고, 실행 가능한 데이터 기반 해결안을 제시하는 해커톤입니다. 참가자는 Python, Pandas, SQL 등을 활용해 분석 결과와 서비스 아이디어를 함께 제안합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "데이터 출처와 전처리 과정을 제출물에 명시해야 합니다.",
+          "분석 결과는 재현 가능해야 하며 주요 가정은 문서에 설명해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-2",
+          "faq": "https://example.com/public/faq/hack-2"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-03-03T08:59:59+09:00"
+          },
+          {
+            "name": "중간 점검",
+            "at": "2026-03-13T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-03-17T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-03-22T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-03-27T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 3000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 1800000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1200000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-2"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-2#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-2#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-3",
+    "title": "부산 관광 추천 모바일 앱 개발 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "부산 관광 추천 모바일 앱 개발 해커톤는 현장 문제를 해결하는 모바일 앱을 기획·구현하는 해커톤입니다. 사용자 경험과 핵심 기능 완성도를 중심으로 평가하며, Flutter, Firebase, REST API 기반의 실전형 앱 개발을 목표로 합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "심사자가 주요 기능을 확인할 수 있는 데모 계정 또는 시연 방법을 제공해야 합니다.",
+          "앱 설치가 어려운 경우 동작 영상을 함께 제출할 수 있습니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-3",
+          "faq": "https://example.com/public/faq/hack-3"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "기능 완성도, 사용성, 기술 구현 수준을 중심으로 평가합니다.",
+        "scoreSource": "judge",
+        "limits": {
+          "maxRuntimeSec": 900,
+          "maxSubmissionsPerDay": 3
+        },
+        "scoreDisplay": {
+          "label": "심사 평가 점수",
+          "breakdown": [
+            {
+              "key": "functionality",
+              "label": "기능 완성도",
+              "weightPercent": 40
+            },
+            {
+              "key": "ux",
+              "label": "사용 경험",
+              "weightPercent": 30
+            },
+            {
+              "key": "technical_quality",
+              "label": "기술 구현",
+              "weightPercent": 30
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-03-03T08:59:59+09:00"
+          },
+          {
+            "name": "중간 점검",
+            "at": "2026-03-13T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-03-17T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-03-22T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-03-27T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 2500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 1500000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1000000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-3"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "url",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-3#submit",
+        "guide": [
+          "동작 가능한 배포 URL을 제출합니다.",
+          "핵심 기능, 테스트 계정, 실행 방법을 PDF에 정리합니다.",
+          "배포 링크는 심사 기간 동안 외부에서 접근 가능해야 합니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-3#leaderboard",
+        "note": "심사 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-4",
+    "title": "대전 실시간 협업 플랫폼 개발 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "대전 실시간 협업 플랫폼 개발 해커톤는 실제 사용 가능한 웹 서비스를 짧은 기간 안에 구현하는 해커톤입니다. 협업, 배포, 핵심 기능 설계를 포함한 전반적인 제품 완성도를 평가합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 6
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "배포 URL은 심사 기간 동안 외부에서 접근 가능해야 합니다.",
+          "테스트 계정이 필요한 경우 안내 정보를 함께 제출해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-4",
+          "faq": "https://example.com/public/faq/hack-4"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "기능 완성도, 사용성, 기술 구현 수준을 중심으로 평가합니다.",
+        "scoreSource": "judge",
+        "limits": {
+          "maxRuntimeSec": 900,
+          "maxSubmissionsPerDay": 3
+        },
+        "scoreDisplay": {
+          "label": "심사 평가 점수",
+          "breakdown": [
+            {
+              "key": "functionality",
+              "label": "기능 완성도",
+              "weightPercent": 40
+            },
+            {
+              "key": "ux",
+              "label": "사용 경험",
+              "weightPercent": 30
+            },
+            {
+              "key": "technical_quality",
+              "label": "기술 구현",
+              "weightPercent": 30
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-03-03T08:59:59+09:00"
+          },
+          {
+            "name": "중간 점검",
+            "at": "2026-03-13T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-03-17T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-03-22T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-03-27T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 2500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 1500000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1000000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-4"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "url",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-4#submit",
+        "guide": [
+          "동작 가능한 배포 URL을 제출합니다.",
+          "핵심 기능, 테스트 계정, 실행 방법을 PDF에 정리합니다.",
+          "배포 링크는 심사 기간 동안 외부에서 접근 가능해야 합니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-4#leaderboard",
+        "note": "심사 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-5",
+    "title": "광주 공공데이터 기반 시민 서비스 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "광주 공공데이터 기반 시민 서비스 해커톤는 실제 서비스 또는 공공 영역의 데이터를 활용해 문제를 분석하고, 실행 가능한 데이터 기반 해결안을 제시하는 해커톤입니다. 참가자는 Python, FastAPI, React 등을 활용해 분석 결과와 서비스 아이디어를 함께 제안합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "데이터 출처와 전처리 과정을 제출물에 명시해야 합니다.",
+          "분석 결과는 재현 가능해야 하며 주요 가정은 문서에 설명해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-5",
+          "faq": "https://example.com/public/faq/hack-5"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-03-03T08:59:59+09:00"
+          },
+          {
+            "name": "중간 점검",
+            "at": "2026-03-13T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-03-17T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-03-22T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-03-27T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 5000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 3000000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 2000000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-5"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-5#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-5#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-6",
+    "title": "제주 스마트 농업 IoT 데이터 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "제주 스마트 농업 IoT 데이터 해커톤는 센서 데이터와 연결 서비스 설계를 바탕으로 스마트 환경 문제를 해결하는 해커톤입니다. 현장 데이터 수집, 처리, 시각화까지 이어지는 전체 흐름을 구현하는 것이 핵심입니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "하드웨어가 필요한 경우 센서 연결 구조와 데이터 흐름을 문서화해야 합니다.",
+          "실물 장비 제출은 필수가 아니며 영상 또는 대시보드 시연으로 대체할 수 있습니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-6",
+          "faq": "https://example.com/public/faq/hack-6"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "기능 완성도, 사용성, 기술 구현 수준을 중심으로 평가합니다.",
+        "scoreSource": "judge",
+        "limits": {
+          "maxRuntimeSec": 900,
+          "maxSubmissionsPerDay": 3
+        },
+        "scoreDisplay": {
+          "label": "심사 평가 점수",
+          "breakdown": [
+            {
+              "key": "functionality",
+              "label": "기능 완성도",
+              "weightPercent": 40
+            },
+            {
+              "key": "ux",
+              "label": "사용 경험",
+              "weightPercent": 30
+            },
+            {
+              "key": "technical_quality",
+              "label": "기술 구현",
+              "weightPercent": 30
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-03-03T08:59:59+09:00"
+          },
+          {
+            "name": "중간 점검",
+            "at": "2026-03-13T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-03-17T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-03-22T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-03-27T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 5000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 3000000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 2000000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-6"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "url",
+          "video",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-6#submit",
+        "guide": [
+          "시연 가능한 웹 대시보드 또는 저장소 링크를 제출합니다.",
+          "센서 흐름과 동작 장면을 확인할 수 있는 영상 링크를 함께 제출합니다.",
+          "장치 구성, 데이터 수집 방식, 실행 절차를 PDF에 정리합니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-6#leaderboard",
+        "note": "심사 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-2-1",
+    "title": "서울 청년 정책 데이터 아이디어톤",
+    "sections": {
+      "overview": {
+        "summary": "서울 청년 정책 데이터 아이디어톤는 데이터와 현장 맥락을 바탕으로 실행 가능한 정책·서비스 아이디어를 제안하는 아이디어톤입니다. 문제 정의의 명확성과 제안의 현실성을 중점적으로 평가합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "아이디어의 문제 정의, 대상 사용자, 기대 효과를 명확히 제시해야 합니다.",
+          "발표 자료 링크를 제출하는 경우 열람 권한을 외부 공개로 설정해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-2-1",
+          "faq": "https://example.com/public/faq/hack-2-1"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "문제 정의, 아이디어의 실효성, 발표 전달력을 투표와 심사로 평가합니다.",
+        "scoreSource": "vote",
+        "limits": {
+          "maxRuntimeSec": 600,
+          "maxSubmissionsPerDay": 3
+        },
+        "scoreDisplay": {
+          "label": "투표 기반 점수",
+          "breakdown": [
+            {
+              "key": "participant",
+              "label": "참가자 투표",
+              "weightPercent": 40
+            },
+            {
+              "key": "judge",
+              "label": "심사위원 평가",
+              "weightPercent": 60
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-07-11T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-07-18T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-07-25T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-07-30T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-08-06T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 2500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 1500000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1000000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-2-1"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "text",
+          "url",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-2-1#submit",
+        "guide": [
+          "아이디어 설명문 또는 발표 자료 링크를 제출합니다.",
+          "문제 정의, 해결 방식, 기대 효과를 PDF에 정리합니다.",
+          "제출 후 수정이 필요한 경우 마감 전 새 버전으로 다시 제출합니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-2-1#leaderboard",
+        "note": "투표 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-3-1",
+    "title": "대구 스마트 교통 데이터 분석 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "대구 스마트 교통 데이터 분석 해커톤는 실제 서비스 또는 공공 영역의 데이터를 활용해 문제를 분석하고, 실행 가능한 데이터 기반 해결안을 제시하는 해커톤입니다. 참가자는 Python, Pandas, Visualization 등을 활용해 분석 결과와 서비스 아이디어를 함께 제안합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 5
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "데이터 출처와 전처리 과정을 제출물에 명시해야 합니다.",
+          "분석 결과는 재현 가능해야 하며 주요 가정은 문서에 설명해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-3-1",
+          "faq": "https://example.com/public/faq/hack-3-1"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-04-13T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-04-20T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-04-27T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-05-02T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-05-09T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 5000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 3000000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 2000000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-3-1"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-3-1#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-3-1#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-4-1",
+    "title": "판교 스타트업 협업 툴 개발 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "판교 스타트업 협업 툴 개발 해커톤는 실제 사용 가능한 웹 서비스를 짧은 기간 안에 구현하는 해커톤입니다. 협업, 배포, 핵심 기능 설계를 포함한 전반적인 제품 완성도를 평가합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 5
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "배포 URL은 심사 기간 동안 외부에서 접근 가능해야 합니다.",
+          "테스트 계정이 필요한 경우 안내 정보를 함께 제출해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-4-1",
+          "faq": "https://example.com/public/faq/hack-4-1"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "기능 완성도, 사용성, 기술 구현 수준을 중심으로 평가합니다.",
+        "scoreSource": "judge",
+        "limits": {
+          "maxRuntimeSec": 900,
+          "maxSubmissionsPerDay": 3
+        },
+        "scoreDisplay": {
+          "label": "심사 평가 점수",
+          "breakdown": [
+            {
+              "key": "functionality",
+              "label": "기능 완성도",
+              "weightPercent": 40
+            },
+            {
+              "key": "ux",
+              "label": "사용 경험",
+              "weightPercent": 30
+            },
+            {
+              "key": "technical_quality",
+              "label": "기술 구현",
+              "weightPercent": 30
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-03-21T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-03-28T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-04-04T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-04-09T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-04-16T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 3500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 2100000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1400000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-4-1"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "url",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-4-1#submit",
+        "guide": [
+          "동작 가능한 배포 URL을 제출합니다.",
+          "핵심 기능, 테스트 계정, 실행 방법을 PDF에 정리합니다.",
+          "배포 링크는 심사 기간 동안 외부에서 접근 가능해야 합니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-4-1#leaderboard",
+        "note": "심사 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-5-1",
+    "title": "인천 물류 데이터 최적화 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "인천 물류 데이터 최적화 해커톤는 실제 서비스 또는 공공 영역의 데이터를 활용해 문제를 분석하고, 실행 가능한 데이터 기반 해결안을 제시하는 해커톤입니다. 참가자는 Python, Optimization, SQL 등을 활용해 분석 결과와 서비스 아이디어를 함께 제안합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 6
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "데이터 출처와 전처리 과정을 제출물에 명시해야 합니다.",
+          "분석 결과는 재현 가능해야 하며 주요 가정은 문서에 설명해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-5-1",
+          "faq": "https://example.com/public/faq/hack-5-1"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-08-30T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-09-06T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-09-13T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-09-18T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-09-25T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 3000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 1800000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1200000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-5-1"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-5-1#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-5-1#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-6-1",
+    "title": "강릉 관광 데이터 시각화 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "강릉 관광 데이터 시각화 해커톤는 실제 서비스 또는 공공 영역의 데이터를 활용해 문제를 분석하고, 실행 가능한 데이터 기반 해결안을 제시하는 해커톤입니다. 참가자는 Python, Tableau, Visualization 등을 활용해 분석 결과와 서비스 아이디어를 함께 제안합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 6
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "데이터 출처와 전처리 과정을 제출물에 명시해야 합니다.",
+          "분석 결과는 재현 가능해야 하며 주요 가정은 문서에 설명해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-6-1",
+          "faq": "https://example.com/public/faq/hack-6-1"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-04-15T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-04-22T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-04-29T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-05-04T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-05-11T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 2500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 1500000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1000000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-6-1"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-6-1#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-6-1#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-7",
+    "title": "서울 헬스케어 데이터 서비스 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "서울 헬스케어 데이터 서비스 해커톤는 건강 데이터를 활용해 사용자에게 도움이 되는 디지털 헬스 서비스를 제안·구현하는 해커톤입니다. 데이터 활용의 적절성과 서비스 경험의 완성도를 함께 봅니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "의료 또는 건강 데이터는 비식별 예시 데이터만 사용해야 합니다.",
+          "개인정보가 포함된 실제 데이터를 제출물에 포함할 수 없습니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-7",
+          "faq": "https://example.com/public/faq/hack-7"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "기능 완성도, 사용성, 기술 구현 수준을 중심으로 평가합니다.",
+        "scoreSource": "judge",
+        "limits": {
+          "maxRuntimeSec": 900,
+          "maxSubmissionsPerDay": 3
+        },
+        "scoreDisplay": {
+          "label": "심사 평가 점수",
+          "breakdown": [
+            {
+              "key": "functionality",
+              "label": "기능 완성도",
+              "weightPercent": 40
+            },
+            {
+              "key": "ux",
+              "label": "사용 경험",
+              "weightPercent": 30
+            },
+            {
+              "key": "technical_quality",
+              "label": "기술 구현",
+              "weightPercent": 30
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-04-28T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-05-05T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-05-12T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-05-17T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-05-24T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 2500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 1500000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1000000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-7"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "url",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-7#submit",
+        "guide": [
+          "동작 가능한 배포 URL을 제출합니다.",
+          "핵심 기능, 테스트 계정, 실행 방법을 PDF에 정리합니다.",
+          "배포 링크는 심사 기간 동안 외부에서 접근 가능해야 합니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-7#leaderboard",
+        "note": "심사 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-8",
+    "title": "대전 AI 문서 요약 서비스 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "대전 AI 문서 요약 서비스 해커톤는 문서 처리 문제를 AI로 해결하는 서비스형 해커톤입니다. 모델 성능뿐 아니라 실제 서비스에 연결했을 때의 활용성과 응답 품질까지 함께 평가합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 6
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "사전학습 모델 사용 시 출처와 사용 범위를 명시해야 합니다.",
+          "평가 환경에서 실행 가능한 형태로 제출해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-8",
+          "faq": "https://example.com/public/faq/hack-8"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "모델 성능, 응답 품질, 서비스 적용 가능성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1800,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "AI 평가 점수",
+          "breakdown": [
+            {
+              "key": "model_quality",
+              "label": "모델 품질",
+              "weightPercent": 50
+            },
+            {
+              "key": "service_fitness",
+              "label": "서비스 적합성",
+              "weightPercent": 30
+            },
+            {
+              "key": "runtime_efficiency",
+              "label": "추론 효율",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-07-26T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-08-02T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-08-09T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-08-14T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-08-21T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 2000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 1200000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 800000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-8"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-8#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-8#leaderboard",
+        "note": "AI 평가 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-9",
+    "title": "부산 반려동물 건강관리 앱 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "부산 반려동물 건강관리 앱 해커톤는 현장 문제를 해결하는 모바일 앱을 기획·구현하는 해커톤입니다. 사용자 경험과 핵심 기능 완성도를 중심으로 평가하며, Flutter, Firebase, REST API 기반의 실전형 앱 개발을 목표로 합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "심사자가 주요 기능을 확인할 수 있는 데모 계정 또는 시연 방법을 제공해야 합니다.",
+          "앱 설치가 어려운 경우 동작 영상을 함께 제출할 수 있습니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-9",
+          "faq": "https://example.com/public/faq/hack-9"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "기능 완성도, 사용성, 기술 구현 수준을 중심으로 평가합니다.",
+        "scoreSource": "judge",
+        "limits": {
+          "maxRuntimeSec": 900,
+          "maxSubmissionsPerDay": 3
+        },
+        "scoreDisplay": {
+          "label": "심사 평가 점수",
+          "breakdown": [
+            {
+              "key": "functionality",
+              "label": "기능 완성도",
+              "weightPercent": 40
+            },
+            {
+              "key": "ux",
+              "label": "사용 경험",
+              "weightPercent": 30
+            },
+            {
+              "key": "technical_quality",
+              "label": "기술 구현",
+              "weightPercent": 30
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-05-02T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-05-09T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-05-16T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-05-21T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-05-28T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 3500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 2100000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1400000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-9"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "url",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-9#submit",
+        "guide": [
+          "동작 가능한 배포 URL을 제출합니다.",
+          "핵심 기능, 테스트 계정, 실행 방법을 PDF에 정리합니다.",
+          "배포 링크는 심사 기간 동안 외부에서 접근 가능해야 합니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-9#leaderboard",
+        "note": "심사 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-10",
+    "title": "세종 교육 데이터 분석 플랫폼 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "세종 교육 데이터 분석 플랫폼 해커톤는 실제 서비스 또는 공공 영역의 데이터를 활용해 문제를 분석하고, 실행 가능한 데이터 기반 해결안을 제시하는 해커톤입니다. 참가자는 Python, Pandas, Dash 등을 활용해 분석 결과와 서비스 아이디어를 함께 제안합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "데이터 출처와 전처리 과정을 제출물에 명시해야 합니다.",
+          "분석 결과는 재현 가능해야 하며 주요 가정은 문서에 설명해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-10",
+          "faq": "https://example.com/public/faq/hack-10"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-04-29T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-05-06T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-05-13T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-05-18T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-05-25T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 3500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 2100000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1400000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-10"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-10#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-10#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-11",
+    "title": "울산 산업 안전 데이터 분석 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "울산 산업 안전 데이터 분석 해커톤는 실제 서비스 또는 공공 영역의 데이터를 활용해 문제를 분석하고, 실행 가능한 데이터 기반 해결안을 제시하는 해커톤입니다. 참가자는 Python, Data Analysis, SQL 등을 활용해 분석 결과와 서비스 아이디어를 함께 제안합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 6
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "데이터 출처와 전처리 과정을 제출물에 명시해야 합니다.",
+          "분석 결과는 재현 가능해야 하며 주요 가정은 문서에 설명해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-11",
+          "faq": "https://example.com/public/faq/hack-11"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-05-08T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-05-15T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-05-22T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-05-27T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-06-03T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 3000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 1800000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1200000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-11"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-11#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-11#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-12",
+    "title": "수원 지역 커뮤니티 앱 개발 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "수원 지역 커뮤니티 앱 개발 해커톤는 현장 문제를 해결하는 모바일 앱을 기획·구현하는 해커톤입니다. 사용자 경험과 핵심 기능 완성도를 중심으로 평가하며, Flutter, Firebase, REST API 기반의 실전형 앱 개발을 목표로 합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 5
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "심사자가 주요 기능을 확인할 수 있는 데모 계정 또는 시연 방법을 제공해야 합니다.",
+          "앱 설치가 어려운 경우 동작 영상을 함께 제출할 수 있습니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-12",
+          "faq": "https://example.com/public/faq/hack-12"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "기능 완성도, 사용성, 기술 구현 수준을 중심으로 평가합니다.",
+        "scoreSource": "judge",
+        "limits": {
+          "maxRuntimeSec": 900,
+          "maxSubmissionsPerDay": 3
+        },
+        "scoreDisplay": {
+          "label": "심사 평가 점수",
+          "breakdown": [
+            {
+              "key": "functionality",
+              "label": "기능 완성도",
+              "weightPercent": 40
+            },
+            {
+              "key": "ux",
+              "label": "사용 경험",
+              "weightPercent": 30
+            },
+            {
+              "key": "technical_quality",
+              "label": "기술 구현",
+              "weightPercent": 30
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-08-06T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-08-13T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-08-20T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-08-25T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-09-01T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 5000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 3000000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 2000000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-12"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "url",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-12#submit",
+        "guide": [
+          "동작 가능한 배포 URL을 제출합니다.",
+          "핵심 기능, 테스트 계정, 실행 방법을 PDF에 정리합니다.",
+          "배포 링크는 심사 기간 동안 외부에서 접근 가능해야 합니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-12#leaderboard",
+        "note": "심사 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-13",
+    "title": "제주 환경 데이터 분석 챌린지",
+    "sections": {
+      "overview": {
+        "summary": "제주 환경 데이터 분석 챌린지는 환경·기후 데이터를 분석해 지속가능성 문제에 대응하는 인사이트와 서비스를 만드는 챌린지입니다. 시각화와 분석 해석력이 중요한 평가 요소입니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 6
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "환경 데이터의 기준 시점과 단위를 명시해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-13",
+          "faq": "https://example.com/public/faq/hack-13"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-08-26T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-09-02T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-09-09T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-09-14T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-09-21T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 5000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 3000000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 2000000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-13"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-13#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-13#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-14",
+    "title": "광주 재난 대응 데이터 플랫폼 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "광주 재난 대응 데이터 플랫폼 해커톤는 실제 서비스 또는 공공 영역의 데이터를 활용해 문제를 분석하고, 실행 가능한 데이터 기반 해결안을 제시하는 해커톤입니다. 참가자는 Python, Data Pipeline, PostgreSQL 등을 활용해 분석 결과와 서비스 아이디어를 함께 제안합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "데이터 출처와 전처리 과정을 제출물에 명시해야 합니다.",
+          "분석 결과는 재현 가능해야 하며 주요 가정은 문서에 설명해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-14",
+          "faq": "https://example.com/public/faq/hack-14"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-05-02T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-05-09T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-05-16T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-05-21T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-05-28T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 5000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 3000000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 2000000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-14"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-14#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-14#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-15",
+    "title": "대구 전통시장 매출 데이터 분석 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "대구 전통시장 매출 데이터 분석 해커톤는 실제 서비스 또는 공공 영역의 데이터를 활용해 문제를 분석하고, 실행 가능한 데이터 기반 해결안을 제시하는 해커톤입니다. 참가자는 Python, Pandas, Visualization 등을 활용해 분석 결과와 서비스 아이디어를 함께 제안합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "데이터 출처와 전처리 과정을 제출물에 명시해야 합니다.",
+          "분석 결과는 재현 가능해야 하며 주요 가정은 문서에 설명해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-15",
+          "faq": "https://example.com/public/faq/hack-15"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2025-04-07T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2025-04-14T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2025-04-21T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2025-04-26T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2025-05-03T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 5000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 3000000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 2000000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-15"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-15#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-15#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-2-2",
+    "title": "서울 핀테크 소비 분석 서비스 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "서울 핀테크 소비 분석 서비스 해커톤는 소비 데이터를 기반으로 금융 습관 개선 또는 개인화 금융 서비스를 설계하는 해커톤입니다. 분석 정확성과 서비스 연결성이 중요합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "개인 금융 데이터는 익명화된 예시 데이터만 사용해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-2-2",
+          "faq": "https://example.com/public/faq/hack-2-2"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-04-27T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2026-05-04T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-05-11T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-05-16T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-05-23T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 3500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 2100000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1400000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-2-2"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-2-2#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-2-2#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-3-2",
+    "title": "부산 스마트 항만 물류 데이터 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "부산 스마트 항만 물류 데이터 해커톤는 실제 서비스 또는 공공 영역의 데이터를 활용해 문제를 분석하고, 실행 가능한 데이터 기반 해결안을 제시하는 해커톤입니다. 참가자는 Python, Logistics Data, Optimization 등을 활용해 분석 결과와 서비스 아이디어를 함께 제안합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "데이터 출처와 전처리 과정을 제출물에 명시해야 합니다.",
+          "분석 결과는 재현 가능해야 하며 주요 가정은 문서에 설명해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-3-2",
+          "faq": "https://example.com/public/faq/hack-3-2"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-06-27T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2026-07-04T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-07-11T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-07-16T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-07-23T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 3000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 1800000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1200000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-3-2"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-3-2#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-3-2#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-4-2",
+    "title": "대전 캠퍼스 생활 플랫폼 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "대전 캠퍼스 생활 플랫폼 해커톤는 실제 사용 가능한 웹 서비스를 짧은 기간 안에 구현하는 해커톤입니다. 협업, 배포, 핵심 기능 설계를 포함한 전반적인 제품 완성도를 평가합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 5
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "배포 URL은 심사 기간 동안 외부에서 접근 가능해야 합니다.",
+          "테스트 계정이 필요한 경우 안내 정보를 함께 제출해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-4-2",
+          "faq": "https://example.com/public/faq/hack-4-2"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "기능 완성도, 사용성, 기술 구현 수준을 중심으로 평가합니다.",
+        "scoreSource": "judge",
+        "limits": {
+          "maxRuntimeSec": 900,
+          "maxSubmissionsPerDay": 3
+        },
+        "scoreDisplay": {
+          "label": "심사 평가 점수",
+          "breakdown": [
+            {
+              "key": "functionality",
+              "label": "기능 완성도",
+              "weightPercent": 40
+            },
+            {
+              "key": "ux",
+              "label": "사용 경험",
+              "weightPercent": 30
+            },
+            {
+              "key": "technical_quality",
+              "label": "기술 구현",
+              "weightPercent": 30
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-04-04T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2026-04-11T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-04-18T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-04-23T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-04-30T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 3500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 2100000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1400000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-4-2"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "url",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-4-2#submit",
+        "guide": [
+          "동작 가능한 배포 URL을 제출합니다.",
+          "핵심 기능, 테스트 계정, 실행 방법을 PDF에 정리합니다.",
+          "배포 링크는 심사 기간 동안 외부에서 접근 가능해야 합니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-4-2#leaderboard",
+        "note": "심사 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-5-2",
+    "title": "인천 공항 여행 데이터 서비스 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "인천 공항 여행 데이터 서비스 해커톤는 실제 서비스 또는 공공 영역의 데이터를 활용해 문제를 분석하고, 실행 가능한 데이터 기반 해결안을 제시하는 해커톤입니다. 참가자는 Python, Travel Data, API 등을 활용해 분석 결과와 서비스 아이디어를 함께 제안합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "데이터 출처와 전처리 과정을 제출물에 명시해야 합니다.",
+          "분석 결과는 재현 가능해야 하며 주요 가정은 문서에 설명해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-5-2",
+          "faq": "https://example.com/public/faq/hack-5-2"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-05-09T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2026-05-16T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-05-23T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-05-28T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-06-04T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 4000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 2400000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1600000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-5-2"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-5-2#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-5-2#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-6-2",
+    "title": "세종 공공 행정 데이터 아이디어톤",
+    "sections": {
+      "overview": {
+        "summary": "세종 공공 행정 데이터 아이디어톤는 데이터와 현장 맥락을 바탕으로 실행 가능한 정책·서비스 아이디어를 제안하는 아이디어톤입니다. 문제 정의의 명확성과 제안의 현실성을 중점적으로 평가합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "아이디어의 문제 정의, 대상 사용자, 기대 효과를 명확히 제시해야 합니다.",
+          "발표 자료 링크를 제출하는 경우 열람 권한을 외부 공개로 설정해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-6-2",
+          "faq": "https://example.com/public/faq/hack-6-2"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "문제 정의, 아이디어의 실효성, 발표 전달력을 투표와 심사로 평가합니다.",
+        "scoreSource": "vote",
+        "limits": {
+          "maxRuntimeSec": 600,
+          "maxSubmissionsPerDay": 3
+        },
+        "scoreDisplay": {
+          "label": "투표 기반 점수",
+          "breakdown": [
+            {
+              "key": "participant",
+              "label": "참가자 투표",
+              "weightPercent": 40
+            },
+            {
+              "key": "judge",
+              "label": "심사위원 평가",
+              "weightPercent": 60
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-06-28T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2026-07-05T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-07-12T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-07-17T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-07-24T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 2000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 1200000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 800000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-6-2"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "text",
+          "url",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-6-2#submit",
+        "guide": [
+          "아이디어 설명문 또는 발표 자료 링크를 제출합니다.",
+          "문제 정의, 해결 방식, 기대 효과를 PDF에 정리합니다.",
+          "제출 후 수정이 필요한 경우 마감 전 새 버전으로 다시 제출합니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-6-2#leaderboard",
+        "note": "투표 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-7-1",
+    "title": "울산 에너지 소비 데이터 분석 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "울산 에너지 소비 데이터 분석 해커톤는 에너지 소비 데이터를 수집·분석해 운영 효율을 높이는 아이디어와 서비스를 만드는 해커톤입니다. 계측 데이터 해석과 실효성 있는 절감 전략이 핵심입니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 6
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "에너지 데이터 해석 과정과 절감 가정은 문서에 포함해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-7-1",
+          "faq": "https://example.com/public/faq/hack-7-1"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-06-23T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2026-06-30T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-07-07T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-07-12T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-07-19T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 3500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 2100000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1400000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-7-1"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-7-1#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-7-1#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-8-1",
+    "title": "강릉 관광 AR 서비스 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "강릉 관광 AR 서비스 해커톤는 관광 경험을 확장하는 AR 콘텐츠와 서비스를 만드는 해커톤입니다. 현장성, 몰입감, 사용성의 균형을 고려한 구현이 중요합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "시연 영상에는 실제 상호작용 장면이 포함되어야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-8-1",
+          "faq": "https://example.com/public/faq/hack-8-1"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "기능 완성도, 사용성, 기술 구현 수준을 중심으로 평가합니다.",
+        "scoreSource": "judge",
+        "limits": {
+          "maxRuntimeSec": 900,
+          "maxSubmissionsPerDay": 3
+        },
+        "scoreDisplay": {
+          "label": "심사 평가 점수",
+          "breakdown": [
+            {
+              "key": "functionality",
+              "label": "기능 완성도",
+              "weightPercent": 40
+            },
+            {
+              "key": "ux",
+              "label": "사용 경험",
+              "weightPercent": 30
+            },
+            {
+              "key": "technical_quality",
+              "label": "기술 구현",
+              "weightPercent": 30
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-05-29T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2026-06-05T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-06-12T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-06-17T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-06-24T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 3500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 2100000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1400000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-8-1"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "url",
+          "video",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-8-1#submit",
+        "guide": [
+          "실행 가능한 데모 링크 또는 설치 파일 안내 URL을 제출합니다.",
+          "AR/XR 동작을 확인할 수 있는 시연 영상을 포함합니다.",
+          "조작 방법, 콘텐츠 구성, 테스트 환경을 PDF에 정리합니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-8-1#leaderboard",
+        "note": "심사 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-9-1",
+    "title": "판교 스타트업 네트워킹 앱 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "판교 스타트업 네트워킹 앱 해커톤는 현장 문제를 해결하는 모바일 앱을 기획·구현하는 해커톤입니다. 사용자 경험과 핵심 기능 완성도를 중심으로 평가하며, Flutter, Firebase, REST API 기반의 실전형 앱 개발을 목표로 합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 6
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "심사자가 주요 기능을 확인할 수 있는 데모 계정 또는 시연 방법을 제공해야 합니다.",
+          "앱 설치가 어려운 경우 동작 영상을 함께 제출할 수 있습니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-9-1",
+          "faq": "https://example.com/public/faq/hack-9-1"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "기능 완성도, 사용성, 기술 구현 수준을 중심으로 평가합니다.",
+        "scoreSource": "judge",
+        "limits": {
+          "maxRuntimeSec": 900,
+          "maxSubmissionsPerDay": 3
+        },
+        "scoreDisplay": {
+          "label": "심사 평가 점수",
+          "breakdown": [
+            {
+              "key": "functionality",
+              "label": "기능 완성도",
+              "weightPercent": 40
+            },
+            {
+              "key": "ux",
+              "label": "사용 경험",
+              "weightPercent": 30
+            },
+            {
+              "key": "technical_quality",
+              "label": "기술 구현",
+              "weightPercent": 30
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-06-18T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2026-06-25T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-07-02T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-07-07T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-07-14T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 3500000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 2100000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 1400000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-9-1"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "url",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-9-1#submit",
+        "guide": [
+          "동작 가능한 배포 URL을 제출합니다.",
+          "핵심 기능, 테스트 계정, 실행 방법을 PDF에 정리합니다.",
+          "배포 링크는 심사 기간 동안 외부에서 접근 가능해야 합니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-9-1#leaderboard",
+        "note": "심사 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  },
+  {
+    "slug": "hack-10-1",
+    "title": "서울 음식 추천 데이터 서비스 해커톤",
+    "sections": {
+      "overview": {
+        "summary": "서울 음식 추천 데이터 서비스 해커톤는 실제 서비스 또는 공공 영역의 데이터를 활용해 문제를 분석하고, 실행 가능한 데이터 기반 해결안을 제시하는 해커톤입니다. 참가자는 Python, Recommendation, Pandas 등을 활용해 분석 결과와 서비스 아이디어를 함께 제안합니다.",
+        "teamPolicy": {
+          "allowSolo": true,
+          "maxTeamSize": 4
+        }
+      },
+      "info": {
+        "notice": [
+          "제출 마감 이후 추가 제출은 불가합니다.",
+          "팀 대표자는 최종 제출 전 파일 형식과 링크 동작 여부를 반드시 확인해야 합니다.",
+          "데이터 출처와 전처리 과정을 제출물에 명시해야 합니다.",
+          "분석 결과는 재현 가능해야 하며 주요 가정은 문서에 설명해야 합니다."
+        ],
+        "links": {
+          "rules": "https://example.com/public/rules/hack-10-1",
+          "faq": "https://example.com/public/faq/hack-10-1"
+        }
+      },
+      "eval": {
+        "metricName": "FinalScore",
+        "description": "분석 정확도, 인사이트 도출력, 결과 재현성을 종합 평가합니다.",
+        "scoreSource": "metric",
+        "limits": {
+          "maxRuntimeSec": 1200,
+          "maxSubmissionsPerDay": 5
+        },
+        "scoreDisplay": {
+          "label": "종합 평가 점수",
+          "breakdown": [
+            {
+              "key": "analysis_accuracy",
+              "label": "분석 정확도",
+              "weightPercent": 50
+            },
+            {
+              "key": "insight_quality",
+              "label": "인사이트 품질",
+              "weightPercent": 30
+            },
+            {
+              "key": "reproducibility",
+              "label": "재현 가능성",
+              "weightPercent": 20
+            }
+          ]
+        }
+      },
+      "schedule": {
+        "timezone": "Asia/Seoul",
+        "milestones": [
+          {
+            "name": "참가 신청 시작",
+            "at": "2026-05-13T08:59:59+09:00"
+          },
+          {
+            "name": "참가 신청 마감",
+            "at": "2026-05-20T08:59:59+09:00"
+          },
+          {
+            "name": "제출 마감",
+            "at": "2026-05-27T08:59:59+09:00"
+          },
+          {
+            "name": "대회 종료",
+            "at": "2026-06-01T08:59:59+09:00"
+          },
+          {
+            "name": "결과 발표",
+            "at": "2026-06-08T08:59:59+09:00"
+          }
+        ]
+      },
+      "prize": {
+        "items": [
+          {
+            "place": "1st",
+            "amountKRW": 2000000
+          },
+          {
+            "place": "2nd",
+            "amountKRW": 1200000
+          },
+          {
+            "place": "3rd",
+            "amountKRW": 800000
+          }
+        ]
+      },
+      "teams": {
+        "campEnabled": true,
+        "listUrl": "/camp?hackathon=hack-10-1"
+      },
+      "submit": {
+        "allowedArtifactTypes": [
+          "zip",
+          "pdf"
+        ],
+        "submissionUrl": "/hackathons/hack-10-1#submit",
+        "guide": [
+          "실행 가능한 분석 결과물 또는 모델 파일을 zip으로 제출합니다.",
+          "분석 방법, 주요 결과, 재현 절차를 PDF에 함께 정리합니다.",
+          "업로드 후 반드시 '제출' 버튼을 눌러야 리더보드에 반영됩니다."
+        ]
+      },
+      "leaderboard": {
+        "publicLeaderboardUrl": "/hackathons/hack-10-1#leaderboard",
+        "note": "분석 점수는 제출 마감 이후 고정되거나 최종 심사 결과에 따라 조정될 수 있습니다."
+      }
+    }
+  }
+]

@@ -1,0 +1,1010 @@
+[
+  {
+    "slug": "hack-2",
+    "title": "서울 금융 소비 패턴 데이터 분석 해커톤",
+    "status": "ongoing",
+    "type": "Data",
+    "difficulty": "Beginner",
+    "tags": [
+      "Data",
+      "Finance",
+      "Analysis"
+    ],
+    "host": {
+      "name": "금융데이터연구소",
+      "organization": "금융데이터연구소",
+      "logoUrl": "data:image/jpeg;base64,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"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-03-16T23:59:59Z",
+      "endAt": "2026-03-21T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 135,
+      "teamCount": 21,
+      "submissionCount": 14
+    },
+    "prize": {
+      "totalKRW": 6000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Pandas",
+      "SQL"
+    ],
+    "popularityScore": 8.5,
+    "bookmarkCount": 360
+  },
+  {
+    "slug": "hack-3",
+    "title": "부산 관광 추천 모바일 앱 개발 해커톤",
+    "status": "ongoing",
+    "type": "Mobile",
+    "difficulty": "Beginner",
+    "tags": [
+      "Mobile",
+      "App",
+      "Frontend"
+    ],
+    "host": {
+      "name": "스마트관광연구원",
+      "organization": "스마트관광연구원",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-03-16T23:59:59Z",
+      "endAt": "2026-03-21T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 112,
+      "teamCount": 34,
+      "submissionCount": 30
+    },
+    "prize": {
+      "totalKRW": 5000000
+    },
+    "requiredSkills": [
+      "Flutter",
+      "Firebase",
+      "REST API"
+    ],
+    "popularityScore": 8.3,
+    "bookmarkCount": 307
+  },
+  {
+    "slug": "hack-4",
+    "title": "대전 실시간 협업 플랫폼 개발 해커톤",
+    "status": "ongoing",
+    "type": "Web",
+    "difficulty": "Advanced",
+    "tags": [
+      "Web",
+      "Backend",
+      "Realtime"
+    ],
+    "host": {
+      "name": "넥스트소프트랩",
+      "organization": "넥스트소프트랩",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-03-16T23:59:59Z",
+      "endAt": "2026-03-21T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 102,
+      "teamCount": 23,
+      "submissionCount": 20
+    },
+    "prize": {
+      "totalKRW": 5000000
+    },
+    "requiredSkills": [
+      "TypeScript",
+      "Node.js",
+      "WebSocket"
+    ],
+    "popularityScore": 8.4,
+    "bookmarkCount": 514
+  },
+  {
+    "slug": "hack-5",
+    "title": "광주 공공데이터 기반 시민 서비스 해커톤",
+    "status": "ongoing",
+    "type": "Data",
+    "difficulty": "Beginner",
+    "tags": [
+      "PublicData",
+      "API",
+      "Web"
+    ],
+    "host": {
+      "name": "도시데이터연구센터",
+      "organization": "도시데이터연구센터",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-03-16T23:59:59Z",
+      "endAt": "2026-03-21T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 142,
+      "teamCount": 40,
+      "submissionCount": 33
+    },
+    "prize": {
+      "totalKRW": 10000000
+    },
+    "requiredSkills": [
+      "Python",
+      "FastAPI",
+      "React"
+    ],
+    "popularityScore": 9.2,
+    "bookmarkCount": 405
+  },
+  {
+    "slug": "hack-6",
+    "title": "제주 스마트 농업 IoT 데이터 해커톤",
+    "status": "ongoing",
+    "type": "IoT",
+    "difficulty": "Beginner",
+    "tags": [
+      "IoT",
+      "Agriculture",
+      "Data"
+    ],
+    "host": {
+      "name": "스마트팜데이터연구소",
+      "organization": "스마트팜데이터연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-03-16T23:59:59Z",
+      "endAt": "2026-03-21T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 122,
+      "teamCount": 34,
+      "submissionCount": 28
+    },
+    "prize": {
+      "totalKRW": 10000000
+    },
+    "requiredSkills": [
+      "Python",
+      "MQTT",
+      "Sensor Data"
+    ],
+    "popularityScore": 8.2,
+    "bookmarkCount": 441
+  },
+  {
+    "slug": "hack-2-1",
+    "title": "서울 청년 정책 데이터 아이디어톤",
+    "status": "ended",
+    "type": "Idea",
+    "difficulty": "Beginner",
+    "tags": [
+      "Idea",
+      "Policy",
+      "Social"
+    ],
+    "host": {
+      "name": "사회정책데이터연구소",
+      "organization": "사회정책데이터연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-07-24T23:59:59Z",
+      "endAt": "2025-07-29T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 121,
+      "teamCount": 28,
+      "submissionCount": 25
+    },
+    "prize": {
+      "totalKRW": 5000000
+    },
+    "requiredSkills": [
+      "Research",
+      "Data Analysis",
+      "Presentation"
+    ],
+    "popularityScore": 7.9,
+    "bookmarkCount": 268
+  },
+  {
+    "slug": "hack-3-1",
+    "title": "대구 스마트 교통 데이터 분석 해커톤",
+    "status": "ended",
+    "type": "Data",
+    "difficulty": "Intermediate",
+    "tags": [
+      "SmartCity",
+      "Mobility",
+      "Data"
+    ],
+    "host": {
+      "name": "도시모빌리티데이터랩",
+      "organization": "도시모빌리티데이터랩",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-04-26T23:59:59Z",
+      "endAt": "2025-05-01T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 125,
+      "teamCount": 30,
+      "submissionCount": 28
+    },
+    "prize": {
+      "totalKRW": 10000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Pandas",
+      "Visualization"
+    ],
+    "popularityScore": 8.9,
+    "bookmarkCount": 408
+  },
+  {
+    "slug": "hack-4-1",
+    "title": "판교 스타트업 협업 툴 개발 해커톤",
+    "status": "ended",
+    "type": "Web",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Web",
+      "Startup",
+      "Backend"
+    ],
+    "host": {
+      "name": "스타트업테크랩",
+      "organization": "스타트업테크랩",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-04-03T23:59:59Z",
+      "endAt": "2025-04-08T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 135,
+      "teamCount": 29,
+      "submissionCount": 24
+    },
+    "prize": {
+      "totalKRW": 7000000
+    },
+    "requiredSkills": [
+      "Next.js",
+      "Node.js",
+      "MongoDB"
+    ],
+    "popularityScore": 8.7,
+    "bookmarkCount": 363
+  },
+  {
+    "slug": "hack-5-1",
+    "title": "인천 물류 데이터 최적화 해커톤",
+    "status": "ended",
+    "type": "Data",
+    "difficulty": "Advanced",
+    "tags": [
+      "Logistics",
+      "Optimization",
+      "Data"
+    ],
+    "host": {
+      "name": "스마트물류데이터연구원",
+      "organization": "스마트물류데이터연구원",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-09-12T23:59:59Z",
+      "endAt": "2025-09-17T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 135,
+      "teamCount": 31,
+      "submissionCount": 26
+    },
+    "prize": {
+      "totalKRW": 6000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Optimization",
+      "SQL"
+    ],
+    "popularityScore": 8.5,
+    "bookmarkCount": 350
+  },
+  {
+    "slug": "hack-6-1",
+    "title": "강릉 관광 데이터 시각화 해커톤",
+    "status": "ended",
+    "type": "Data",
+    "difficulty": "Advanced",
+    "tags": [
+      "Visualization",
+      "Tourism",
+      "Data"
+    ],
+    "host": {
+      "name": "관광데이터연구센터",
+      "organization": "관광데이터연구센터",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-04-28T23:59:59Z",
+      "endAt": "2025-05-03T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 178,
+      "teamCount": 26,
+      "submissionCount": 15
+    },
+    "prize": {
+      "totalKRW": 5000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Tableau",
+      "Visualization"
+    ],
+    "popularityScore": 8.9,
+    "bookmarkCount": 519
+  },
+  {
+    "slug": "hack-7",
+    "title": "서울 헬스케어 데이터 서비스 해커톤",
+    "status": "ended",
+    "type": "HealthTech",
+    "difficulty": "Beginner",
+    "tags": [
+      "Health",
+      "Data",
+      "Service"
+    ],
+    "host": {
+      "name": "헬스데이터연구소",
+      "organization": "헬스데이터연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-05-11T23:59:59Z",
+      "endAt": "2025-05-16T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 109,
+      "teamCount": 39,
+      "submissionCount": 33
+    },
+    "prize": {
+      "totalKRW": 5000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Healthcare Data",
+      "API"
+    ],
+    "popularityScore": 8.4,
+    "bookmarkCount": 238
+  },
+  {
+    "slug": "hack-8",
+    "title": "대전 AI 문서 요약 서비스 해커톤",
+    "status": "ended",
+    "type": "AI",
+    "difficulty": "Advanced",
+    "tags": [
+      "AI",
+      "NLP",
+      "Backend"
+    ],
+    "host": {
+      "name": "지능형컴퓨팅연구소",
+      "organization": "지능형컴퓨팅연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-08-08T23:59:59Z",
+      "endAt": "2025-08-13T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 152,
+      "teamCount": 26,
+      "submissionCount": 22
+    },
+    "prize": {
+      "totalKRW": 4000000
+    },
+    "requiredSkills": [
+      "Python",
+      "PyTorch",
+      "FastAPI"
+    ],
+    "popularityScore": 8.3,
+    "bookmarkCount": 222
+  },
+  {
+    "slug": "hack-9",
+    "title": "부산 반려동물 건강관리 앱 해커톤",
+    "status": "ended",
+    "type": "Mobile",
+    "difficulty": "Beginner",
+    "tags": [
+      "Mobile",
+      "Health",
+      "App"
+    ],
+    "host": {
+      "name": "펫테크연구소",
+      "organization": "펫테크연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-05-15T23:59:59Z",
+      "endAt": "2025-05-20T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 122,
+      "teamCount": 24,
+      "submissionCount": 16
+    },
+    "prize": {
+      "totalKRW": 7000000
+    },
+    "requiredSkills": [
+      "Flutter",
+      "Firebase",
+      "REST API"
+    ],
+    "popularityScore": 9.2,
+    "bookmarkCount": 431
+  },
+  {
+    "slug": "hack-10",
+    "title": "세종 교육 데이터 분석 플랫폼 해커톤",
+    "status": "ended",
+    "type": "Data",
+    "difficulty": "Beginner",
+    "tags": [
+      "Education",
+      "Data",
+      "Analysis"
+    ],
+    "host": {
+      "name": "에듀데이터연구원",
+      "organization": "에듀데이터연구원",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-05-12T23:59:59Z",
+      "endAt": "2025-05-17T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 158,
+      "teamCount": 33,
+      "submissionCount": 15
+    },
+    "prize": {
+      "totalKRW": 7000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Pandas",
+      "Dash"
+    ],
+    "popularityScore": 8.1,
+    "bookmarkCount": 451
+  },
+  {
+    "slug": "hack-11",
+    "title": "울산 산업 안전 데이터 분석 해커톤",
+    "status": "ended",
+    "type": "Data",
+    "difficulty": "Advanced",
+    "tags": [
+      "Industry",
+      "Safety",
+      "Data"
+    ],
+    "host": {
+      "name": "산업데이터연구소",
+      "organization": "산업데이터연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-05-21T23:59:59Z",
+      "endAt": "2025-05-26T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 99,
+      "teamCount": 25,
+      "submissionCount": 16
+    },
+    "prize": {
+      "totalKRW": 6000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Data Analysis",
+      "SQL"
+    ],
+    "popularityScore": 8.7,
+    "bookmarkCount": 502
+  },
+  {
+    "slug": "hack-12",
+    "title": "수원 지역 커뮤니티 앱 개발 해커톤",
+    "status": "ended",
+    "type": "Mobile",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Mobile",
+      "Community",
+      "App"
+    ],
+    "host": {
+      "name": "커뮤니티기술연구소",
+      "organization": "커뮤니티기술연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-08-19T23:59:59Z",
+      "endAt": "2025-08-24T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 152,
+      "teamCount": 37,
+      "submissionCount": 14
+    },
+    "prize": {
+      "totalKRW": 10000000
+    },
+    "requiredSkills": [
+      "Flutter",
+      "Firebase",
+      "REST API"
+    ],
+    "popularityScore": 7.8,
+    "bookmarkCount": 410
+  },
+  {
+    "slug": "hack-13",
+    "title": "제주 환경 데이터 분석 챌린지",
+    "status": "ended",
+    "type": "Environment",
+    "difficulty": "Advanced",
+    "tags": [
+      "Environment",
+      "Climate",
+      "Data"
+    ],
+    "host": {
+      "name": "환경데이터연구소",
+      "organization": "환경데이터연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-09-08T23:59:59Z",
+      "endAt": "2025-09-13T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 128,
+      "teamCount": 27,
+      "submissionCount": 25
+    },
+    "prize": {
+      "totalKRW": 10000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Climate Data",
+      "Visualization"
+    ],
+    "popularityScore": 8.6,
+    "bookmarkCount": 259
+  },
+  {
+    "slug": "hack-14",
+    "title": "광주 재난 대응 데이터 플랫폼 해커톤",
+    "status": "ended",
+    "type": "Data",
+    "difficulty": "Beginner",
+    "tags": [
+      "Disaster",
+      "Data",
+      "Platform"
+    ],
+    "host": {
+      "name": "재난데이터연구센터",
+      "organization": "재난데이터연구센터",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-05-15T23:59:59Z",
+      "endAt": "2025-05-20T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 97,
+      "teamCount": 39,
+      "submissionCount": 29
+    },
+    "prize": {
+      "totalKRW": 10000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Data Pipeline",
+      "PostgreSQL"
+    ],
+    "popularityScore": 8.1,
+    "bookmarkCount": 251
+  },
+  {
+    "slug": "hack-15",
+    "title": "대구 전통시장 매출 데이터 분석 해커톤",
+    "status": "ended",
+    "type": "Data",
+    "difficulty": "Beginner",
+    "tags": [
+      "Commerce",
+      "Data",
+      "Local"
+    ],
+    "host": {
+      "name": "로컬상권데이터랩",
+      "organization": "로컬상권데이터랩",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2025-04-20T23:59:59Z",
+      "endAt": "2025-04-25T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 124,
+      "teamCount": 24,
+      "submissionCount": 20
+    },
+    "prize": {
+      "totalKRW": 10000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Pandas",
+      "Visualization"
+    ],
+    "popularityScore": 9.2,
+    "bookmarkCount": 514
+  },
+  {
+    "slug": "hack-2-2",
+    "title": "서울 핀테크 소비 분석 서비스 해커톤",
+    "status": "upcoming",
+    "type": "FinTech",
+    "difficulty": "Beginner",
+    "tags": [
+      "FinTech",
+      "Data",
+      "Mobile"
+    ],
+    "host": {
+      "name": "핀테크데이터연구센터",
+      "organization": "핀테크데이터연구센터",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-05-10T23:59:59Z",
+      "endAt": "2026-05-15T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 170,
+      "teamCount": 33,
+      "submissionCount": 25
+    },
+    "prize": {
+      "totalKRW": 7000000
+    },
+    "requiredSkills": [
+      "Python",
+      "FinTech Data",
+      "API"
+    ],
+    "popularityScore": 8.8,
+    "bookmarkCount": 384
+  },
+  {
+    "slug": "hack-3-2",
+    "title": "부산 스마트 항만 물류 데이터 해커톤",
+    "status": "upcoming",
+    "type": "Data",
+    "difficulty": "Beginner",
+    "tags": [
+      "Logistics",
+      "Port",
+      "Data"
+    ],
+    "host": {
+      "name": "항만데이터연구소",
+      "organization": "항만데이터연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-07-10T23:59:59Z",
+      "endAt": "2026-07-15T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 112,
+      "teamCount": 22,
+      "submissionCount": 21
+    },
+    "prize": {
+      "totalKRW": 6000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Logistics Data",
+      "Optimization"
+    ],
+    "popularityScore": 8.9,
+    "bookmarkCount": 316
+  },
+  {
+    "slug": "hack-4-2",
+    "title": "대전 캠퍼스 생활 플랫폼 해커톤",
+    "status": "upcoming",
+    "type": "Web",
+    "difficulty": "Intermediate",
+    "tags": [
+      "Campus",
+      "Web",
+      "Community"
+    ],
+    "host": {
+      "name": "캠퍼스테크랩",
+      "organization": "캠퍼스테크랩",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-04-17T23:59:59Z",
+      "endAt": "2026-04-22T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 168,
+      "teamCount": 23,
+      "submissionCount": 14
+    },
+    "prize": {
+      "totalKRW": 7000000
+    },
+    "requiredSkills": [
+      "React",
+      "Node.js",
+      "PostgreSQL"
+    ],
+    "popularityScore": 9.2,
+    "bookmarkCount": 278
+  },
+  {
+    "slug": "hack-5-2",
+    "title": "인천 공항 여행 데이터 서비스 해커톤",
+    "status": "upcoming",
+    "type": "Data",
+    "difficulty": "Beginner",
+    "tags": [
+      "Travel",
+      "Data",
+      "Mobile"
+    ],
+    "host": {
+      "name": "트래블데이터연구소",
+      "organization": "트래블데이터연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-05-22T23:59:59Z",
+      "endAt": "2026-05-27T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 93,
+      "teamCount": 33,
+      "submissionCount": 27
+    },
+    "prize": {
+      "totalKRW": 8000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Travel Data",
+      "API"
+    ],
+    "popularityScore": 7.9,
+    "bookmarkCount": 268
+  },
+  {
+    "slug": "hack-6-2",
+    "title": "세종 공공 행정 데이터 아이디어톤",
+    "status": "upcoming",
+    "type": "Idea",
+    "difficulty": "Beginner",
+    "tags": [
+      "Public",
+      "Idea",
+      "Policy"
+    ],
+    "host": {
+      "name": "공공데이터정책연구소",
+      "organization": "공공데이터정책연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-07-11T23:59:59Z",
+      "endAt": "2026-07-16T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 154,
+      "teamCount": 22,
+      "submissionCount": 14
+    },
+    "prize": {
+      "totalKRW": 4000000
+    },
+    "requiredSkills": [
+      "Research",
+      "Public Data",
+      "Presentation"
+    ],
+    "popularityScore": 9.2,
+    "bookmarkCount": 359
+  },
+  {
+    "slug": "hack-7-1",
+    "title": "울산 에너지 소비 데이터 분석 해커톤",
+    "status": "upcoming",
+    "type": "Energy",
+    "difficulty": "Advanced",
+    "tags": [
+      "Energy",
+      "Data",
+      "IoT"
+    ],
+    "host": {
+      "name": "에너지데이터연구소",
+      "organization": "에너지데이터연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-07-06T23:59:59Z",
+      "endAt": "2026-07-11T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 99,
+      "teamCount": 24,
+      "submissionCount": 14
+    },
+    "prize": {
+      "totalKRW": 7000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Energy Data",
+      "IoT"
+    ],
+    "popularityScore": 8.6,
+    "bookmarkCount": 352
+  },
+  {
+    "slug": "hack-8-1",
+    "title": "강릉 관광 AR 서비스 해커톤",
+    "status": "upcoming",
+    "type": "XR",
+    "difficulty": "Beginner",
+    "tags": [
+      "XR",
+      "AR",
+      "Tourism"
+    ],
+    "host": {
+      "name": "XR콘텐츠연구소",
+      "organization": "XR콘텐츠연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-06-11T23:59:59Z",
+      "endAt": "2026-06-16T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 176,
+      "teamCount": 24,
+      "submissionCount": 16
+    },
+    "prize": {
+      "totalKRW": 7000000
+    },
+    "requiredSkills": [
+      "Unity",
+      "C#",
+      "AR SDK"
+    ],
+    "popularityScore": 8.5,
+    "bookmarkCount": 269
+  },
+  {
+    "slug": "hack-9-1",
+    "title": "판교 스타트업 네트워킹 앱 해커톤",
+    "status": "upcoming",
+    "type": "Mobile",
+    "difficulty": "Advanced",
+    "tags": [
+      "Startup",
+      "Mobile",
+      "Community"
+    ],
+    "host": {
+      "name": "스타트업지원센터",
+      "organization": "스타트업지원센터",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-07-01T23:59:59Z",
+      "endAt": "2026-07-06T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 119,
+      "teamCount": 39,
+      "submissionCount": 20
+    },
+    "prize": {
+      "totalKRW": 7000000
+    },
+    "requiredSkills": [
+      "Flutter",
+      "Firebase",
+      "REST API"
+    ],
+    "popularityScore": 8.2,
+    "bookmarkCount": 500
+  },
+  {
+    "slug": "hack-10-1",
+    "title": "서울 음식 추천 데이터 서비스 해커톤",
+    "status": "upcoming",
+    "type": "Data",
+    "difficulty": "Beginner",
+    "tags": [
+      "Food",
+      "Data",
+      "Recommendation"
+    ],
+    "host": {
+      "name": "푸드데이터연구소",
+      "organization": "푸드데이터연구소",
+      "logoUrl": "https://example.com/logo.png"
+    },
+    "period": {
+      "submissionDeadlineAt": "2026-05-26T23:59:59Z",
+      "endAt": "2026-05-31T23:59:59Z"
+    },
+    "stats": {
+      "participantCount": 171,
+      "teamCount": 31,
+      "submissionCount": 22
+    },
+    "prize": {
+      "totalKRW": 4000000
+    },
+    "requiredSkills": [
+      "Python",
+      "Recommendation",
+      "Pandas"
+    ],
+    "popularityScore": 7.9,
+    "bookmarkCount": 487
+  }
+]
