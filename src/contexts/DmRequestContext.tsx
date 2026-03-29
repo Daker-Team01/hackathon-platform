@@ -2,8 +2,10 @@ import { createContext, useContext, useCallback, useEffect, useState, useRef, ty
 import { 
   sendDmRequest as supabaseSendDmRequest,
   getDmRequestsForUser,
+  getDmRequestsSentByUser,
   respondToDmRequest,
   subscribeToDmRequests,
+  subscribeToDmRequestsBySender,
   type SupabaseDmRequest
 } from '../api/realtimeChatApi'
 import { enqueueGeneralChatNotification } from '../utils/generalChatNotifications'
@@ -126,22 +128,21 @@ export function DmRequestProvider({ children }: { children: ReactNode }) {
       }
 
       // 초기 로드
-      getDmRequestsForUser(userId)
-        .then((requests) => {
+      Promise.all([getDmRequestsForUser(userId), getDmRequestsSentByUser(userId)])
+        .then(([receivedRequests, sentRequests]) => {
+          const requests = [...receivedRequests, ...sentRequests]
           setDmRequests((prev) => {
-            // 기존 요청들 중 이 사용자에 대한 것은 제거
-            const filtered = prev.filter((r) => r.to_user_id !== userId)
-            // 새 요청들 추가
+            // 기존 요청들 중 이 사용자와 관련된 것은 제거 후 최신 데이터 병합
+            const filtered = prev.filter((r) => r.to_user_id !== userId && r.from_user_id !== userId)
             return [...filtered, ...requests]
           })
         })
         .catch((error) => console.error('Failed to load DM requests:', error))
 
-      // 실시간 구독
-      const unsubscribe = subscribeToDmRequests(
+      // 실시간 구독(받은 요청)
+      const unsubscribeTo = subscribeToDmRequests(
         userId,
         (newRequest) => {
-          // 새 요청 도착
           setDmRequests((prev) => {
             const exists = prev.some((r) => r.id === newRequest.id)
             return exists ? prev : [...prev, newRequest]
@@ -155,14 +156,34 @@ export function DmRequestProvider({ children }: { children: ReactNode }) {
         }
       )
 
-      subscriptionMapRef.current.set(userId, unsubscribe)
+      // 실시간 구독(보낸 요청)
+      const unsubscribeFrom = subscribeToDmRequestsBySender(
+        userId,
+        (newRequest) => {
+          setDmRequests((prev) => {
+            const exists = prev.some((r) => r.id === newRequest.id)
+            return exists ? prev : [...prev, newRequest]
+          })
+        },
+        (updatedRequest) => {
+          setDmRequests((prev) =>
+            prev.map((r) => (r.id === updatedRequest.id ? updatedRequest : r))
+          )
+        }
+      )
+
+      subscriptionMapRef.current.set(userId, () => {
+        unsubscribeTo()
+        unsubscribeFrom()
+      })
 
       // Realtime 누락/끊김 대비 폴링 fallback
       const pollingId = window.setInterval(() => {
-        getDmRequestsForUser(userId)
-          .then((requests) => {
+        Promise.all([getDmRequestsForUser(userId), getDmRequestsSentByUser(userId)])
+          .then(([receivedRequests, sentRequests]) => {
+            const requests = [...receivedRequests, ...sentRequests]
             setDmRequests((prev) => {
-              const others = prev.filter((r) => r.to_user_id !== userId)
+              const others = prev.filter((r) => r.to_user_id !== userId && r.from_user_id !== userId)
               return [...others, ...requests]
             })
           })

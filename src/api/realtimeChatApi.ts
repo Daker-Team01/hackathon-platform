@@ -141,9 +141,6 @@ export const createChatRoom = async (
   }
 }
 
-/**
- * 활성 일반 채팅방 1개 조회
- */
 export const fetchPersonalChannelRoom = async (
   userId: string,
   roomName: '일반' | '공지'
@@ -974,6 +971,25 @@ export const getDmRequestsForUser = async (toUserId: string): Promise<SupabaseDm
 }
 
 /**
+ * 사용자가 보낸 DM 요청 목록 조회
+ */
+export const getDmRequestsSentByUser = async (fromUserId: string): Promise<SupabaseDmRequest[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('dm_requests')
+      .select('*')
+      .eq('from_user_id', fromUserId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Failed to fetch sent DM requests:', error)
+    return []
+  }
+}
+
+/**
  * DM 요청에 응답 (승인/거절)
  */
 export const respondToDmRequest = async (
@@ -1001,6 +1017,70 @@ export const respondToDmRequest = async (
 
 const dmRequestChannels = new Map<string, RealtimeChannel>()
 
+const subscribeDmRequestByColumn = (
+  mapKey: string,
+  column: 'to_user_id' | 'from_user_id',
+  userId: string,
+  onNewRequest: (request: SupabaseDmRequest) => void,
+  onRequestUpdated: (request: SupabaseDmRequest) => void,
+  onError?: (error: any) => void
+) => {
+  try {
+    const existing = dmRequestChannels.get(mapKey)
+    if (existing) {
+      existing.unsubscribe()
+      dmRequestChannels.delete(mapKey)
+    }
+
+    const channel = supabase
+      .channel(`dm_requests:${column}:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'dm_requests',
+          filter: `${column}=eq.${userId}`
+        },
+        (payload) => {
+          onNewRequest(payload.new as SupabaseDmRequest)
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'dm_requests',
+          filter: `${column}=eq.${userId}`
+        },
+        (payload) => {
+          onRequestUpdated(payload.new as SupabaseDmRequest)
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' && onError) {
+          onError('DM 요청 실시간 연결 실패')
+        }
+        console.log('DM request subscription status:', status)
+      })
+
+    dmRequestChannels.set(mapKey, channel)
+
+    return () => {
+      const subscribed = dmRequestChannels.get(mapKey)
+      if (subscribed) {
+        subscribed.unsubscribe()
+        dmRequestChannels.delete(mapKey)
+      }
+    }
+  } catch (error) {
+    console.error('Failed to subscribe to DM requests:', error)
+    if (onError) onError(error)
+    return () => {}
+  }
+}
+
 /**
  * DM 요청 실시간 구독 (특정 사용자가 받은 요청들)
  */
@@ -1010,59 +1090,31 @@ export const subscribeToDmRequests = (
   onRequestUpdated: (request: SupabaseDmRequest) => void,
   onError?: (error: any) => void
 ) => {
-  try {
-    // 같은 사용자에 대해 기존 구독이 있으면 교체
-    const existing = dmRequestChannels.get(toUserId)
-    if (existing) {
-      existing.unsubscribe()
-      dmRequestChannels.delete(toUserId)
-    }
+  return subscribeDmRequestByColumn(
+    `to:${toUserId}`,
+    'to_user_id',
+    toUserId,
+    onNewRequest,
+    onRequestUpdated,
+    onError
+  )
+}
 
-    const channel = supabase
-      .channel(`dm_requests:user:${toUserId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "dm_requests",
-          filter: `to_user_id=eq.${toUserId}`
-        },
-        (payload) => {
-          onNewRequest(payload.new as SupabaseDmRequest)
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "dm_requests",
-          filter: `to_user_id=eq.${toUserId}`
-        },
-        (payload) => {
-          onRequestUpdated(payload.new as SupabaseDmRequest)
-        }
-      )
-      .subscribe((status) => {
-        if (status === "CHANNEL_ERROR" && onError) {
-          onError("DM 요청 실시간 연결 실패")
-        }
-        console.log("DM request subscription status:", status)
-      })
-
-    dmRequestChannels.set(toUserId, channel)
-
-    return () => {
-      const subscribed = dmRequestChannels.get(toUserId)
-      if (subscribed) {
-        subscribed.unsubscribe()
-        dmRequestChannels.delete(toUserId)
-      }
-    }
-  } catch (error) {
-    console.error("Failed to subscribe to DM requests:", error)
-    if (onError) onError(error)
-    return () => {}
-  }
+/**
+ * DM 요청 실시간 구독 (특정 사용자가 보낸 요청들)
+ */
+export const subscribeToDmRequestsBySender = (
+  fromUserId: string,
+  onNewRequest: (request: SupabaseDmRequest) => void,
+  onRequestUpdated: (request: SupabaseDmRequest) => void,
+  onError?: (error: any) => void
+) => {
+  return subscribeDmRequestByColumn(
+    `from:${fromUserId}`,
+    'from_user_id',
+    fromUserId,
+    onNewRequest,
+    onRequestUpdated,
+    onError
+  )
 }
