@@ -1,5 +1,7 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   AreaChart, Area
@@ -19,6 +21,7 @@ import type { Hackathon } from '../types/hackathon'
 import type { EventLog } from '../types/log'
 import { generatePersonalAnalyticsWithFallback } from '../api/chatbotApi'
 import { classifyLogImportance } from '../api/chatbotApi'
+import { generateStackRecommendationReasonsWithFallback } from '../api/chatbotApi'
 
 const HACKATHONS_STORAGE_KEY = 'hackathons'
 
@@ -47,6 +50,8 @@ type StackRecommendation = {
   tech: string
   score: number
   supporters: number
+  supporterNicknames: string[]
+  reason: string
 }
 
 const BEHAVIOR_ACTIONS = [
@@ -96,7 +101,6 @@ export default function Analytics() {
   const [personalAnalyzing, setPersonalAnalyzing] = useState(false)
   const [personalAnalysisText, setPersonalAnalysisText] = useState('')
   const [personalAnalysisError, setPersonalAnalysisError] = useState('')
-  const [similarUsers, setSimilarUsers] = useState<SimilarUserResult[]>([])
   const [recommendedStacks, setRecommendedStacks] = useState<StackRecommendation[]>([])
 
   const hackathons = useMemo(() => getFromStorage<Hackathon>(HACKATHONS_STORAGE_KEY), [])
@@ -397,23 +401,30 @@ export default function Analytics() {
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, 5)
 
-    const stackScoreMap = new Map<string, { score: number; supporters: number }>()
+    const stackScoreMap = new Map<string, { score: number; supporterNicknames: Set<string> }>()
     neighbors.forEach((neighbor) => {
       const candidate = allUsers.find((item) => item.userId === neighbor.userId)
       if (!candidate) return
 
       candidate.techStack.forEach((tech) => {
         if (myTechSet.has(tech)) return
-        const prev = stackScoreMap.get(tech) ?? { score: 0, supporters: 0 }
+        const prev = stackScoreMap.get(tech) ?? { score: 0, supporterNicknames: new Set<string>() }
+        prev.supporterNicknames.add(candidate.nickname)
         stackScoreMap.set(tech, {
           score: prev.score + neighbor.similarity,
-          supporters: prev.supporters + 1
+          supporterNicknames: prev.supporterNicknames
         })
       })
     })
 
     const recommendations = [...stackScoreMap.entries()]
-      .map(([tech, value]) => ({ tech, score: value.score, supporters: value.supporters }))
+      .map(([tech, value]) => ({
+        tech,
+        score: value.score,
+        supporters: value.supporterNicknames.size,
+        supporterNicknames: [...value.supporterNicknames].slice(0, 3),
+        reason: ''
+      }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
 
@@ -433,11 +444,23 @@ export default function Analytics() {
       const userLogs = await fetchAllUserLogs(user.id)
       const allLogs = await fetchAllLogsForSimilarity()
         const weights = await classifyLogImportance()
-        const { neighbors, recommendations } = buildSimilarityInsights(user.id, allLogs, weights)
+        const { recommendations } = buildSimilarityInsights(user.id, allLogs, weights)
       const report = await generatePersonalAnalyticsWithFallback(user, userLogs)
+      const reasonMap = await generateStackRecommendationReasonsWithFallback(
+        user,
+        recommendations.map((item) => ({
+          tech: item.tech,
+          supporters: item.supporters,
+          supporterNicknames: item.supporterNicknames ?? []
+        }))
+      )
+      const recommendationsWithReasons = recommendations.map((item) => ({
+        ...item,
+        supporterNicknames: item.supporterNicknames ?? [],
+        reason: reasonMap[item.tech] || ''
+      }))
 
-      setSimilarUsers(neighbors)
-      setRecommendedStacks(recommendations)
+      setRecommendedStacks(recommendationsWithReasons)
       setPersonalAnalysisText(report)
       setPersonalModalOpen(false)
       setPersonalResultModalOpen(true)
@@ -736,10 +759,16 @@ export default function Analytics() {
             </div>
 
             <div className="space-y-3 text-sm text-slate-600 leading-6">
-              <p>개인 분석은 현재 로그인한 유저의 프로필 정보와 활동 로그 전체를 기반으로 생성됩니다.</p>
-              <p>분석 결과에는 현재 패턴 요약, 강점/병목 포인트, 그리고 바로 실행 가능한 개선 액션 제안이 포함됩니다.</p>
-              <p className="text-slate-500">추천 항목은 초기 버전이며 이후 커스터마이징될 수 있습니다.</p>
+              <p>개인 분석은 유저의 해커톤 활동을 기반으로 성장 인사이트를 제공하는 맞춤형 리포트입니다.</p>
+              <p>분석에는 유사한 활동 패턴을 가진 다른 참가자들과의 비교를 통해 개인의 강점과 개선점을 도출하는 AI 모델이 활용됩니다.</p>
             </div>
+
+            {personalAnalyzing && (
+              <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+                <p className="text-sm font-semibold text-blue-700 animate-pulse">AI가 개인맞춤 분석을 생성하는 중입니다...</p>
+                <p className="text-xs text-blue-600 mt-1">활동 로그와 프로필 데이터를 종합해 맞춤 리포트를 만들고 있어요. 잠시만 기다려주세요.</p>
+              </div>
+            )}
 
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="outline" onClick={() => setPersonalModalOpen(false)} disabled={personalAnalyzing}>
@@ -781,11 +810,30 @@ export default function Analytics() {
                     <Sparkles className="w-3.5 h-3.5 text-blue-500" />
                     AI 개인 분석
                   </p>
-                  <pre className="whitespace-pre-wrap text-sm text-slate-700 leading-7 font-sans m-0">{personalAnalysisText}</pre>
+                  <div className="text-sm text-slate-700 leading-7">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        h1: ({ children }) => <h1 className="text-lg font-extrabold text-slate-900 mt-3 mb-2">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-base font-bold text-slate-900 mt-3 mb-2">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-sm font-bold text-slate-900 mt-2 mb-1">{children}</h3>,
+                        p: ({ children }) => <p className="mb-2 whitespace-pre-wrap">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc pl-5 mb-2 space-y-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 space-y-1">{children}</ol>,
+                        li: ({ children }) => <li className="text-slate-700">{children}</li>,
+                        strong: ({ children }) => <strong className="font-bold text-slate-900">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        code: ({ children }) => <code className="rounded bg-slate-100 px-1 py-0.5 text-[0.9em]">{children}</code>,
+                        blockquote: ({ children }) => <blockquote className="border-l-4 border-slate-300 pl-3 text-slate-600 my-2">{children}</blockquote>,
+                      }}
+                    >
+                      {personalAnalysisText}
+                    </ReactMarkdown>
+                  </div>
                 </div>
 
                 {/* 참가자 인사이트 구분선 */}
-                {(similarUsers.length > 0 || recommendedStacks.length > 0) && (
+                {recommendedStacks.length > 0 && (
                   <div className="mb-4 flex items-center gap-3">
                     <div className="flex-1 h-px bg-slate-200" />
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">참가자 인사이트</span>
@@ -793,54 +841,32 @@ export default function Analytics() {
                   </div>
                 )}
 
-                {/* 비슷한 참가자들 */}
-                <div className="mb-4 rounded-xl border border-blue-100 bg-white p-4">
-                  <p className="text-sm font-bold text-slate-800 mb-1">🧑‍💻 비슷한 참가자들은 이런 기술을 선택했어요</p>
-                  <p className="text-xs text-slate-400 mb-3">활동 로그와 프로필을 종합해 계산된 유사도 기반 TOP {similarUsers.length || 0}</p>
-                  {similarUsers.length > 0 ? (
-                    <div className="space-y-2">
-                      {similarUsers.map((item) => (
-                        <div key={item.userId} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-slate-800">{item.nickname}</p>
-                            <span className="text-xs font-bold text-blue-600">유사도 {(item.similarity * 100).toFixed(1)}%</span>
-                          </div>
-                          <p className="text-xs text-slate-500 mt-1">
-                            프로필 {(item.profileSimilarity * 100).toFixed(1)}% · 활동 {(item.behaviorSimilarity * 100).toFixed(1)}%
-                          </p>
-                          {item.newTech.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {item.newTech.map((tech) => (
-                                <span key={tech} className="rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-600">
-                                  {tech}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-500">유사 참가자를 계산할 수 있는 데이터가 아직 부족합니다.</p>
-                  )}
-                </div>
-
                 {/* 추천 기술 스택 */}
                 <div className="mb-2 rounded-xl border border-emerald-100 bg-white p-4">
                   <p className="text-sm font-bold text-slate-800 mb-0.5">📚 무엇을 공부해야 할지 고민된다면?</p>
                   <p className="text-xs text-slate-400 mb-3">지금 멈춰있다면, 이런 선택을 해보세요</p>
                   {recommendedStacks.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="space-y-2.5">
                       {recommendedStacks.map((item) => (
-                        <span
+                        <div
                           key={item.tech}
-                          className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700"
+                          className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5"
                         >
-                          {item.tech}
-                          <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">
-                            {item.supporters}명 선택
-                          </span>
-                        </span>
+                          <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                            <span className="inline-flex items-center rounded-full border border-emerald-200 bg-white px-2.5 py-0.5 text-xs font-bold text-emerald-700">
+                              {item.tech}
+                            </span>
+                            <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">
+                              나와 비슷한유저 {item.supporters}명이 선택했어요
+                            </span>
+                          </div>
+                          {item.reason && <p className="text-xs text-slate-700 leading-5">{item.reason}</p>}
+                          {(item.supporterNicknames?.length ?? 0) > 0 && (
+                            <p className="text-[11px] text-slate-500 mt-1">
+                              근거 유저: {(item.supporterNicknames ?? []).join(', ')}
+                            </p>
+                          )}
+                        </div>
                       ))}
                     </div>
                   ) : (

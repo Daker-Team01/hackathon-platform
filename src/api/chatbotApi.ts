@@ -200,6 +200,7 @@ const OPENAI_CHATBOT_MODEL = 'gpt-4o-mini'
 const OPENAI_CHATBOT_FALLBACK_NOTICE = '현재 OpenAI 챗봇 응답이 불가능해 기본 답변 모드로 동작 중입니다. (API 키/모델 설정 확인 필요)'
 const OPENAI_PERSONAL_ANALYSIS_MODEL = 'gpt-4o-mini'
 const OPENAI_PERSONAL_ANALYSIS_FALLBACK_NOTICE = '현재 OpenAI 개인 분석 응답이 불가능해 기본 분석 모드로 동작 중입니다. (API 키/모델 설정 확인 필요)'
+const OPENAI_STACK_REASON_MODEL = 'gpt-4o-mini'
 
 const FALLBACK_ACTION_WEIGHTS: Record<string, number> = {
   submit_project: 1.0,
@@ -211,6 +212,99 @@ const FALLBACK_ACTION_WEIGHTS: Record<string, number> = {
   chatbot_query: 0.3,
   hackathon_view: 0.2,
   tab_view: 0.1,
+}
+
+export type StackReasonInput = {
+  tech: string
+  supporters: number
+  supporterNicknames: string[]
+}
+
+const buildRoleAwareReasonFallback = (roles: string[], input: StackReasonInput): string => {
+  const roleText = roles.length > 0 ? roles.join(', ') : '현재 선호 역할'
+  const supporterText = input.supporterNicknames.length > 0
+    ? `유사 참가자(${input.supporterNicknames.join(', ')})가 자주 선택`
+    : `유사 참가자 ${input.supporters}명이 선택`
+  return `${roleText} 관점에서 ${input.tech}는 실전 구현과 협업 생산성에 직접 연결되며, ${supporterText}한 기술입니다.`
+}
+
+/**
+ * 추천 기술 스택별 이유를 GPT로 생성합니다.
+ * 실패 시 역할 기반 규칙 문장으로 fallback 합니다.
+ */
+export const generateStackRecommendationReasonsWithFallback = async (
+  currentUser: User,
+  recommendations: StackReasonInput[]
+): Promise<Record<string, string>> => {
+  if (recommendations.length === 0) return {}
+
+  const fallbackMap = recommendations.reduce<Record<string, string>>((acc, item) => {
+    acc[item.tech] = buildRoleAwareReasonFallback(currentUser.preferredRoles, item)
+    return acc
+  }, {})
+
+  if (!OPENAI_API_KEY) return fallbackMap
+
+  try {
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENAI_STACK_REASON_MODEL,
+        temperature: 0.3,
+        max_tokens: 700,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: [
+              '당신은 해커톤 멘토입니다.',
+              '항상 한국어로 작성하세요.',
+              '기술별 이유는 1~2문장으로 간결하게 작성하세요.',
+              '사용자의 선호 역할과 유사 참가자 근거를 반드시 반영하세요.',
+              '반드시 JSON으로만 응답하세요.',
+              '응답 형식: {"reasons":[{"tech":"...","reason":"..."}]}'
+            ].join('\n')
+          },
+          {
+            role: 'user',
+            content: JSON.stringify({
+              preferredRoles: currentUser.preferredRoles,
+              recommendations,
+              instruction: '각 기술마다 역할 적합성과 유사 참가자 선택 근거를 포함해 reason을 작성해줘.'
+            })
+          }
+        ]
+      })
+    })
+
+    if (!response.ok) return fallbackMap
+
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+    }
+
+    const content = data.choices?.[0]?.message?.content
+    if (!content) return fallbackMap
+
+    const parsed = JSON.parse(content) as {
+      reasons?: Array<{ tech?: unknown; reason?: unknown }>
+    }
+
+    const reasonMap = { ...fallbackMap }
+    for (const row of parsed.reasons || []) {
+      if (typeof row.tech === 'string' && typeof row.reason === 'string' && row.reason.trim()) {
+        reasonMap[row.tech] = row.reason.trim()
+      }
+    }
+
+    return reasonMap
+  } catch {
+    return fallbackMap
+  }
 }
 
 /**
@@ -656,9 +750,48 @@ export const generatePersonalAnalyticsWithFallback = async (
             content: [
               '당신은 해커톤 활동 분석 코치입니다.',
               '항상 한국어로 답하세요.',
-              '주어진 사용자 정보와 로그만 기반으로 분석하세요.',
-              '형식: 1)한줄 요약 2)강점 3)병목/리스크 4)추천 액션 5개 5)다음 7일 실행 계획.',
-              '추천 액션은 구체적이며 바로 실행 가능한 형태로 작성하세요.'
+              '주어진 사용자 정보와 활동로그만 기반으로 분석하세요.',
+              '추측하거나 없는 정보를 만들지 마세요.',
+              'markdown형식과 이모지를 사용하여 예쁘게 작성하세요',
+              `사용자의 로그를 분석하여 다음을 도출하세요.
+              1. 활동 성향 분석
+              - 탐색 중심인지, 실행 중심인지
+              - 의사결정 속도 (빠름 / 느림)
+              - 참여 적극성 수준
+
+              2. 협업 및 역할 성향
+              - 리더형 / 참여형 / 관찰형
+              - 팀 활동 기여 수준
+
+              3. 관심 분야 및 방향성
+              - 사용자가 주로 관심을 보이는 해커톤/기술 분야
+
+              4. 문제점 및 개선 필요 영역
+              - 현재 행동 패턴에서의 약점
+              - 해커톤 성과를 방해할 수 있는 요소
+
+              5. 성장 방향 및 행동 추천 (가장 중요)
+              - 지금 사용자가 해야 할 구체적인 행동 2~3가지
+              - 실천 가능한 수준으로 제안하세요.
+
+              먼저, 사용자의 행동 패턴을 기반으로 한 줄 요약을 작성하세요.
+              형식: "당신은 ~~한 해커톤 참가자입니다."
+
+              그 다음 아래 구조로 분석을 이어서 작성하세요:
+              [현재 상태]
+              (간단한 요약)
+
+              [분석]
+              (성향, 패턴 설명)
+
+              [문제점]
+              (핵심 문제 2~3개)
+
+              [추천 행동]
+              (구체적인 행동 2~3개)
+
+              분석은 간결하지만 명확하게 작성하세요.
+              단순 설명이 아니라, 사용자의 행동을 개선할 수 있도록 작성하세요.`
             ].join('\n')
           },
           {
