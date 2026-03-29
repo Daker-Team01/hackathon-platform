@@ -5,6 +5,7 @@ import { normalizedHackathons as hackathons } from '../lib/hackathonData'
 import teams from '../data/team_dummy_data.json'
 import { allUsers } from '../contexts/UserContext'
 import type { User } from '../contexts/UserContext'
+import type { EventLog } from '../types/log'
 import { retrieveVectorContext } from './chatbotVectorApi'
 
 
@@ -192,10 +193,80 @@ export const getChatbotAction = (userMessage: string): ChatbotAction | undefined
   return getActionByIntent(intent)
 }
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string | undefined
-const GROQ_MODEL = (import.meta.env.VITE_GROQ_MODEL as string | undefined) || 'llama-3.1-8b-instant'
-const GROQ_FALLBACK_NOTICE = '현재 Groq API 응답이 불가능해 기본 답변 모드로 동작 중입니다. (API 키/모델 설정 확인 필요)'
+// ─── OpenAI ──────────────────────────────────────────────────────────────────
+const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined
+const OPENAI_CHATBOT_MODEL = 'gpt-4o-mini'
+const OPENAI_CHATBOT_FALLBACK_NOTICE = '현재 OpenAI 챗봇 응답이 불가능해 기본 답변 모드로 동작 중입니다. (API 키/모델 설정 확인 필요)'
+const OPENAI_PERSONAL_ANALYSIS_MODEL = 'gpt-4o-mini'
+const OPENAI_PERSONAL_ANALYSIS_FALLBACK_NOTICE = '현재 OpenAI 개인 분석 응답이 불가능해 기본 분석 모드로 동작 중입니다. (API 키/모델 설정 확인 필요)'
+
+const FALLBACK_ACTION_WEIGHTS: Record<string, number> = {
+  submit_project: 1.0,
+  team_create: 0.9,
+  hackathon_join: 0.85,
+  team_join: 0.8,
+  team_request_create: 0.7,
+  invite_send: 0.65,
+  chatbot_query: 0.3,
+  hackathon_view: 0.2,
+  tab_view: 0.1,
+}
+
+/**
+ * GPT-4o-mini로 액션 타입별 중요도를 0~1 사이 점수로 분류합니다.
+ * API 키 미설정 또는 오류 시 규칙 기반 fallback 가중치를 반환합니다.
+ */
+export const classifyLogImportance = async (): Promise<Record<string, number>> => {
+  if (!OPENAI_API_KEY) return FALLBACK_ACTION_WEIGHTS
+
+  const actionList = Object.keys(FALLBACK_ACTION_WEIGHTS).join(', ')
+
+  try {
+    const res = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 250,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content:
+              '당신은 개발자 해커톤 플랫폼의 데이터 분석 전문가입니다. ' +
+              '주어진 사용자 액션 타입이 "개발자의 기술 성장 및 협업 행동 분석"에 얼마나 중요한지 0.0~1.0 점수로 평가합니다. ' +
+              '단순 조회(view, tab_view)는 낮게, 실질적 참여·제출·협업 행동은 높게 평가하세요. ' +
+              '반드시 JSON 객체({action_type: score}) 형식으로만 응답하세요.',
+          },
+          {
+            role: 'user',
+            content: `다음 액션 타입들의 중요도를 0.0~1.0 사이 숫자로 평가해 JSON으로만 반환하세요:\n${actionList}`,
+          },
+        ],
+      }),
+    })
+
+    if (!res.ok) return FALLBACK_ACTION_WEIGHTS
+
+    const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> }
+    const content = data.choices?.[0]?.message?.content
+    if (!content) return FALLBACK_ACTION_WEIGHTS
+
+    const parsed = JSON.parse(content) as Record<string, unknown>
+    const result: Record<string, number> = {}
+    for (const [key, fallback] of Object.entries(FALLBACK_ACTION_WEIGHTS)) {
+      const v = parsed[key]
+      result[key] = typeof v === 'number' ? Math.max(0, Math.min(1, v)) : fallback
+    }
+    return result
+  } catch {
+    return FALLBACK_ACTION_WEIGHTS
+  }
+}
 
 const isPersonalQuery = (query: string): boolean => {
   return /(\bme\b|\bmy\b|나|내|저|내정보|내 정보|프로필|개인|분석)/i.test(query)
@@ -255,8 +326,8 @@ const buildIntentContext = (userMessage: string, intent: Intent, currentUser?: U
   return parts.join('\n\n')
 }
 
-const generateGroqResponse = async (userMessage: string, currentUser?: User): Promise<string | null> => {
-  if (!GROQ_API_KEY) {
+const generateOpenAIResponse = async (userMessage: string, currentUser?: User): Promise<string | null> => {
+  if (!OPENAI_API_KEY) {
     return null
   }
 
@@ -279,14 +350,14 @@ const generateGroqResponse = async (userMessage: string, currentUser?: User): Pr
       '답변 형식: 요약 1~2문장 + 핵심 목록 2~5개 + 마지막 한 줄 제안.'
     ].join('\n')
 
-    const response = await fetch(GROQ_API_URL, {
+    const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${GROQ_API_KEY}`
+        Authorization: `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: GROQ_MODEL,
+        model: OPENAI_CHATBOT_MODEL,
         temperature: 0.4,
         max_tokens: 520,
         messages: [
@@ -305,7 +376,7 @@ const generateGroqResponse = async (userMessage: string, currentUser?: User): Pr
       } catch {
         // no-op: keep status-only reason
       }
-      console.warn('Groq API non-OK response:', reason)
+      console.warn('OpenAI API non-OK response:', reason)
       return null
     }
 
@@ -316,7 +387,7 @@ const generateGroqResponse = async (userMessage: string, currentUser?: User): Pr
     const content = data.choices?.[0]?.message?.content?.trim()
     return content || null
   } catch (error) {
-    console.warn('Groq response failed, fallback to local rule response:', error)
+    console.warn('OpenAI response failed, fallback to local rule response:', error)
     return null
   } finally {
     clearTimeout(timer)
@@ -467,13 +538,155 @@ export const generateChatbotResponseWithFallback = async (
   userMessage: string,
   currentUser?: User
 ): Promise<string> => {
-  const groqResponse = await generateGroqResponse(userMessage, currentUser)
-  if (groqResponse) {
-    return groqResponse
+  const openAIResponse = await generateOpenAIResponse(userMessage, currentUser)
+  if (openAIResponse) {
+    return openAIResponse
   }
   const ruleBased = generateChatbotResponse(userMessage)
-  if (GROQ_API_KEY) {
-    return `${GROQ_FALLBACK_NOTICE}\n\n${ruleBased}`
+  if (OPENAI_API_KEY) {
+    return `${OPENAI_CHATBOT_FALLBACK_NOTICE}\n\n${ruleBased}`
   }
   return ruleBased
+}
+
+const buildPersonalRuleBasedReport = (user: User, logs: EventLog[]): string => {
+  const totalLogs = logs.length
+  const actionCounts = logs.reduce<Record<string, number>>((acc, log) => {
+    acc[log.action_type] = (acc[log.action_type] || 0) + 1
+    return acc
+  }, {})
+
+  const topActions = Object.entries(actionCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([name, count]) => `- ${name}: ${count}회`)
+
+  const recommendations: string[] = []
+  if ((actionCounts.team_create || 0) === 0) {
+    recommendations.push('- 팀 생성/팀장 경험을 1회 이상 시도해 협업 리더십 로그를 확보하세요.')
+  }
+  if ((actionCounts.submit_project || 0) < 2) {
+    recommendations.push('- 제출 경험이 적으니 작은 기능 단위라도 주 1회 제출 루틴을 만드세요.')
+  }
+  if ((actionCounts.hackathon_view || 0) > (actionCounts.hackathon_join || 0) * 4) {
+    recommendations.push('- 조회 대비 참가 전환이 낮습니다. 관심 해커톤 3개를 고정해 바로 지원하세요.')
+  }
+  if (recommendations.length === 0) {
+    recommendations.push('- 현재 전환 흐름이 안정적입니다. 다음 목표는 팀 빌딩 속도 개선입니다.')
+  }
+
+  return [
+    `개인 분석 요약: ${user.nickname}님의 최근 활동 로그 ${totalLogs}건을 기반으로 분석했습니다.`,
+    '',
+    '핵심 지표',
+    `- 포인트: ${user.points}점`,
+    `- 랭킹: ${user.ranking}위`,
+    `- 활동 점수: ${user.activityScore}`,
+    `- 평판: ${user.reputation}`,
+    '',
+    '자주 한 활동',
+    ...(topActions.length > 0 ? topActions : ['- 활동 로그가 충분하지 않습니다.']),
+    '',
+    '추천 액션',
+    ...recommendations,
+    '- 다음 7일 동안 참가 1회 + 팀 협업 1회 + 제출 1회를 목표로 설정하세요.'
+  ].join('\n')
+}
+
+export const generatePersonalAnalyticsWithFallback = async (
+  currentUser: User,
+  userLogs: EventLog[]
+): Promise<string> => {
+  const actionCounts = userLogs.reduce<Record<string, number>>((acc, log) => {
+    acc[log.action_type] = (acc[log.action_type] || 0) + 1
+    return acc
+  }, {})
+
+  const recentLogs = [...userLogs]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 120)
+
+  const compactRecentLogs = recentLogs.map((log) => {
+    const metaSummary = log.metadata ? JSON.stringify(log.metadata).slice(0, 180) : ''
+    return `${log.created_at} | ${log.action_type} | target=${log.target_id}${metaSummary ? ` | meta=${metaSummary}` : ''}`
+  })
+
+  const prompt = [
+    '[USER_PROFILE]',
+    `userId: ${currentUser.userId}`,
+    `nickname: ${currentUser.nickname}`,
+    `points: ${currentUser.points}`,
+    `ranking: ${currentUser.ranking}`,
+    `activityScore: ${currentUser.activityScore}`,
+    `reputation: ${currentUser.reputation}`,
+    `preferredRoles: ${currentUser.preferredRoles.join(', ') || '없음'}`,
+    `techStack: ${currentUser.techStack.join(', ') || '없음'}`,
+    `personalityTags: ${currentUser.personalityTags.join(', ') || '없음'}`,
+    '',
+    '[ACTION_COUNTS]',
+    ...Object.entries(actionCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => `${name}: ${count}`),
+    '',
+    '[RECENT_LOGS]',
+    ...compactRecentLogs
+  ].join('\n')
+
+  if (!OPENAI_API_KEY) {
+    return buildPersonalRuleBasedReport(currentUser, userLogs)
+  }
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 15000)
+
+  try {
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: OPENAI_PERSONAL_ANALYSIS_MODEL,
+        temperature: 0.35,
+        max_tokens: 900,
+        messages: [
+          {
+            role: 'system',
+            content: [
+              '당신은 해커톤 활동 분석 코치입니다.',
+              '항상 한국어로 답하세요.',
+              '주어진 사용자 정보와 로그만 기반으로 분석하세요.',
+              '형식: 1)한줄 요약 2)강점 3)병목/리스크 4)추천 액션 5개 5)다음 7일 실행 계획.',
+              '추천 액션은 구체적이며 바로 실행 가능한 형태로 작성하세요.'
+            ].join('\n')
+          },
+          {
+            role: 'user',
+            content: `아래 데이터를 기반으로 개인 분석 보고서를 작성해줘.\n\n${prompt}`
+          }
+        ]
+      }),
+      signal: controller.signal
+    })
+
+    if (!response.ok) {
+      return `${OPENAI_PERSONAL_ANALYSIS_FALLBACK_NOTICE}\n\n${buildPersonalRuleBasedReport(currentUser, userLogs)}`
+    }
+
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+    }
+    const content = data.choices?.[0]?.message?.content?.trim()
+
+    if (!content) {
+      return `${OPENAI_PERSONAL_ANALYSIS_FALLBACK_NOTICE}\n\n${buildPersonalRuleBasedReport(currentUser, userLogs)}`
+    }
+
+    return content
+  } catch {
+    return `${OPENAI_PERSONAL_ANALYSIS_FALLBACK_NOTICE}\n\n${buildPersonalRuleBasedReport(currentUser, userLogs)}`
+  } finally {
+    clearTimeout(timer)
+  }
 }
