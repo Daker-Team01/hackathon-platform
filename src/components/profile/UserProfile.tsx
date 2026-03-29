@@ -3,6 +3,7 @@ import { useUser, type UserWorkStyle } from '../../contexts/UserContext'
 import { router } from '../../router/router'
 import usersData from '../../data/user_dummy_v2.json'
 import ParticipationSummary from './ParticipationSummary'
+import { useTeams } from '../../hooks/useTeams'
 
 const PERSONALITY_TAGS_OPTIONS = [
   '실행빠름',
@@ -121,6 +122,7 @@ const filterOptions = (options: string[], query: string, selected: string[]) => 
 
 export default function UserProfile() {
   const { user, logout, updateUser } = useUser()
+  const { data: teams = [] } = useTeams(undefined, { enabled: !!user })
   const [isEditing, setIsEditing] = useState(false)
   const [roleQuery, setRoleQuery] = useState('')
   const [personalityQuery, setPersonalityQuery] = useState('')
@@ -142,8 +144,21 @@ export default function UserProfile() {
   const personalityTags = normalizeStringArray(user.personalityTags)
   const techStack = normalizeStringArray(user.techStack)
   const preferredRoles = normalizeStringArray(user.preferredRoles)
-  const participationCount = user.participations.length
-  const ongoingParticipationCount = user.participations.filter((item) => item.status === 'ongoing').length
+  const localParticipationByTeamCode = new Map(user.participations.map((item) => [item.teamCode, item]))
+  const supabaseTeamCodes = teams
+    .filter((team) => team.members?.some((member) => member.userId === user.userId))
+    .map((team) => team.teamCode)
+
+  const mergedTeamCodes = new Set<string>([
+    ...user.participations.map((item) => item.teamCode),
+    ...supabaseTeamCodes
+  ])
+
+  const participationCount = mergedTeamCodes.size
+  const ongoingParticipationCount = [...mergedTeamCodes].filter((teamCode) => {
+    const localParticipation = localParticipationByTeamCode.get(teamCode)
+    return (localParticipation?.status ?? 'ongoing') === 'ongoing'
+  }).length
   const activityPercent = Math.round(user.activityScore * 100)
   const filteredRoleOptions = filterOptions(ALL_ROLE_OPTIONS, roleQuery, editData.preferredRoles).slice(0, 8)
   const filteredPersonalityOptions = filterOptions(
@@ -584,7 +599,7 @@ export default function UserProfile() {
           </div>
         )}
         <p style={{ margin: '10px 0 0 0', fontSize: 11, color: '#64748b' }}>
-          현재 진행 중인 해커톤 {ongoingParticipationCount}개 · 가입일 {formatDate(user.createdAt)}
+          현재 참여 중인 팀 {ongoingParticipationCount}개 · 가입일 {formatDate(user.createdAt)}
         </p>
       </div>
 
