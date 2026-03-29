@@ -473,11 +473,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       teamChatMappingUnsubscribeRef.current = null
     }
 
-    if (roomSyncIntervalRef.current !== null) {
-      window.clearInterval(roomSyncIntervalRef.current)
-      roomSyncIntervalRef.current = null
-    }
-
     teamChatMappingUnsubscribeRef.current = subscribeToTeamChatMappingChanges(
       (mapping) => {
         if (mapping.team_id) {

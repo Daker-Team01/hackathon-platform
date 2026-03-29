@@ -6,11 +6,26 @@ import teams from '../data/team_dummy_data.json'
 import { allUsers } from '../contexts/UserContext'
 import type { User } from '../contexts/UserContext'
 import type { EventLog } from '../types/log'
+import { supabase } from '../lib/supabase'
 import { retrieveVectorContext } from './chatbotVectorApi'
 
 
 type HackathonData = (typeof hackathons)[0]
-type TeamData = (typeof teams)[0]
+type ChatbotTeamData = {
+  name: string
+  intro: string
+  isOpen: boolean
+  memberCount: number
+  lookingFor: string[]
+}
+
+type SupabaseChatbotTeamRow = {
+  name: string | null
+  intro: string | null
+  is_open: boolean | null
+  member_count: number | null
+  looking_for: string[] | null
+}
 type Intent =
   | 'ongoing_hackathons'
   | 'upcoming_hackathons'
@@ -106,6 +121,33 @@ const calculateSimilarity = (text1: string, text2: string): number => {
   return matches.length / Math.max(t1.length, t2.length)
 }
 
+const normalizeRoles = (roles: unknown): string[] => {
+  if (!Array.isArray(roles)) return []
+  return roles.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+}
+
+const fetchChatbotTeams = async (): Promise<ChatbotTeamData[]> => {
+  const { data, error } = await supabase
+    .from('teams')
+    .select('name,intro,is_open,member_count,looking_for')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.warn('Failed to fetch teams for chatbot:', error)
+    return []
+  }
+
+  return ((data || []) as SupabaseChatbotTeamRow[])
+    .filter((row) => typeof row.name === 'string' && row.name.trim().length > 0)
+    .map((row) => ({
+      name: row.name || '',
+      intro: row.intro || '',
+      isOpen: Boolean(row.is_open),
+      memberCount: typeof row.member_count === 'number' ? row.member_count : 0,
+      lookingFor: normalizeRoles(row.looking_for)
+    }))
+}
+
 // 해커톤 검색
 const searchHackathons = (query: string): HackathonData[] => {
   const queryLower = query.toLowerCase()
@@ -123,7 +165,7 @@ const searchHackathons = (query: string): HackathonData[] => {
 }
 
 // 팀 검색
-const searchTeams = (query: string): TeamData[] => {
+const searchTeams = (query: string, teams: ChatbotTeamData[]): ChatbotTeamData[] => {
   const queryLower = query.toLowerCase()
   return teams
     .filter(t => 
@@ -366,7 +408,9 @@ const isPersonalQuery = (query: string): boolean => {
   return /(\bme\b|\bmy\b|나|내|저|내정보|내 정보|프로필|개인|분석)/i.test(query)
 }
 
-const buildIntentContext = (userMessage: string, intent: Intent, currentUser?: User): string => {
+const buildIntentContext = async (userMessage: string, intent: Intent, currentUser?: User): Promise<string> => {
+
+  const teamPool = await fetchChatbotTeams()
 
   const parts: string[] = [
     `[QUERY]\n${userMessage}`,
@@ -397,8 +441,8 @@ const buildIntentContext = (userMessage: string, intent: Intent, currentUser?: U
   }
 
   if (intent === 'teams' || intent === 'team_ranking' || intent === 'general') {
-    const searchedTeams = searchTeams(userMessage)
-    const targetTeams = searchedTeams.length > 0 ? searchedTeams.slice(0, 4) : teams.filter((t) => t.isOpen).slice(0, 4)
+    const searchedTeams = searchTeams(userMessage, teamPool)
+    const targetTeams = searchedTeams.length > 0 ? searchedTeams.slice(0, 4) : teamPool.filter((t) => t.isOpen).slice(0, 4)
     if (targetTeams.length > 0) {
       parts.push(`[TEAMS]\n${targetTeams.map((t) => `${t.name} | 모집:${t.isOpen ? '열림' : '닫힘'} | 역할:${t.lookingFor.slice(0, 3).join(',')}`).join('\n')}`)
     }
@@ -430,7 +474,7 @@ const generateOpenAIResponse = async (userMessage: string, currentUser?: User): 
 
   try {
     const intent = detectIntent(userMessage)
-    const selectedContext = buildIntentContext(userMessage, intent, currentUser)
+    const selectedContext = await buildIntentContext(userMessage, intent, currentUser)
     const vectorContext = await retrieveVectorContext(userMessage, intent)
     const finalContext = vectorContext ? `${selectedContext}\n\n${vectorContext}` : selectedContext
 
@@ -489,8 +533,9 @@ const generateOpenAIResponse = async (userMessage: string, currentUser?: User): 
 }
 
 // 챗봇 응답 생성
-export const generateChatbotResponse = (userMessage: string): string => {
+export const generateChatbotResponse = async (userMessage: string): Promise<string> => {
   const intent = detectIntent(userMessage)
+  const teamPool = await fetchChatbotTeams()
   
   switch (intent) {
     case 'ongoing_hackathons': {
@@ -527,7 +572,7 @@ export const generateChatbotResponse = (userMessage: string): string => {
     }
 
     case 'team_ranking': {
-      const teamsWithPoints = teams.map(team => ({
+      const teamsWithPoints = teamPool.map(team => ({
         ...team,
         totalPoints: team.memberCount * 100 // 팀원 수 기반 포인트 계산
       }))
@@ -545,7 +590,7 @@ export const generateChatbotResponse = (userMessage: string): string => {
     }
     
     case 'teams': {
-      const openTeams = teams.filter(t => t.isOpen)
+      const openTeams = teamPool.filter(t => t.isOpen)
       
       // 팀 찾기 정보
       let response = ''
@@ -560,7 +605,7 @@ export const generateChatbotResponse = (userMessage: string): string => {
       }
       
       // 팀 랭킹 추가
-      const teamsWithPoints = teams.map(team => ({
+      const teamsWithPoints = teamPool.map(team => ({
         ...team,
         totalPoints: team.memberCount * 100
       }))
@@ -613,7 +658,7 @@ export const generateChatbotResponse = (userMessage: string): string => {
     default: {
       // 키워드 기반 일반 검색
       const hackResults = searchHackathons(userMessage)
-      const teamResults = searchTeams(userMessage)
+      const teamResults = searchTeams(userMessage, teamPool)
       
       if (hackResults.length > 0) {
         return `**해커톤** 검색 결과:\n\n• **${hackResults[0].title}**\n태그: ${hackResults[0].tags.join(', ')}`
@@ -636,7 +681,7 @@ export const generateChatbotResponseWithFallback = async (
   if (openAIResponse) {
     return openAIResponse
   }
-  const ruleBased = generateChatbotResponse(userMessage)
+  const ruleBased = await generateChatbotResponse(userMessage)
   if (OPENAI_API_KEY) {
     return `${OPENAI_CHATBOT_FALLBACK_NOTICE}\n\n${ruleBased}`
   }
