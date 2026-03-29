@@ -1,9 +1,10 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Info } from 'lucide-react'
+import { FileUp, Info, Link2, Send } from 'lucide-react'
 import { getHackathonDetailBySlug } from '../lib/hackathonDetailData'
 import { useLog } from '../contexts/LogContext'
 import { useUser } from '../contexts/UserContext'
 import { useTeams } from '../hooks/useTeams'
+import { Button } from '@/components/ui/button'
 
 type SubmitProps = {
   hackathonSlug: string
@@ -131,8 +132,7 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
       .filter((item) => !user?.id || item.leaderId === user.id)
   }, [teams, hackathonSlug, user?.id])
   const evalBreakdown = useMemo(() => getEvalBreakdownBySlug(hackathonSlug), [hackathonSlug])
-  
-  // 해커톤 상태 확인
+
   const isEnded = useMemo(() => {
     const raw = localStorage.getItem('hackathons')
     if (!raw) return false
@@ -149,6 +149,7 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
       return false
     }
   }, [hackathonSlug])
+
   const allowedArtifactTypes = submitSection?.allowedArtifactTypes ?? []
   const defaultType = allowedArtifactTypes[0] ?? 'zip'
 
@@ -205,6 +206,7 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
       submittedAt,
       totalScore,
     }
+
     const leaderboardSubmissions = getLeaderboardSubmissionsFromStorage()
     localStorage.setItem(
       LEADERBOARD_SUBMISSIONS_STORAGE_KEY,
@@ -224,192 +226,194 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
   }
 
   return (
-    <section style={{ marginTop: 12 }}>
-      <h2 style={{ marginBottom: 12 }}>Submit</h2>
+    <section className="space-y-8">
+      <div className="rounded-[28px] border border-fuchsia-100 bg-gradient-to-br from-rose-50 via-white to-sky-50 p-6 sm:p-8">
+        <p className="text-xs font-black uppercase tracking-[0.25em] text-rose-600/70">Submission Desk</p>
+        <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">Submit</h2>
+        <p className="mt-4 max-w-4xl text-sm font-medium leading-7 text-slate-700 sm:text-base">
+          팀장이 최종 결과물을 제출하는 구간입니다. 제출 형식과 가이드를 확인한 뒤 정확한 팀을 선택해 제출하세요.
+        </p>
+      </div>
 
       {isEnded ? (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-6 py-8 rounded-3xl flex flex-col items-center gap-4 text-center shadow-sm animate-in fade-in zoom-in duration-500">
-          <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-500">
-            <Info className="w-8 h-8" />
+        <div className="flex flex-col items-center gap-4 rounded-3xl border border-amber-200 bg-amber-50 px-6 py-8 text-center text-amber-800 shadow-sm">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-500">
+            <Info className="h-8 w-8" />
           </div>
           <div>
-            <h3 className="text-xl font-black mb-1">해커톤 종료</h3>
-            <p className="font-bold text-sm opacity-80 leading-relaxed">
-              이미 종료된 해커톤입니다.<br />프로젝트 제출 및 수정이 불가합니다.
+            <h3 className="mb-1 text-xl font-black">해커톤 종료</h3>
+            <p className="text-sm font-bold leading-relaxed opacity-80">
+              이미 종료된 해커톤입니다.
+              <br />
+              프로젝트 제출 및 수정이 불가합니다.
             </p>
           </div>
         </div>
       ) : (
         <>
-          <div
-            style={{
-              border: '1px solid #e5e7eb',
-              borderRadius: 10,
-              padding: 16,
-              backgroundColor: '#fafafa',
-              marginBottom: 16,
-            }}
-          >
-            <h3 style={{ margin: '0 0 10px 0' }}>Submission Guide</h3>
-            {submitSection?.guide && submitSection.guide.length > 0 ? (
-              <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.6 }}>
-                {submitSection.guide.map((item, index) => (
-                  <li key={`${item}-${index}`}>{item}</li>
-                ))}
-              </ul>
-            ) : (
-              <p style={{ margin: 0 }}>제출 가이드가 없습니다.</p>
-            )}
+          <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="rounded-[28px] border border-slate-100 bg-gradient-to-b from-white to-slate-50 p-6 shadow-sm">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Submission Guide</p>
+              <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-900">제출 전 확인사항</h3>
+              {submitSection?.guide && submitSection.guide.length > 0 ? (
+                <div className="mt-5 space-y-3">
+                  {submitSection.guide.map((item, index) => (
+                    <div
+                      key={`${item}-${index}`}
+                      className="rounded-2xl border border-sky-100 bg-sky-50/70 px-4 py-4"
+                    >
+                      <p className="text-sm font-semibold leading-7 text-slate-700">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-5 text-slate-600">제출 가이드가 없습니다.</p>
+              )}
+            </div>
+
+            <div className="grid gap-4">
+              <div className="rounded-3xl border border-sky-100 bg-sky-50/70 p-6">
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sky-600/70">Allowed Types</p>
+                <p className="mt-3 break-words text-lg font-black text-slate-900">
+                  {allowedArtifactTypes.length > 0 ? allowedArtifactTypes.join(', ') : 'zip'}
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-violet-100 bg-violet-50/70 p-6">
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-violet-600/70">Submission Policy</p>
+                <p className="mt-3 text-sm font-semibold leading-7 text-slate-700">
+                  제출은 팀장만 가능하며, 선택한 팀 기준으로 리더보드 점수가 기록됩니다.
+                </p>
+              </div>
+            </div>
           </div>
 
           <form
             onSubmit={handleSubmit}
-            style={{
-              border: '1px solid #e5e7eb',
-              borderRadius: 10,
-              padding: 16,
-              display: 'grid',
-              gap: 14,
-            }}
+            className="rounded-[28px] border border-slate-100 bg-white p-6 shadow-sm sm:p-8"
           >
-            <div style={{ display: 'grid', gap: 6 }}>
-              <label htmlFor="submit-team" style={{ fontWeight: 600 }}>
-                Team (팀장만 제출 가능)
-              </label>
-              <select
-                id="submit-team"
-                value={teamId}
-                onChange={(event) => setTeamId(event.target.value)}
-                required
-                style={{
-                  padding: '10px 12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: 8,
-                  fontSize: 14,
-                }}
-              >
-                <option value="">팀을 선택하세요</option>
-                {teamOptions.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-              {teamOptions.length === 0 && user && (
-                <p style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 'bold', marginTop: 4 }}>
-                  * 귀하가 팀장인 팀이 없습니다. 제출은 팀장만 가능합니다.
-                </p>
-              )}
-            </div>
-
-            <div style={{ display: 'grid', gap: 6 }}>
-              <label htmlFor="submit-notes" style={{ fontWeight: 600 }}>
-                Notes
-              </label>
-              <textarea
-                id="submit-notes"
-                placeholder="notes (optional)"
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                rows={5}
-                style={{
-                  padding: '10px 12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  resize: 'vertical',
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'grid', gap: 6 }}>
-              <label htmlFor="artifact-type" style={{ fontWeight: 600 }}>
-                Artifact Type
-              </label>
-              <select
-                id="artifact-type"
-                value={artifactType}
-                onChange={(event) => {
-                  const nextType = event.target.value
-                  setArtifactType(nextType)
-                  setArtifactFile(null)
-                  setArtifactUrl('')
-                }}
-                style={{
-                  padding: '10px 12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: 8,
-                  fontSize: 14,
-                }}
-              >
-                {allowedArtifactTypes.length > 0 ? (
-                  allowedArtifactTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="grid gap-2">
+                <label htmlFor="submit-team" className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">
+                  Team
+                </label>
+                <select
+                  id="submit-team"
+                  value={teamId}
+                  onChange={(event) => setTeamId(event.target.value)}
+                  required
+                  className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-400 focus:bg-white"
+                >
+                  <option value="">팀을 선택하세요</option>
+                  {teamOptions.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
                     </option>
-                  ))
+                  ))}
+                </select>
+                {teamOptions.length === 0 && user ? (
+                  <p className="text-sm font-semibold leading-6 text-rose-500">
+                    제출 가능한 내 팀이 없습니다. 제출은 팀장만 가능합니다.
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="grid gap-2">
+                <label htmlFor="artifact-type" className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">
+                  Artifact Type
+                </label>
+                <select
+                  id="artifact-type"
+                  value={artifactType}
+                  onChange={(event) => {
+                    const nextType = event.target.value
+                    setArtifactType(nextType)
+                    setArtifactFile(null)
+                    setArtifactUrl('')
+                  }}
+                  className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-400 focus:bg-white"
+                >
+                  {allowedArtifactTypes.length > 0 ? (
+                    allowedArtifactTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="zip">zip</option>
+                  )}
+                </select>
+              </div>
+
+              <div className="grid gap-2 lg:col-span-2">
+                <label htmlFor="submit-notes" className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">
+                  Notes
+                </label>
+                <textarea
+                  id="submit-notes"
+                  placeholder="제출에 대한 간단한 설명이나 비고를 입력하세요."
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  rows={5}
+                  className="min-h-36 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-medium leading-7 text-slate-800 outline-none transition focus:border-sky-400 focus:bg-white"
+                />
+              </div>
+
+              <div className="grid gap-2 lg:col-span-2">
+                <label className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">Artifact</label>
+                {artifactType === 'url' ? (
+                  <div className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3">
+                    <Link2 className="h-5 w-5 shrink-0 text-slate-400" />
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={artifactUrl}
+                      onChange={(event) => setArtifactUrl(event.target.value)}
+                      required
+                      className="w-full bg-transparent text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400"
+                    />
+                  </div>
                 ) : (
-                  <option value="zip">zip</option>
+                  <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-4 py-5">
+                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-600">
+                      <FileUp className="h-4 w-4" />
+                      업로드 가능한 형식: {artifactType}
+                    </div>
+                    <input
+                      key={artifactType}
+                      type="file"
+                      accept={ACCEPT_BY_TYPE[artifactType] ?? ''}
+                      onChange={(event) => setArtifactFile(event.target.files?.[0] ?? null)}
+                      required
+                      className="block w-full text-sm font-medium text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:font-semibold file:text-white hover:file:bg-slate-800"
+                    />
+                  </div>
                 )}
-              </select>
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gap: 6 }}>
-              <label style={{ fontWeight: 600 }}>Artifact</label>
-              {artifactType === 'url' ? (
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={artifactUrl}
-                  onChange={(event) => setArtifactUrl(event.target.value)}
-                  required
-                  style={{
-                    padding: '10px 12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: 8,
-                    fontSize: 14,
-                  }}
-                />
-              ) : (
-                <input
-                  key={artifactType}
-                  type="file"
-                  accept={ACCEPT_BY_TYPE[artifactType] ?? ''}
-                  onChange={(event) => setArtifactFile(event.target.files?.[0] ?? null)}
-                  required
-                  style={{
-                    padding: '10px 12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: 8,
-                    fontSize: 14,
-                    backgroundColor: '#fff',
-                  }}
-                />
-              )}
-            </div>
-
-            <div>
-              <button
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm leading-6 text-slate-500">
+                제출 후 점수가 계산되어 리더보드에 반영됩니다.
+              </p>
+              <Button
                 type="submit"
                 disabled={teamOptions.length === 0}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 8,
-                  border: 'none',
-                  backgroundColor: teamOptions.length === 0 ? '#9ca3af' : '#111827',
-                  color: '#fff',
-                  cursor: teamOptions.length === 0 ? 'not-allowed' : 'pointer',
-                  fontWeight: 600,
-                }}
+                className="rounded-2xl bg-gradient-to-r from-slate-900 to-slate-700 px-6 py-6 font-bold text-white shadow-lg hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                submit
-              </button>
+                <Send className="mr-2 h-4 w-4" />
+                최종 제출하기
+              </Button>
             </div>
           </form>
         </>
       )}
 
-      {message ? <p style={{ marginTop: 12 }}>{message}</p> : null}
+      {message ? (
+        <div className="rounded-2xl border border-sky-100 bg-sky-50 px-5 py-4 text-sm font-semibold text-sky-700">
+          {message}
+        </div>
+      ) : null}
     </section>
   )
-  }
+}
