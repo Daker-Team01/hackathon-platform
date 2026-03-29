@@ -564,10 +564,12 @@ export default function Navbar({
                           <div
                             key={`${participation.teamCode}-${index}`}
                             style={{
+                              position: 'relative',
                               border: '1px solid #dbeafe',
                               background: 'linear-gradient(180deg, #f8fbff 0%, #f1f7ff 100%)',
                               borderRadius: 12,
                               padding: 12,
+                              paddingBottom: participation.isLeader ? 42 : 12,
                               boxShadow: '0 6px 14px rgba(37, 99, 235, 0.08)'
                             }}
                           >
@@ -604,6 +606,37 @@ export default function Navbar({
                                 기여도: {Math.round(participation.contributionScore * 100)}점
                               </p>
                             </div>
+
+                            {participation.isLeader && (
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/team/${participation.teamCode}/manage`)}
+                                style={{
+                                  position: 'absolute',
+                                  right: 12,
+                                  bottom: 10,
+                                  border: '1px solid #bfdbfe',
+                                  backgroundColor: '#eff6ff',
+                                  color: '#1d4ed8',
+                                  padding: '4px 8px',
+                                  borderRadius: 8,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  lineHeight: 1.2
+                                }}
+                                onMouseOver={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#dbeafe'
+                                  e.currentTarget.style.borderColor = '#93c5fd'
+                                }}
+                                onMouseOut={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#eff6ff'
+                                  e.currentTarget.style.borderColor = '#bfdbfe'
+                                }}
+                              >
+                                팀관리 페이지로 이동
+                              </button>
+                            )}
                           </div>
                         )
                       })
