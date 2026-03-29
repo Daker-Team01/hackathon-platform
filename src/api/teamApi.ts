@@ -1,5 +1,5 @@
 import type { Team, TeamInvite, TeamMember, TeamRequest } from "../types/team"
-import userDummyData from "../data/user_dummy_data.json"
+import userDummyData from "../data/user_dummy_v2.json"
 import { supabase } from "../lib/supabase"
 import { enqueueGeneralChatNotification } from '../utils/generalChatNotifications'
 import {

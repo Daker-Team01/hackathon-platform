@@ -11,7 +11,7 @@ import { useUser } from '@/contexts/UserContext'
 import { getTeamsByLeaderId } from '@/api/teamApi'
 import type { Team } from '@/types/team'
 import teamsData from '../data/team_dummy_data.json'
-import usersData from '../data/user_dummy_data.json'
+import usersData from '../data/user_dummy_v2.json'
 
 type DocType = 'user' | 'team'
 type FilterValue = 'all' | string

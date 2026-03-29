@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import userDummyData from '../data/user_dummy_data.json'
+import userDummyData from '../data/user_dummy_v2.json'
 import { useChat } from './ChatContext'
 
 export type UserParticipation = {
