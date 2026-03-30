@@ -32,7 +32,7 @@ R_norm = normalize(R, norm="l2", axis=1)
 S = cosine_similarity(R_norm)  # user-user similarity matrix
 print("similarity matrix shape:", S.shape)
 
-def recommend_for_user(user_id, R, R_norm, S, u_uniques, i_uniques, topk_user=10, topk_item=5):
+def recommend_for_user(user_id, R, R_norm, S, u_uniques, i_uniques, topk_user=10, topk_item=5, item_prefix="hack"):
     u2idx = {u:i for i,u in enumerate(u_uniques)}
     uid = u2idx[user_id]
 
@@ -48,6 +48,9 @@ def recommend_for_user(user_id, R, R_norm, S, u_uniques, i_uniques, topk_user=10
         if sim <= 0:
             continue
         for j, val in zip(R[v].indices, R[v].data):
+            item_id = str(i_uniques[j])
+            if item_prefix and not item_id.startswith(item_prefix):
+                continue
             if j in user_seen:
                 continue
             scores[j] = scores.get(j, 0.0) + sim * val
@@ -55,4 +58,4 @@ def recommend_for_user(user_id, R, R_norm, S, u_uniques, i_uniques, topk_user=10
     rec = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:topk_item]
     return [(i_uniques[j], s) for j, s in rec]
 
-print(recommend_for_user(u_uniques[0], R, R_norm, S, u_uniques, i_uniques))
+print(recommend_for_user(u_uniques[0], R, R_norm, S, u_uniques, i_uniques, item_prefix="hack"))
