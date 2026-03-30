@@ -121,6 +121,10 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
   const { data: teams = [] } = useTeams(hackathonSlug)
   const submitSection = useMemo(() => getSubmitSectionBySlug(hackathonSlug), [hackathonSlug])
   const teamOptions = useMemo<TeamOption[]>(() => {
+    if (!user?.id) {
+      return []
+    }
+
     return teams
       .map((team) => ({
         id: team.teamCode,
@@ -129,7 +133,7 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
         leaderId: team.leaderId
       }))
       .filter((item) => item.hackathonSlug === hackathonSlug)
-      .filter((item) => !user?.id || item.leaderId === user.id)
+      .filter((item) => item.leaderId === user.id)
   }, [teams, hackathonSlug, user?.id])
   const evalBreakdown = useMemo(() => getEvalBreakdownBySlug(hackathonSlug), [hackathonSlug])
 
@@ -162,6 +166,11 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (!user) {
+      setMessage('로그인 후 제출할 수 있습니다.')
+      return
+    }
 
     let artifact = ''
     if (artifactType === 'url') {
@@ -251,6 +260,12 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
         </div>
       ) : (
         <>
+          {!user ? (
+            <div className="rounded-3xl border border-amber-200 bg-amber-50 px-6 py-5 text-sm font-semibold leading-7 text-amber-800">
+              로그인 후 제출할 수 있습니다. 제출은 팀장만 가능합니다.
+            </div>
+          ) : null}
+
           <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="rounded-[28px] border border-slate-100 bg-gradient-to-b from-white to-slate-50 p-6 shadow-sm">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Submission Guide</p>
@@ -300,8 +315,15 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
                 <select
                   id="submit-team"
                   value={teamId}
-                  onChange={(event) => setTeamId(event.target.value)}
+                  onChange={(event) => {
+                    if (!user) {
+                      setMessage('로그인 후 제출할 수 있습니다.')
+                      return
+                    }
+                    setTeamId(event.target.value)
+                  }}
                   required
+                  disabled={!user}
                   className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-400 focus:bg-white"
                 >
                   <option value="">팀을 선택하세요</option>
@@ -326,11 +348,16 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
                   id="artifact-type"
                   value={artifactType}
                   onChange={(event) => {
+                    if (!user) {
+                      setMessage('로그인 후 제출할 수 있습니다.')
+                      return
+                    }
                     const nextType = event.target.value
                     setArtifactType(nextType)
                     setArtifactFile(null)
                     setArtifactUrl('')
                   }}
+                  disabled={!user}
                   className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-sky-400 focus:bg-white"
                 >
                   {allowedArtifactTypes.length > 0 ? (
@@ -353,8 +380,15 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
                   id="submit-notes"
                   placeholder="제출에 대한 간단한 설명이나 비고를 입력하세요."
                   value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
+                  onChange={(event) => {
+                    if (!user) {
+                      setMessage('로그인 후 제출할 수 있습니다.')
+                      return
+                    }
+                    setNotes(event.target.value)
+                  }}
                   rows={5}
+                  disabled={!user}
                   className="min-h-36 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-medium leading-7 text-slate-800 outline-none transition focus:border-sky-400 focus:bg-white"
                 />
               </div>
@@ -368,8 +402,15 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
                       type="url"
                       placeholder="https://..."
                       value={artifactUrl}
-                      onChange={(event) => setArtifactUrl(event.target.value)}
+                      onChange={(event) => {
+                        if (!user) {
+                          setMessage('로그인 후 제출할 수 있습니다.')
+                          return
+                        }
+                        setArtifactUrl(event.target.value)
+                      }}
                       required
+                      disabled={!user}
                       className="w-full bg-transparent text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400"
                     />
                   </div>
@@ -383,8 +424,15 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
                       key={artifactType}
                       type="file"
                       accept={ACCEPT_BY_TYPE[artifactType] ?? ''}
-                      onChange={(event) => setArtifactFile(event.target.files?.[0] ?? null)}
+                      onChange={(event) => {
+                        if (!user) {
+                          setMessage('로그인 후 제출할 수 있습니다.')
+                          return
+                        }
+                        setArtifactFile(event.target.files?.[0] ?? null)
+                      }}
                       required
+                      disabled={!user}
                       className="block w-full text-sm font-medium text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:font-semibold file:text-white hover:file:bg-slate-800"
                     />
                   </div>
@@ -398,7 +446,7 @@ export default function Submit({ hackathonSlug }: SubmitProps) {
               </p>
               <Button
                 type="submit"
-                disabled={teamOptions.length === 0}
+                disabled={!user || teamOptions.length === 0}
                 className="rounded-2xl bg-gradient-to-r from-slate-900 to-slate-700 px-6 py-6 font-bold text-white shadow-lg hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Send className="mr-2 h-4 w-4" />
