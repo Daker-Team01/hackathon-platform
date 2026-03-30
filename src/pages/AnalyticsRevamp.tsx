@@ -40,6 +40,7 @@ import { classifyLogImportance } from '../api/chatbotApi'
 import { generateStackRecommendationReasonsWithFallback } from '../api/chatbotApi'
 
 const HACKATHONS_STORAGE_KEY = 'hackathons'
+const PERSONAL_INSIGHT_STORAGE_KEY = 'personal_insight_latest_v1'
 
 function getFromStorage<T>(key: string): T[] {
   const raw = localStorage.getItem(key)
@@ -88,6 +89,42 @@ type CfRecommendationMeta = {
   shape: string
   nnz: number
   sparsity: number
+}
+
+type PersonalInsightSnapshot = {
+  userId: string
+  analysisText: string
+  recommendedStacks: StackRecommendation[]
+  updatedAt: string
+}
+
+function loadPersonalInsightSnapshot(userId: string): PersonalInsightSnapshot | null {
+  const raw = localStorage.getItem(PERSONAL_INSIGHT_STORAGE_KEY)
+  if (!raw) return null
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, PersonalInsightSnapshot>
+    const snapshot = parsed[userId]
+    return snapshot ?? null
+  } catch {
+    return null
+  }
+}
+
+function savePersonalInsightSnapshot(snapshot: PersonalInsightSnapshot) {
+  const raw = localStorage.getItem(PERSONAL_INSIGHT_STORAGE_KEY)
+  let record: Record<string, PersonalInsightSnapshot> = {}
+
+  if (raw) {
+    try {
+      record = JSON.parse(raw) as Record<string, PersonalInsightSnapshot>
+    } catch {
+      record = {}
+    }
+  }
+
+  record[snapshot.userId] = snapshot
+  localStorage.setItem(PERSONAL_INSIGHT_STORAGE_KEY, JSON.stringify(record))
 }
 
 const fetchCfRecommendationsForUser = async (userId: string): Promise<{
@@ -183,6 +220,26 @@ export default function AnalyticsRevamp() {
   const [personalAnalysisError, setPersonalAnalysisError] = useState('')
   const [recommendedStacks, setRecommendedStacks] = useState<StackRecommendation[]>([])
   const [cfRecommendations, setCfRecommendations] = useState<CfRecommendationItem[]>([])
+  const [expandRecommendationPanels, setExpandRecommendationPanels] = useState(false)
+  const hasPersonalInsightResult = personalAnalysisText.trim().length > 0 || recommendedStacks.length > 0
+
+  useEffect(() => {
+    if (!user) {
+      setPersonalAnalysisText('')
+      setRecommendedStacks([])
+      return
+    }
+
+    const snapshot = loadPersonalInsightSnapshot(user.userId || user.id)
+    if (!snapshot) {
+      setPersonalAnalysisText('')
+      setRecommendedStacks([])
+      return
+    }
+
+    setPersonalAnalysisText(snapshot.analysisText)
+    setRecommendedStacks(snapshot.recommendedStacks)
+  }, [user])
 
   const hackathons = useMemo(() => {
     const fromStorage = getFromStorage<Hackathon>(HACKATHONS_STORAGE_KEY)
@@ -712,6 +769,12 @@ export default function AnalyticsRevamp() {
 
       setRecommendedStacks(recommendationsWithReasons)
       setPersonalAnalysisText(report)
+      savePersonalInsightSnapshot({
+        userId: user.userId || user.id,
+        analysisText: report,
+        recommendedStacks: recommendationsWithReasons,
+        updatedAt: new Date().toISOString()
+      })
       setPersonalModalOpen(false)
       setPersonalResultModalOpen(true)
     } catch (error) {
@@ -882,12 +945,17 @@ export default function AnalyticsRevamp() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-        <Card className="p-8 border-0 shadow-xl bg-white rounded-3xl">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <Target className="w-5 h-5 text-indigo-500" />
-            해커톤 추천
-          </h3>
+      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10 ${expandRecommendationPanels ? 'items-start' : ''}`}>
+        <Card className={`p-8 border-0 shadow-xl bg-white rounded-3xl ${expandRecommendationPanels ? 'self-start' : ''}`}>
+          <div className="mb-3">
+            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Target className="w-5 h-5 text-indigo-500" />
+              해커톤 추천
+            </h3>
+            <p className="text-xs text-slate-500 mt-3">
+              내 활동 데이터를 기반으로 참여하기 좋은 해커톤을 추천합니다.
+            </p>
+          </div>
           <div className="space-y-4">
             {cfRecommendations.length > 0 ? (
               cfRecommendations.map((item, index) => {
@@ -923,47 +991,77 @@ export default function AnalyticsRevamp() {
           </div>
         </Card>
 
-        <Card className="p-8 border-0 shadow-xl bg-white rounded-3xl">
-          <div className="flex items-start justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-blue-500" />
-              개인적 성장 인사이트
-            </h3>
-            <Button
-              onClick={() => setPersonalModalOpen(true)}
-              variant="default"
-              size="sm"
-              className="rounded-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:opacity-95"
-            >
-              개인 분석
-            </Button>
+        <Card className={`p-8 border-0 shadow-xl bg-white rounded-3xl ${expandRecommendationPanels ? 'self-start' : ''}`}>
+          <div className="mb-3">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-blue-500" />
+                개인적 성장 인사이트
+              </h3>
+              <div className="flex items-center gap-2 shrink-0">
+                {hasPersonalInsightResult && (
+                  <Button
+                    onClick={() => setExpandRecommendationPanels((prev) => !prev)}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl font-bold"
+                  >
+                    {expandRecommendationPanels ? '결과 접기' : '결과 펼치기'}
+                  </Button>
+                )}
+                <Button
+                  onClick={() => {
+                    if (!user) {
+                      window.alert('개인 분석을 이용하려면 로그인해주세요.')
+                      return
+                    }
+                    setPersonalModalOpen(true)
+                  }}
+                  variant="default"
+                  size="sm"
+                  className="rounded-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:opacity-95"
+                >
+                  개인 분석
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 mt-3">
+              최근 분석 결과와 추천 스택으로 다음 학습 방향을 빠르게 확인할 수 있습니다.
+            </p>
           </div>
 
-          <div className="space-y-3">
-            {(similarityDigest.stackRecommendations.length > 0
-              ? similarityDigest.stackRecommendations
-              : recommendedStacks
-            )
-              .slice(0, 4)
-              .map((item) => (
-                <div key={item.tech} className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5">
-                  <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                    <span className="inline-flex items-center rounded-full border border-emerald-200 bg-white px-2.5 py-0.5 text-xs font-bold text-emerald-700">
-                      {item.tech}
-                    </span>
-                    <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">
-                      유사 유저 {item.supporters}명 선택
-                    </span>
-                  </div>
-                  {(item.supporterNicknames?.length ?? 0) > 0 && (
-                    <p className="text-[11px] text-slate-500 mt-1">근거 유저: {(item.supporterNicknames ?? []).join(', ')}</p>
-                  )}
+          <div className={`space-y-3 overflow-x-hidden ${expandRecommendationPanels ? '' : 'h-[460px] overflow-y-auto pr-1'}`}>
+            {personalAnalysisText ? (
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+                <p className="text-xs font-bold text-blue-700 mb-2">최신 개인 분석 결과</p>
+                <div className="text-sm text-slate-700 leading-6 max-h-48 overflow-y-auto prose prose-sm max-w-none break-words prose-p:my-1 prose-headings:my-2">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{personalAnalysisText}</ReactMarkdown>
                 </div>
-              ))}
-
-            {similarityDigest.stackRecommendations.length === 0 && recommendedStacks.length === 0 && (
-              <p className="text-sm text-slate-500">추천 가능한 신규 기술 스택이 아직 없습니다.</p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-sm text-slate-600">아직 개인 분석 결과가 없습니다. 개인 분석을 시작해보세요.</p>
+              </div>
             )}
+
+            {recommendedStacks.slice(0, 4).map((item) => (
+              <div key={item.tech} className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5">
+                <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                  <span className="inline-flex items-center rounded-full border border-emerald-200 bg-white px-2.5 py-0.5 text-xs font-bold text-emerald-700">
+                    {item.tech}
+                  </span>
+                  <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">
+                    유사 유저 {item.supporters}명 선택
+                  </span>
+                </div>
+                <p className="text-xs text-slate-700 leading-5">
+                  {item.reason || '유사 사용자 기술 선택 패턴을 기반으로 추천된 스택입니다.'}
+                </p>
+                {(item.supporterNicknames?.length ?? 0) > 0 && (
+                  <p className="text-[11px] text-slate-500 mt-1">근거 유저: {(item.supporterNicknames ?? []).join(', ')}</p>
+                )}
+              </div>
+            ))}
           </div>
         </Card>
       </div>
@@ -1068,10 +1166,23 @@ export default function AnalyticsRevamp() {
               )}
 
               <div className="mb-2 rounded-xl border border-emerald-100 bg-white p-4">
-                <p className="text-sm font-bold text-slate-800 mb-0.5">📚 무엇을 공부해야 할지 고민된다면?</p>
-                <p className="text-xs text-slate-400 mb-3">지금 멈춰있다면, 이런 선택을 해보세요</p>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800 mb-0.5">📚 무엇을 공부해야 할지 고민된다면?</p>
+                    <p className="text-xs text-slate-400">지금 멈춰있다면, 이런 선택을 해보세요</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg text-xs"
+                    onClick={() => setExpandRecommendationPanels((prev) => !prev)}
+                  >
+                    {expandRecommendationPanels ? '전체 접기' : '전체 펼치기'}
+                  </Button>
+                </div>
                 {recommendedStacks.length > 0 ? (
-                  <div className="space-y-2.5">
+                  <div className={`space-y-2.5 ${expandRecommendationPanels ? '' : 'max-h-[320px] overflow-y-auto pr-1'}`}>
                     {recommendedStacks.map((item) => (
                       <div key={item.tech} className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5">
                         <div className="flex flex-wrap items-center gap-1.5 mb-1.5">

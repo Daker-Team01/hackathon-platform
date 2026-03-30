@@ -414,10 +414,10 @@ export default function Rankings() {
       <div className="mb-10">
         <h1 className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight flex items-center gap-3">
           <Trophy className="w-10 h-10 text-yellow-500" />
-          Global Rankings
+          User Rankings
         </h1>
         <p className="text-gray-600 text-lg max-w-2xl">
-          전 세계 해커톤 참가자들의 실력을 확인하고 당신의 위치를 파악해보세요.
+          전체 해커톤 참가자들의 실력을 확인하고 당신의 위치를 파악해보세요.
         </p>
       </div>
 

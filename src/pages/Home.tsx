@@ -31,7 +31,7 @@ export default function Home() {
     },
     {
       title: '랭킹',
-      description: '글로벌 해커톤 랭킹을 확인하세요',
+      description: '전체 해커톤 유저의 랭킹을 확인하세요',
       icon: Trophy,
       link: '/rankings',
       gradient: 'from-[#3B82F6] to-[#0EA5E9]'
@@ -45,7 +45,7 @@ export default function Home() {
     },
     {
       title: 'AI 매칭 랩',
-      description: '팀과 팀원을 벡터 검색으로 직접 비교해보세요',
+      description: 'AI 기반 팀·팀원 매칭으로 개인과 팀을 정밀하게 연결합니다',
       icon: ArrowRightLeft,
       link: '/matcher',
       gradient: 'from-[#2563EB] to-[#38BDF8]'
@@ -64,7 +64,7 @@ export default function Home() {
           <img src={insighthonLogo} alt="Insighthon" className="h-28 w-auto object-contain" />
         </div>
         <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
-          전 세계의 해커톤을 탐색하고, 팀을 구성하고, 경쟁하세요
+          해커톤 속에서 당신의 성장을 발견하세요
         </p>
         <div className="flex flex-wrap gap-4 justify-center">
           <Link to="/hackathons">
