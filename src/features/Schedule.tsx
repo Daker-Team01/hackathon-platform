@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { getHackathonDetailBySlug } from '../lib/hackathonDetailData'
+import { normalizedHackathons } from '../lib/hackathonData'
 
 type ScheduleProps = {
   hackathonSlug: string
@@ -15,11 +16,45 @@ type ScheduleSection = {
   milestones?: Milestone[]
 }
 
+type HackathonPeriod = {
+  submissionDeadlineAt?: string
+  endAt?: string
+}
+
 function getScheduleSectionBySlug(slug: string): ScheduleSection | null {
   const detail = getHackathonDetailBySlug(slug) as
     | { sections?: { schedule?: ScheduleSection } }
     | null
   return detail?.sections?.schedule ?? null
+}
+
+function getHackathonPeriodBySlug(slug: string): HackathonPeriod | null {
+  const hackathon = normalizedHackathons.find((item) => item.slug === slug)
+  return hackathon?.period ?? null
+}
+
+function syncMilestonesWithPeriod(milestones: Milestone[], period: HackathonPeriod | null): Milestone[] {
+  if (!period) return milestones
+
+  const endTime = Date.parse(period.endAt ?? '')
+  const resultAnnouncementAt =
+    Number.isFinite(endTime) ? new Date(endTime + 7 * 24 * 60 * 60 * 1000).toISOString() : null
+
+  return milestones.map((item) => {
+    if (item.name?.includes('제출 마감') && period.submissionDeadlineAt) {
+      return { ...item, at: period.submissionDeadlineAt }
+    }
+
+    if (item.name?.includes('대회 종료') && period.endAt) {
+      return { ...item, at: period.endAt }
+    }
+
+    if (item.name?.includes('결과 발표') && resultAnnouncementAt) {
+      return { ...item, at: resultAnnouncementAt }
+    }
+
+    return item
+  })
 }
 
 function formatDate(value?: string): string {
@@ -31,7 +66,11 @@ function formatDate(value?: string): string {
 
 export default function Schedule({ hackathonSlug }: ScheduleProps) {
   const schedule = useMemo(() => getScheduleSectionBySlug(hackathonSlug), [hackathonSlug])
-  const milestones = schedule?.milestones ?? []
+  const period = useMemo(() => getHackathonPeriodBySlug(hackathonSlug), [hackathonSlug])
+  const milestones = useMemo(
+    () => syncMilestonesWithPeriod(schedule?.milestones ?? [], period),
+    [period, schedule]
+  )
 
   if (!schedule || milestones.length === 0) {
     return (

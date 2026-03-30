@@ -3,7 +3,7 @@ import type { Hackathon } from "../types/hackathon"
 
 type RawHackathon = (typeof rawHackathonData)[number]
 
-export const HACKATHON_DATA_VERSION = "2026-03-31-dummy-v4-detail-stats-synced"
+export const HACKATHON_DATA_VERSION = "2026-03-31-dummy-v4-hack3-vote-open"
 
 function normalizeStatus(status: string): string {
   if (status === "ongoing" || status === "upcoming" || status === "ended") {

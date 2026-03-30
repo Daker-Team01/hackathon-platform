@@ -140,7 +140,7 @@
       "eval": {
         "metricName": "FinalScore",
         "description": "기능 완성도, 사용성, 기술 구현 수준을 중심으로 평가합니다.",
-        "scoreSource": "judge",
+        "scoreSource": "vote",
         "limits": {
           "maxRuntimeSec": 900,
           "maxSubmissionsPerDay": 3
