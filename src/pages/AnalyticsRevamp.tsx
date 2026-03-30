@@ -721,6 +721,43 @@ export default function AnalyticsRevamp() {
     }
   }, [buildSimilarityInsights, fetchAllLogsForSimilarity, fetchAllUserLogs, user])
 
+  const showLoadingScreen = isFetching || loading
+
+  if (showLoadingScreen) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/')}
+            className="hover:bg-gray-100 -ml-2 text-gray-600"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            메인으로
+          </Button>
+        </div>
+
+        <div className="mb-10 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight flex items-center gap-3">
+              <BarChart3 className="w-10 h-10 text-[#3B82F6]" />
+              Analytics
+            </h1>
+            <p className="text-gray-600 text-lg font-medium">인사이톤 핵심 지표 대시보드</p>
+          </div>
+        </div>
+
+        <Card className="p-10 border-0 shadow-xl bg-white rounded-3xl text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 mb-4">
+            <BarChart3 className="w-6 h-6 text-blue-500 animate-pulse" />
+          </div>
+          <p className="text-base font-bold text-slate-800">데이터를 불러오는 중입니다...</p>
+          <p className="text-sm text-slate-500 mt-1">잠시만 기다려주세요.</p>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
@@ -742,7 +779,6 @@ export default function AnalyticsRevamp() {
           </h1>
           <p className="text-gray-600 text-lg font-medium">
             인사이톤 핵심 지표 대시보드
-            {(isFetching || loading) && <span className="text-blue-500 animate-pulse ml-2 font-bold">(동기화 중...)</span>}
           </p>
         </div>
         <Button
