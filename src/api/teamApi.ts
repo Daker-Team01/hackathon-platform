@@ -1,6 +1,7 @@
 import type { Team, TeamInvite, TeamMember, TeamRequest } from "../types/team"
 import userDummyData from "../data/user_dummy_v2.json"
 import { supabase } from "../lib/supabase"
+import { normalizedHackathons } from "../lib/hackathonData"
 import { enqueueGeneralChatNotification } from '../utils/generalChatNotifications'
 import {
   createTeamChatRoom,
@@ -14,6 +15,15 @@ import {
 } from "./realtimeChatApi"
 
 const HACKATHON_TAG_PREFIX = "hackathon:"
+const HACKATHONS_STORAGE_KEY = 'hackathons'
+
+type HackathonSnapshot = {
+  slug: string
+  status?: string
+  period?: {
+    endAt?: string
+  }
+}
 
 type SupabaseTeamRow = {
   id: number
@@ -149,14 +159,93 @@ const extractHackathonSlug = (row: SupabaseTeamRow): string | undefined => {
   return hackathonTag ? hackathonTag.slice(HACKATHON_TAG_PREFIX.length) : undefined
 }
 
-const mapSupabaseTeamToTeam = (row: SupabaseTeamRow): Team => {
+const parseHackathonsFromStorage = (): HackathonSnapshot[] => {
+  if (typeof window === 'undefined') return []
+
+  const raw = window.localStorage.getItem(HACKATHONS_STORAGE_KEY)
+  if (!raw) return []
+
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return parsed
+      .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+      .map((item) => ({
+        slug: typeof item.slug === 'string' ? item.slug : '',
+        status: typeof item.status === 'string' ? item.status : undefined,
+        period: typeof item.period === 'object' && item.period !== null
+          ? {
+              endAt: typeof (item.period as { endAt?: unknown }).endAt === 'string'
+                ? (item.period as { endAt: string }).endAt
+                : undefined
+            }
+          : undefined
+      }))
+      .filter((item) => Boolean(item.slug))
+  } catch {
+    return []
+  }
+}
+
+const isEndedHackathon = (hackathon: HackathonSnapshot, nowMs: number) => {
+  if (hackathon.status === 'ended') return true
+
+  const endAt = hackathon.period?.endAt
+  if (!endAt) return false
+
+  const endMs = Date.parse(endAt)
+  if (Number.isNaN(endMs)) return false
+
+  return endMs < nowMs
+}
+
+const getEndedHackathonSlugSet = (): Set<string> => {
+  const storedHackathons = parseHackathonsFromStorage()
+  const source = storedHackathons.length > 0 ? storedHackathons : normalizedHackathons
+  const nowMs = Date.now()
+
+  return new Set(
+    source
+      .filter((hackathon) => isEndedHackathon(hackathon, nowMs))
+      .map((hackathon) => hackathon.slug)
+  )
+}
+
+const closeRecruitmentForEndedHackathons = async (
+  endedHackathonSlugSet: Set<string> = getEndedHackathonSlugSet()
+) => {
+  const endedHackathonSlugs = [...endedHackathonSlugSet]
+  if (endedHackathonSlugs.length === 0) return
+
+  const { error } = await supabase
+    .from('teams')
+    .update({
+      is_open: false,
+      last_updated_at: new Date().toISOString()
+    })
+    .in('hackathon_slug', endedHackathonSlugs)
+    .eq('is_open', true)
+
+  if (error) {
+    console.error('Failed to close ended-hackathon team recruitment:', error)
+  }
+}
+
+const mapSupabaseTeamToTeam = (
+  row: SupabaseTeamRow,
+  endedHackathonSlugSet: Set<string> = getEndedHackathonSlugSet()
+): Team => {
+  const hackathonSlug = extractHackathonSlug(row)
+  const isEndedLinkedHackathon = Boolean(hackathonSlug && endedHackathonSlugSet.has(hackathonSlug))
+
   const normalized = normalizeTeam({
     teamCode: row.team_code,
     leaderId: row.leader_id,
-    hackathonSlug: extractHackathonSlug(row),
+    hackathonSlug,
     name: row.name,
     intro: row.intro || "",
-    isOpen: row.is_open,
+    isOpen: isEndedLinkedHackathon ? false : row.is_open,
     memberCount: row.member_count,
     maxMembers: row.max_members,
     members: Array.isArray(row.members) ? row.members : [],
@@ -198,6 +287,9 @@ const mapSupabaseRequestToRequest = (row: SupabaseTeamRequestRow): TeamRequest =
 })
 
 const getTeamByCodeFromDb = async (teamCode: string): Promise<Team | undefined> => {
+  const endedHackathonSlugSet = getEndedHackathonSlugSet()
+  await closeRecruitmentForEndedHackathons(endedHackathonSlugSet)
+
   const { data, error } = await supabase
     .from("teams")
     .select("*")
@@ -211,7 +303,7 @@ const getTeamByCodeFromDb = async (teamCode: string): Promise<Team | undefined> 
     throw error
   }
 
-  return mapSupabaseTeamToTeam(data as SupabaseTeamRow)
+  return mapSupabaseTeamToTeam(data as SupabaseTeamRow, endedHackathonSlugSet)
 }
 
 const ensureLeaderHasNoTeamInHackathon = async (
@@ -238,6 +330,9 @@ const ensureLeaderHasNoTeamInHackathon = async (
 }
 
 export const getTeams = async (hackathonSlug?: string): Promise<Team[]> => {
+  const endedHackathonSlugSet = getEndedHackathonSlugSet()
+  await closeRecruitmentForEndedHackathons(endedHackathonSlugSet)
+
   const { data, error } = await supabase
     .from("teams")
     .select("*")
@@ -248,7 +343,7 @@ export const getTeams = async (hackathonSlug?: string): Promise<Team[]> => {
     return []
   }
 
-  const teams = (data || []).map((row) => mapSupabaseTeamToTeam(row as SupabaseTeamRow))
+  const teams = (data || []).map((row) => mapSupabaseTeamToTeam(row as SupabaseTeamRow, endedHackathonSlugSet))
 
   if (!hackathonSlug) return teams
 
@@ -265,6 +360,9 @@ export const getTeamByCode = async (code: string): Promise<Team | undefined> => 
 }
 
 export const getTeamsByLeaderId = async (leaderId: string): Promise<Team[]> => {
+  const endedHackathonSlugSet = getEndedHackathonSlugSet()
+  await closeRecruitmentForEndedHackathons(endedHackathonSlugSet)
+
   const { data, error } = await supabase
     .from("teams")
     .select("*")
@@ -276,7 +374,7 @@ export const getTeamsByLeaderId = async (leaderId: string): Promise<Team[]> => {
     return []
   }
 
-  return (data || []).map((row) => mapSupabaseTeamToTeam(row as SupabaseTeamRow))
+  return (data || []).map((row) => mapSupabaseTeamToTeam(row as SupabaseTeamRow, endedHackathonSlugSet))
 }
 
 export const createTeam = async (
@@ -284,6 +382,8 @@ export const createTeam = async (
 ): Promise<Team> => {
   const { leaderName, ...teamData } = team
   const nowIso = new Date().toISOString()
+  const endedHackathonSlugSet = getEndedHackathonSlugSet()
+  const isEndedLinkedHackathon = Boolean(team.hackathonSlug && endedHackathonSlugSet.has(team.hackathonSlug))
 
   await ensureLeaderHasNoTeamInHackathon(team.leaderId, team.hackathonSlug)
 
@@ -307,7 +407,7 @@ export const createTeam = async (
       intro: newTeam.intro,
       leader_id: newTeam.leaderId,
       members: newTeam.members,
-      is_open: newTeam.isOpen,
+      is_open: isEndedLinkedHackathon ? false : newTeam.isOpen,
       max_members: newTeam.maxMembers,
       member_count: newTeam.memberCount,
       looking_for: newTeam.lookingFor,
@@ -327,7 +427,7 @@ export const createTeam = async (
     throw createError
   }
 
-  const createdTeam = mapSupabaseTeamToTeam(createdRow as SupabaseTeamRow)
+  const createdTeam = mapSupabaseTeamToTeam(createdRow as SupabaseTeamRow, endedHackathonSlugSet)
   
   // Supabase에 팀 채팅방 생성
   try {
@@ -366,6 +466,8 @@ export const updateTeam = async (
   teamCode: string,
   updates: Partial<Omit<Team, "teamCode" | "createdAt">>
 ): Promise<Team> => {
+  const endedHackathonSlugSet = getEndedHackathonSlugSet()
+
   const { data: currentTeamRow, error: currentError } = await supabase
     .from("teams")
     .select("team_code, leader_id, hackathon_slug")
@@ -385,6 +487,7 @@ export const updateTeam = async (
   const targetHackathonSlug = Object.prototype.hasOwnProperty.call(updates, "hackathonSlug")
     ? updates.hackathonSlug
     : currentHackathonSlug
+  const isEndedLinkedHackathon = Boolean(targetHackathonSlug && endedHackathonSlugSet.has(targetHackathonSlug))
 
   await ensureLeaderHasNoTeamInHackathon(targetLeaderId, targetHackathonSlug, teamCode)
 
@@ -396,7 +499,11 @@ export const updateTeam = async (
   if (updates.intro !== undefined) payload.intro = updates.intro
   if (updates.leaderId !== undefined) payload.leader_id = updates.leaderId
   if (updates.members !== undefined) payload.members = updates.members
-  if (updates.isOpen !== undefined) payload.is_open = updates.isOpen
+  if (updates.isOpen !== undefined) {
+    payload.is_open = isEndedLinkedHackathon ? false : updates.isOpen
+  } else if (isEndedLinkedHackathon) {
+    payload.is_open = false
+  }
   if (updates.maxMembers !== undefined) payload.max_members = updates.maxMembers
   if (updates.memberCount !== undefined) payload.member_count = updates.memberCount
   if (updates.lookingFor !== undefined) payload.looking_for = updates.lookingFor
@@ -419,7 +526,7 @@ export const updateTeam = async (
 
   if (updateError) throw updateError
 
-  return mapSupabaseTeamToTeam(updatedRow as SupabaseTeamRow)
+  return mapSupabaseTeamToTeam(updatedRow as SupabaseTeamRow, endedHackathonSlugSet)
 }
 
 export const deleteTeam = async (teamCode: string): Promise<void> => {

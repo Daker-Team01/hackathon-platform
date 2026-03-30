@@ -1,0 +1,2151 @@
+{
+  "meta": {
+    "shape": "100 x 56",
+    "nnz": 3680,
+    "sparsity": 0.34285714285714286,
+    "generatedAt": "2026-03-30T06:23:01.155Z",
+    "source": "tmp/cf_scored.csv"
+  },
+  "byUser": {
+    "U-0001": [
+      {
+        "itemId": "hack-9",
+        "score": 7.31839
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 4.491236
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 2.995549
+      }
+    ],
+    "U-0002": [
+      {
+        "itemId": "hack-9",
+        "score": 7.805391
+      },
+      {
+        "itemId": "hack-11",
+        "score": 7.472808
+      },
+      {
+        "itemId": "hack-12",
+        "score": 7.384448
+      },
+      {
+        "itemId": "hack-10",
+        "score": 4.998766
+      },
+      {
+        "itemId": "hack-7",
+        "score": 4.882249
+      }
+    ],
+    "U-0003": [
+      {
+        "itemId": "hack-14",
+        "score": 9.74204
+      },
+      {
+        "itemId": "hack-12",
+        "score": 5.227055
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 3.894818
+      },
+      {
+        "itemId": "hack-7",
+        "score": 3.175614
+      }
+    ],
+    "U-0004": [
+      {
+        "itemId": "hack-8",
+        "score": 9.917396
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 9.437903
+      },
+      {
+        "itemId": "hack-14",
+        "score": 9.159938
+      },
+      {
+        "itemId": "hack-11",
+        "score": 6.131991
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 2.073199
+      }
+    ],
+    "U-0005": [
+      {
+        "itemId": "hack-10",
+        "score": 7.738434
+      },
+      {
+        "itemId": "hack-7",
+        "score": 7.109024
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 6.671984
+      },
+      {
+        "itemId": "hack-11",
+        "score": 6.636546
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 3.002131
+      }
+    ],
+    "U-0006": [
+      {
+        "itemId": "hack-14",
+        "score": 10.330066
+      },
+      {
+        "itemId": "hack-12",
+        "score": 8.833835
+      },
+      {
+        "itemId": "hack-8",
+        "score": 6.600637
+      },
+      {
+        "itemId": "hack-11",
+        "score": 5.313118
+      },
+      {
+        "itemId": "hack-13",
+        "score": 4.204404
+      }
+    ],
+    "U-0007": [
+      {
+        "itemId": "hack-2-2",
+        "score": 51.469086
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 10.672603
+      },
+      {
+        "itemId": "hack-11",
+        "score": 9.526077
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 9.177363
+      },
+      {
+        "itemId": "hack-8",
+        "score": 8.686193
+      }
+    ],
+    "U-0008": [
+      {
+        "itemId": "hack-13",
+        "score": 7.405866
+      },
+      {
+        "itemId": "hack-11",
+        "score": 3.933185
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 2.192511
+      }
+    ],
+    "U-0009": [
+      {
+        "itemId": "hack-4-1",
+        "score": 9.888457
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.968172
+      },
+      {
+        "itemId": "hack-13",
+        "score": 5.26025
+      },
+      {
+        "itemId": "hack-15",
+        "score": 3.265225
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 2.757496
+      }
+    ],
+    "U-0010": [
+      {
+        "itemId": "hack-9",
+        "score": 12.680692
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 11.047409
+      },
+      {
+        "itemId": "hack-7",
+        "score": 10.25494
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.314975
+      },
+      {
+        "itemId": "hack-14",
+        "score": 7.308357
+      }
+    ],
+    "U-0011": [
+      {
+        "itemId": "hack-12",
+        "score": 8.941206
+      },
+      {
+        "itemId": "hack-11",
+        "score": 8.396592
+      },
+      {
+        "itemId": "hack-7",
+        "score": 8.019153
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 6.398659
+      },
+      {
+        "itemId": "hack-14",
+        "score": 6.259652
+      }
+    ],
+    "U-0012": [
+      {
+        "itemId": "hack-2-2",
+        "score": 28.238371
+      },
+      {
+        "itemId": "hack-4",
+        "score": 27.407486
+      },
+      {
+        "itemId": "hack-11",
+        "score": 9.733782
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.664776
+      },
+      {
+        "itemId": "hack-7",
+        "score": 7.306391
+      }
+    ],
+    "U-0013": [
+      {
+        "itemId": "hack-6-1",
+        "score": 8.510667
+      },
+      {
+        "itemId": "hack-13",
+        "score": 6.483539
+      },
+      {
+        "itemId": "hack-12",
+        "score": 5.966653
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 3.384121
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 3.006562
+      }
+    ],
+    "U-0014": [
+      {
+        "itemId": "hack-6-1",
+        "score": 7.31759
+      },
+      {
+        "itemId": "hack-15",
+        "score": 6.056158
+      },
+      {
+        "itemId": "hack-11",
+        "score": 5.789424
+      },
+      {
+        "itemId": "hack-10",
+        "score": 5.626476
+      },
+      {
+        "itemId": "hack-8",
+        "score": 4.112968
+      }
+    ],
+    "U-0015": [
+      {
+        "itemId": "hack-9",
+        "score": 6.703538
+      },
+      {
+        "itemId": "hack-7",
+        "score": 6.064987
+      },
+      {
+        "itemId": "hack-13",
+        "score": 5.317568
+      },
+      {
+        "itemId": "hack-15",
+        "score": 3.976479
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 3.268616
+      }
+    ],
+    "U-0016": [
+      {
+        "itemId": "hack-6-1",
+        "score": 7.718674
+      },
+      {
+        "itemId": "hack-7",
+        "score": 5.102568
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 4.529429
+      },
+      {
+        "itemId": "hack-15",
+        "score": 2.953495
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 1.374467
+      }
+    ],
+    "U-0017": [
+      {
+        "itemId": "hack-6",
+        "score": 29.166599
+      },
+      {
+        "itemId": "hack-4",
+        "score": 27.304742
+      },
+      {
+        "itemId": "hack-2-2",
+        "score": 22.304034
+      },
+      {
+        "itemId": "hack-6-2",
+        "score": 20.905757
+      },
+      {
+        "itemId": "hack-14",
+        "score": 8.919952
+      }
+    ],
+    "U-0018": [
+      {
+        "itemId": "hack-9",
+        "score": 9.985982
+      },
+      {
+        "itemId": "hack-15",
+        "score": 9.061826
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 8.3122
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.426051
+      },
+      {
+        "itemId": "hack-11",
+        "score": 6.205834
+      }
+    ],
+    "U-0019": [
+      {
+        "itemId": "hack-5-1",
+        "score": 12.229221
+      },
+      {
+        "itemId": "hack-10",
+        "score": 9.183451
+      },
+      {
+        "itemId": "hack-9",
+        "score": 6.409047
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.05224
+      },
+      {
+        "itemId": "hack-11",
+        "score": 5.273071
+      }
+    ],
+    "U-0020": [
+      {
+        "itemId": "hack-11",
+        "score": 11.29387
+      },
+      {
+        "itemId": "hack-8",
+        "score": 7.962338
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 7.153096
+      },
+      {
+        "itemId": "hack-14",
+        "score": 5.829866
+      },
+      {
+        "itemId": "hack-7",
+        "score": 4.48919
+      }
+    ],
+    "U-0021": [
+      {
+        "itemId": "hack-6-1",
+        "score": 11.38104
+      },
+      {
+        "itemId": "hack-12",
+        "score": 8.780146
+      },
+      {
+        "itemId": "hack-9",
+        "score": 8.611883
+      },
+      {
+        "itemId": "hack-15",
+        "score": 8.504296
+      },
+      {
+        "itemId": "hack-8",
+        "score": 7.617429
+      }
+    ],
+    "U-0022": [
+      {
+        "itemId": "hack-7-1",
+        "score": 33.390783
+      },
+      {
+        "itemId": "hack-9-1",
+        "score": 28.101637
+      },
+      {
+        "itemId": "hack-9",
+        "score": 10.487556
+      },
+      {
+        "itemId": "hack-12",
+        "score": 8.572606
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.728974
+      }
+    ],
+    "U-0023": [
+      {
+        "itemId": "hack-8",
+        "score": 10.073797
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 7.748684
+      },
+      {
+        "itemId": "hack-14",
+        "score": 7.150051
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 6.262387
+      },
+      {
+        "itemId": "hack-10",
+        "score": 6.084651
+      }
+    ],
+    "U-0024": [
+      {
+        "itemId": "hack-7",
+        "score": 8.3137
+      },
+      {
+        "itemId": "hack-15",
+        "score": 6.928807
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 4.742038
+      }
+    ],
+    "U-0025": [
+      {
+        "itemId": "hack-4-1",
+        "score": 8.458062
+      },
+      {
+        "itemId": "hack-13",
+        "score": 8.030761
+      },
+      {
+        "itemId": "hack-8",
+        "score": 6.6826
+      },
+      {
+        "itemId": "hack-10",
+        "score": 4.541116
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 3.714119
+      }
+    ],
+    "U-0026": [
+      {
+        "itemId": "hack-8",
+        "score": 13.919805
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 7.556901
+      },
+      {
+        "itemId": "hack-14",
+        "score": 7.328222
+      }
+    ],
+    "U-0027": [
+      {
+        "itemId": "hack-6-1",
+        "score": 9.997373
+      },
+      {
+        "itemId": "hack-8",
+        "score": 9.738929
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 9.036073
+      },
+      {
+        "itemId": "hack-12",
+        "score": 7.065992
+      },
+      {
+        "itemId": "hack-13",
+        "score": 6.193239
+      }
+    ],
+    "U-0028": [
+      {
+        "itemId": "hack-10",
+        "score": 8.826886
+      },
+      {
+        "itemId": "hack-8",
+        "score": 8.706208
+      },
+      {
+        "itemId": "hack-11",
+        "score": 8.304003
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 7.33389
+      },
+      {
+        "itemId": "hack-12",
+        "score": 7.195595
+      }
+    ],
+    "U-0029": [
+      {
+        "itemId": "hack-15",
+        "score": 8.303805
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.987054
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 6.123487
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.019937
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 5.469141
+      }
+    ],
+    "U-0030": [
+      {
+        "itemId": "hack-13",
+        "score": 6.959668
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 4.803618
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 4.75212
+      },
+      {
+        "itemId": "hack-12",
+        "score": 4.615122
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 4.472482
+      }
+    ],
+    "U-0031": [
+      {
+        "itemId": "hack-5",
+        "score": 32.852009
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 7.63559
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.615715
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 5.605558
+      },
+      {
+        "itemId": "hack-8",
+        "score": 5.535001
+      }
+    ],
+    "U-0032": [
+      {
+        "itemId": "hack-6",
+        "score": 37.646633
+      },
+      {
+        "itemId": "hack-13",
+        "score": 14.164666
+      },
+      {
+        "itemId": "hack-8",
+        "score": 10.482988
+      },
+      {
+        "itemId": "hack-11",
+        "score": 8.044929
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 7.774422
+      }
+    ],
+    "U-0033": [
+      {
+        "itemId": "hack-5",
+        "score": 48.139986
+      },
+      {
+        "itemId": "hack-4-2",
+        "score": 32.074089
+      },
+      {
+        "itemId": "hack-8-1",
+        "score": 31.49375
+      },
+      {
+        "itemId": "hack-10",
+        "score": 12.800932
+      },
+      {
+        "itemId": "hack-15",
+        "score": 9.460249
+      }
+    ],
+    "U-0034": [
+      {
+        "itemId": "hack-3-2",
+        "score": 42.694139
+      },
+      {
+        "itemId": "hack-6-2",
+        "score": 33.13828
+      },
+      {
+        "itemId": "hack-2",
+        "score": 32.796169
+      },
+      {
+        "itemId": "hack-10-1",
+        "score": 23.426318
+      },
+      {
+        "itemId": "hack-11",
+        "score": 8.600605
+      }
+    ],
+    "U-0035": [
+      {
+        "itemId": "hack-3",
+        "score": 37.368751
+      },
+      {
+        "itemId": "hack-9-1",
+        "score": 17.573528
+      },
+      {
+        "itemId": "hack-15",
+        "score": 6.947402
+      },
+      {
+        "itemId": "hack-10",
+        "score": 6.659623
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 5.801923
+      }
+    ],
+    "U-0036": [
+      {
+        "itemId": "hack-5",
+        "score": 43.905662
+      },
+      {
+        "itemId": "hack-8-1",
+        "score": 30.331573
+      },
+      {
+        "itemId": "hack-10",
+        "score": 11.956347
+      },
+      {
+        "itemId": "hack-8",
+        "score": 8.056932
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.605286
+      }
+    ],
+    "U-0037": [
+      {
+        "itemId": "hack-2-2",
+        "score": 50.4551
+      },
+      {
+        "itemId": "hack-4-2",
+        "score": 43.329507
+      },
+      {
+        "itemId": "hack-7-1",
+        "score": 40.002476
+      },
+      {
+        "itemId": "hack-11",
+        "score": 10.376146
+      },
+      {
+        "itemId": "hack-9",
+        "score": 10.339538
+      }
+    ],
+    "U-0038": [
+      {
+        "itemId": "hack-2-2",
+        "score": 30.624306
+      },
+      {
+        "itemId": "hack-6",
+        "score": 28.912779
+      },
+      {
+        "itemId": "hack-9",
+        "score": 6.963991
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 5.386814
+      },
+      {
+        "itemId": "hack-11",
+        "score": 4.538174
+      }
+    ],
+    "U-0039": [
+      {
+        "itemId": "hack-4",
+        "score": 41.242885
+      },
+      {
+        "itemId": "hack-6-2",
+        "score": 39.361405
+      },
+      {
+        "itemId": "hack-5-2",
+        "score": 36.490646
+      },
+      {
+        "itemId": "hack-9",
+        "score": 10.099624
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 7.779277
+      }
+    ],
+    "U-0040": [
+      {
+        "itemId": "hack-8-1",
+        "score": 36.715253
+      },
+      {
+        "itemId": "hack-15",
+        "score": 8.399737
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 7.473937
+      },
+      {
+        "itemId": "hack-8",
+        "score": 6.708298
+      },
+      {
+        "itemId": "hack-11",
+        "score": 6.354721
+      }
+    ],
+    "U-0041": [
+      {
+        "itemId": "hack-3",
+        "score": 44.627327
+      },
+      {
+        "itemId": "hack-2-2",
+        "score": 32.637402
+      },
+      {
+        "itemId": "hack-6",
+        "score": 31.525739
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 10.80261
+      },
+      {
+        "itemId": "hack-13",
+        "score": 7.906365
+      }
+    ],
+    "U-0042": [
+      {
+        "itemId": "hack-6",
+        "score": 20.841402
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.17394
+      },
+      {
+        "itemId": "hack-7",
+        "score": 5.521696
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 5.29632
+      },
+      {
+        "itemId": "hack-10",
+        "score": 5.164201
+      }
+    ],
+    "U-0043": [
+      {
+        "itemId": "hack-5-2",
+        "score": 31.177503
+      },
+      {
+        "itemId": "hack-5",
+        "score": 30.125433
+      },
+      {
+        "itemId": "hack-8-1",
+        "score": 28.64802
+      },
+      {
+        "itemId": "hack-4-2",
+        "score": 27.03644
+      },
+      {
+        "itemId": "hack-4",
+        "score": 27.010424
+      }
+    ],
+    "U-0044": [
+      {
+        "itemId": "hack-9-1",
+        "score": 29.875258
+      },
+      {
+        "itemId": "hack-5",
+        "score": 28.220202
+      },
+      {
+        "itemId": "hack-4",
+        "score": 25.544946
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 10.551307
+      },
+      {
+        "itemId": "hack-8",
+        "score": 8.076556
+      }
+    ],
+    "U-0045": [
+      {
+        "itemId": "hack-6",
+        "score": 28.814311
+      },
+      {
+        "itemId": "hack-13",
+        "score": 9.494875
+      },
+      {
+        "itemId": "hack-11",
+        "score": 8.941243
+      },
+      {
+        "itemId": "hack-14",
+        "score": 7.209203
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 6.947897
+      }
+    ],
+    "U-0046": [
+      {
+        "itemId": "hack-9",
+        "score": 12.414796
+      },
+      {
+        "itemId": "hack-11",
+        "score": 10.750391
+      },
+      {
+        "itemId": "hack-14",
+        "score": 7.886514
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 6.395624
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 5.429345
+      }
+    ],
+    "U-0047": [
+      {
+        "itemId": "hack-10-1",
+        "score": 36.036929
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 7.067412
+      },
+      {
+        "itemId": "hack-9",
+        "score": 6.728181
+      },
+      {
+        "itemId": "hack-10",
+        "score": 6.205696
+      },
+      {
+        "itemId": "hack-11",
+        "score": 5.935375
+      }
+    ],
+    "U-0048": [
+      {
+        "itemId": "hack-2-2",
+        "score": 27.624976
+      },
+      {
+        "itemId": "hack-7",
+        "score": 9.378666
+      },
+      {
+        "itemId": "hack-8",
+        "score": 8.06032
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 7.603982
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 6.873827
+      }
+    ],
+    "U-0049": [
+      {
+        "itemId": "hack-13",
+        "score": 11.020102
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 7.740213
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.842155
+      },
+      {
+        "itemId": "hack-8",
+        "score": 5.733104
+      },
+      {
+        "itemId": "hack-10",
+        "score": 4.713631
+      }
+    ],
+    "U-0050": [
+      {
+        "itemId": "hack-8",
+        "score": 10.287459
+      },
+      {
+        "itemId": "hack-14",
+        "score": 8.382076
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 8.337189
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 7.017718
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.544524
+      }
+    ],
+    "U-0051": [
+      {
+        "itemId": "hack-4-2",
+        "score": 39.721673
+      },
+      {
+        "itemId": "hack-3-2",
+        "score": 33.77622
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 11.371092
+      },
+      {
+        "itemId": "hack-9",
+        "score": 6.691539
+      },
+      {
+        "itemId": "hack-14",
+        "score": 6.635036
+      }
+    ],
+    "U-0052": [
+      {
+        "itemId": "hack-8-1",
+        "score": 41.985957
+      },
+      {
+        "itemId": "hack-10-1",
+        "score": 38.174988
+      },
+      {
+        "itemId": "hack-11",
+        "score": 7.899007
+      },
+      {
+        "itemId": "hack-9",
+        "score": 7.734074
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 5.701398
+      }
+    ],
+    "U-0053": [
+      {
+        "itemId": "hack-4-2",
+        "score": 31.094235
+      },
+      {
+        "itemId": "hack-10",
+        "score": 10.065359
+      },
+      {
+        "itemId": "hack-8",
+        "score": 9.627046
+      },
+      {
+        "itemId": "hack-7",
+        "score": 5.613499
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 4.697649
+      }
+    ],
+    "U-0054": [
+      {
+        "itemId": "hack-4-2",
+        "score": 25.24456
+      },
+      {
+        "itemId": "hack-10",
+        "score": 12.725026
+      },
+      {
+        "itemId": "hack-8",
+        "score": 7.178683
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.370176
+      },
+      {
+        "itemId": "hack-15",
+        "score": 6.31168
+      }
+    ],
+    "U-0055": [
+      {
+        "itemId": "hack-9",
+        "score": 9.7768
+      },
+      {
+        "itemId": "hack-13",
+        "score": 6.581697
+      },
+      {
+        "itemId": "hack-7",
+        "score": 5.530417
+      },
+      {
+        "itemId": "hack-10",
+        "score": 5.426603
+      },
+      {
+        "itemId": "hack-8",
+        "score": 4.77944
+      }
+    ],
+    "U-0056": [
+      {
+        "itemId": "hack-5",
+        "score": 36.730209
+      },
+      {
+        "itemId": "hack-6",
+        "score": 33.541706
+      },
+      {
+        "itemId": "hack-4-2",
+        "score": 33.464806
+      },
+      {
+        "itemId": "hack-10-1",
+        "score": 29.972388
+      },
+      {
+        "itemId": "hack-5-2",
+        "score": 27.008236
+      }
+    ],
+    "U-0057": [
+      {
+        "itemId": "hack-5",
+        "score": 38.289855
+      },
+      {
+        "itemId": "hack-6",
+        "score": 35.101394
+      },
+      {
+        "itemId": "hack-10-1",
+        "score": 34.936954
+      },
+      {
+        "itemId": "hack-10",
+        "score": 10.377995
+      },
+      {
+        "itemId": "hack-8",
+        "score": 6.570898
+      }
+    ],
+    "U-0058": [
+      {
+        "itemId": "hack-4-1",
+        "score": 11.708842
+      },
+      {
+        "itemId": "hack-14",
+        "score": 11.029713
+      },
+      {
+        "itemId": "hack-10",
+        "score": 9.623141
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 9.034757
+      },
+      {
+        "itemId": "hack-8",
+        "score": 8.732776
+      }
+    ],
+    "U-0059": [
+      {
+        "itemId": "hack-4",
+        "score": 37.652951
+      },
+      {
+        "itemId": "hack-2",
+        "score": 34.509784
+      },
+      {
+        "itemId": "hack-15",
+        "score": 10.065943
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 8.326756
+      },
+      {
+        "itemId": "hack-9",
+        "score": 8.058592
+      }
+    ],
+    "U-0060": [
+      {
+        "itemId": "hack-4",
+        "score": 30.360889
+      },
+      {
+        "itemId": "hack-10",
+        "score": 8.901879
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 6.211609
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.00449
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 4.740489
+      }
+    ],
+    "U-0061": [
+      {
+        "itemId": "hack-13",
+        "score": 7.227818
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 6.684512
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 5.49021
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 3.912957
+      }
+    ],
+    "U-0062": [
+      {
+        "itemId": "hack-10",
+        "score": 7.108888
+      },
+      {
+        "itemId": "hack-11",
+        "score": 6.789338
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 6.156265
+      },
+      {
+        "itemId": "hack-12",
+        "score": 4.98064
+      },
+      {
+        "itemId": "hack-13",
+        "score": 4.875088
+      }
+    ],
+    "U-0063": [
+      {
+        "itemId": "hack-4-1",
+        "score": 9.267779
+      },
+      {
+        "itemId": "hack-11",
+        "score": 8.266119
+      },
+      {
+        "itemId": "hack-9",
+        "score": 6.97373
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 4.716293
+      },
+      {
+        "itemId": "hack-7",
+        "score": 4.40719
+      }
+    ],
+    "U-0064": [
+      {
+        "itemId": "hack-8",
+        "score": 8.696605
+      },
+      {
+        "itemId": "hack-13",
+        "score": 6.458664
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.249671
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 5.879069
+      }
+    ],
+    "U-0065": [
+      {
+        "itemId": "hack-9",
+        "score": 10.71695
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 10.019031
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.489872
+      },
+      {
+        "itemId": "hack-15",
+        "score": 4.944288
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 3.233072
+      }
+    ],
+    "U-0066": [
+      {
+        "itemId": "hack-14",
+        "score": 9.64045
+      },
+      {
+        "itemId": "hack-8",
+        "score": 9.31571
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 9.180554
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 7.640066
+      },
+      {
+        "itemId": "hack-9",
+        "score": 6.98994
+      }
+    ],
+    "U-0067": [
+      {
+        "itemId": "hack-5",
+        "score": 34.89196
+      },
+      {
+        "itemId": "hack-7-1",
+        "score": 25.441852
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 7.442776
+      },
+      {
+        "itemId": "hack-13",
+        "score": 6.645695
+      },
+      {
+        "itemId": "hack-10",
+        "score": 6.462296
+      }
+    ],
+    "U-0068": [
+      {
+        "itemId": "hack-15",
+        "score": 6.959937
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 6.379125
+      },
+      {
+        "itemId": "hack-13",
+        "score": 5.05752
+      },
+      {
+        "itemId": "hack-7",
+        "score": 5.032512
+      },
+      {
+        "itemId": "hack-11",
+        "score": 4.561458
+      }
+    ],
+    "U-0069": [
+      {
+        "itemId": "hack-11",
+        "score": 10.403016
+      },
+      {
+        "itemId": "hack-12",
+        "score": 8.699673
+      },
+      {
+        "itemId": "hack-9",
+        "score": 8.000093
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 6.720954
+      },
+      {
+        "itemId": "hack-14",
+        "score": 5.071632
+      }
+    ],
+    "U-0070": [
+      {
+        "itemId": "hack-3",
+        "score": 48.379261
+      },
+      {
+        "itemId": "hack-9",
+        "score": 9.206182
+      },
+      {
+        "itemId": "hack-8",
+        "score": 7.776309
+      },
+      {
+        "itemId": "hack-15",
+        "score": 7.123743
+      },
+      {
+        "itemId": "hack-7",
+        "score": 6.68076
+      }
+    ],
+    "U-0071": [
+      {
+        "itemId": "hack-7",
+        "score": 7.961869
+      },
+      {
+        "itemId": "hack-14",
+        "score": 7.522889
+      },
+      {
+        "itemId": "hack-8",
+        "score": 7.071645
+      },
+      {
+        "itemId": "hack-15",
+        "score": 6.232955
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.117254
+      }
+    ],
+    "U-0072": [
+      {
+        "itemId": "hack-2-1",
+        "score": 8.804567
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 8.028797
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 6.81926
+      },
+      {
+        "itemId": "hack-14",
+        "score": 6.010597
+      },
+      {
+        "itemId": "hack-13",
+        "score": 5.622023
+      }
+    ],
+    "U-0073": [
+      {
+        "itemId": "hack-3-2",
+        "score": 32.353777
+      },
+      {
+        "itemId": "hack-5",
+        "score": 31.37269
+      },
+      {
+        "itemId": "hack-2-2",
+        "score": 28.773984
+      },
+      {
+        "itemId": "hack-6-2",
+        "score": 23.747868
+      },
+      {
+        "itemId": "hack-14",
+        "score": 8.739388
+      }
+    ],
+    "U-0074": [
+      {
+        "itemId": "hack-12",
+        "score": 8.468521
+      },
+      {
+        "itemId": "hack-7",
+        "score": 7.180728
+      },
+      {
+        "itemId": "hack-14",
+        "score": 6.801714
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 5.841048
+      },
+      {
+        "itemId": "hack-13",
+        "score": 5.269398
+      }
+    ],
+    "U-0075": [
+      {
+        "itemId": "hack-14",
+        "score": 10.888825
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 8.9702
+      },
+      {
+        "itemId": "hack-9",
+        "score": 8.000716
+      },
+      {
+        "itemId": "hack-8",
+        "score": 7.507443
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.138775
+      }
+    ],
+    "U-0076": [
+      {
+        "itemId": "hack-6",
+        "score": 35.569944
+      },
+      {
+        "itemId": "hack-9",
+        "score": 6.712695
+      },
+      {
+        "itemId": "hack-13",
+        "score": 6.667195
+      },
+      {
+        "itemId": "hack-8",
+        "score": 5.115234
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 4.937602
+      }
+    ],
+    "U-0077": [
+      {
+        "itemId": "hack-6-1",
+        "score": 10.230713
+      },
+      {
+        "itemId": "hack-10",
+        "score": 9.719477
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 9.370322
+      },
+      {
+        "itemId": "hack-8",
+        "score": 8.75501
+      },
+      {
+        "itemId": "hack-12",
+        "score": 7.224188
+      }
+    ],
+    "U-0078": [
+      {
+        "itemId": "hack-10",
+        "score": 11.611895
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 10.45306
+      },
+      {
+        "itemId": "hack-9",
+        "score": 7.557528
+      },
+      {
+        "itemId": "hack-12",
+        "score": 7.259941
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 6.25812
+      }
+    ],
+    "U-0079": [
+      {
+        "itemId": "hack-14",
+        "score": 10.107012
+      },
+      {
+        "itemId": "hack-9",
+        "score": 8.682065
+      },
+      {
+        "itemId": "hack-13",
+        "score": 8.304257
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 6.822672
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 5.748635
+      }
+    ],
+    "U-0080": [
+      {
+        "itemId": "hack-9",
+        "score": 9.561424
+      },
+      {
+        "itemId": "hack-10",
+        "score": 8.356803
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 7.193484
+      },
+      {
+        "itemId": "hack-11",
+        "score": 5.543479
+      }
+    ],
+    "U-0081": [
+      {
+        "itemId": "hack-15",
+        "score": 9.201636
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 8.96691
+      },
+      {
+        "itemId": "hack-10",
+        "score": 8.026256
+      },
+      {
+        "itemId": "hack-7",
+        "score": 6.697408
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 6.430725
+      }
+    ],
+    "U-0082": [
+      {
+        "itemId": "hack-6-2",
+        "score": 26.090907
+      },
+      {
+        "itemId": "hack-2",
+        "score": 25.714609
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 7.596568
+      },
+      {
+        "itemId": "hack-14",
+        "score": 6.794314
+      },
+      {
+        "itemId": "hack-11",
+        "score": 6.526555
+      }
+    ],
+    "U-0083": [
+      {
+        "itemId": "hack-4-1",
+        "score": 8.129409
+      },
+      {
+        "itemId": "hack-15",
+        "score": 6.412472
+      },
+      {
+        "itemId": "hack-7",
+        "score": 5.385355
+      },
+      {
+        "itemId": "hack-9",
+        "score": 4.539854
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 3.961189
+      }
+    ],
+    "U-0084": [
+      {
+        "itemId": "hack-9",
+        "score": 11.971947
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 8.199542
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.122062
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 6.507032
+      },
+      {
+        "itemId": "hack-11",
+        "score": 5.629744
+      }
+    ],
+    "U-0085": [
+      {
+        "itemId": "hack-12",
+        "score": 10.545272
+      },
+      {
+        "itemId": "hack-8",
+        "score": 10.494482
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 9.660539
+      },
+      {
+        "itemId": "hack-13",
+        "score": 8.784052
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.02345
+      }
+    ],
+    "U-0086": [
+      {
+        "itemId": "hack-11",
+        "score": 12.712603
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.727072
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 6.30135
+      },
+      {
+        "itemId": "hack-8",
+        "score": 5.649225
+      },
+      {
+        "itemId": "hack-13",
+        "score": 4.584102
+      }
+    ],
+    "U-0087": [
+      {
+        "itemId": "hack-14",
+        "score": 9.7155
+      },
+      {
+        "itemId": "hack-9",
+        "score": 7.660172
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 5.94196
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 5.083388
+      },
+      {
+        "itemId": "hack-15",
+        "score": 5.081469
+      }
+    ],
+    "U-0088": [
+      {
+        "itemId": "hack-6-2",
+        "score": 33.48834
+      },
+      {
+        "itemId": "hack-3-2",
+        "score": 31.977732
+      },
+      {
+        "itemId": "hack-9-1",
+        "score": 28.785836
+      },
+      {
+        "itemId": "hack-10",
+        "score": 10.702804
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 10.003506
+      }
+    ],
+    "U-0089": [
+      {
+        "itemId": "hack-7",
+        "score": 11.393369
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 9.305745
+      },
+      {
+        "itemId": "hack-10",
+        "score": 8.924787
+      },
+      {
+        "itemId": "hack-15",
+        "score": 8.41819
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.574482
+      }
+    ],
+    "U-0090": [
+      {
+        "itemId": "hack-10",
+        "score": 12.188953
+      },
+      {
+        "itemId": "hack-8",
+        "score": 10.750954
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 7.472453
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 7.221349
+      },
+      {
+        "itemId": "hack-15",
+        "score": 6.139976
+      }
+    ],
+    "U-0091": [
+      {
+        "itemId": "hack-10",
+        "score": 8.550267
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 4.62381
+      },
+      {
+        "itemId": "hack-12",
+        "score": 4.027867
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 3.859443
+      },
+      {
+        "itemId": "hack-15",
+        "score": 3.079543
+      }
+    ],
+    "U-0092": [
+      {
+        "itemId": "hack-8-1",
+        "score": 34.062348
+      },
+      {
+        "itemId": "hack-2-2",
+        "score": 33.32831
+      },
+      {
+        "itemId": "hack-6",
+        "score": 20.03
+      },
+      {
+        "itemId": "hack-14",
+        "score": 7.309759
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 7.112189
+      }
+    ],
+    "U-0093": [
+      {
+        "itemId": "hack-13",
+        "score": 12.173906
+      },
+      {
+        "itemId": "hack-15",
+        "score": 11.919374
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 6.878426
+      },
+      {
+        "itemId": "hack-3-1",
+        "score": 6.251777
+      }
+    ],
+    "U-0094": [
+      {
+        "itemId": "hack-4-1",
+        "score": 10.746394
+      },
+      {
+        "itemId": "hack-14",
+        "score": 9.893374
+      },
+      {
+        "itemId": "hack-13",
+        "score": 9.742683
+      },
+      {
+        "itemId": "hack-8",
+        "score": 9.588866
+      },
+      {
+        "itemId": "hack-15",
+        "score": 5.398119
+      }
+    ],
+    "U-0095": [
+      {
+        "itemId": "hack-4-1",
+        "score": 14.599409
+      },
+      {
+        "itemId": "hack-14",
+        "score": 9.141087
+      },
+      {
+        "itemId": "hack-7",
+        "score": 8.970399
+      },
+      {
+        "itemId": "hack-9",
+        "score": 8.280663
+      },
+      {
+        "itemId": "hack-6-1",
+        "score": 4.882733
+      }
+    ],
+    "U-0096": [
+      {
+        "itemId": "hack-8",
+        "score": 10.18781
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 5.580597
+      },
+      {
+        "itemId": "hack-13",
+        "score": 4.823569
+      },
+      {
+        "itemId": "hack-14",
+        "score": 4.622261
+      },
+      {
+        "itemId": "hack-15",
+        "score": 4.577507
+      }
+    ],
+    "U-0097": [
+      {
+        "itemId": "hack-4-1",
+        "score": 9.412404
+      },
+      {
+        "itemId": "hack-14",
+        "score": 4.737044
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 4.506186
+      }
+    ],
+    "U-0098": [
+      {
+        "itemId": "hack-3-2",
+        "score": 26.134061
+      },
+      {
+        "itemId": "hack-9-1",
+        "score": 23.685092
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 8.021937
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.890856
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 7.262977
+      }
+    ],
+    "U-0099": [
+      {
+        "itemId": "hack-5-1",
+        "score": 10.769636
+      },
+      {
+        "itemId": "hack-10",
+        "score": 7.301637
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 7.086781
+      },
+      {
+        "itemId": "hack-7",
+        "score": 6.603905
+      },
+      {
+        "itemId": "hack-12",
+        "score": 6.148752
+      }
+    ],
+    "U-0100": [
+      {
+        "itemId": "hack-14",
+        "score": 10.968993
+      },
+      {
+        "itemId": "hack-4-1",
+        "score": 10.349101
+      },
+      {
+        "itemId": "hack-2-1",
+        "score": 6.433434
+      },
+      {
+        "itemId": "hack-5-1",
+        "score": 4.206514
+      },
+      {
+        "itemId": "hack-15",
+        "score": 4.151368
+      }
+    ]
+  }
+}

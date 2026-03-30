@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "export:profile-documents": "tsc -p tsconfig.scripts.json && node .generated-scripts/scripts/export_profile_documents.js"
+    "export:profile-documents": "tsc -p tsconfig.scripts.json && node .generated-scripts/scripts/export_profile_documents.js",
+    "update:cf-recommendations": "tsc -p tsconfig.scripts.json && node .generated-scripts/scripts/update_cf_recommendations.js"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
