@@ -10,11 +10,9 @@ import { useLog } from '@/contexts/LogContext'
 import { useUser } from '@/contexts/UserContext'
 import { getTeamsByLeaderId } from '@/api/teamApi'
 import type { Team } from '@/types/team'
-import teamsData from '../data/team_dummy_data.json'
 import usersData from '../data/user_dummy_v2.json'
 
 type DocType = 'user' | 'team'
-type FilterValue = 'all' | string
 
 type ProfileSlots = {
   role?: string[]
@@ -33,15 +31,26 @@ type ProfileDocument = {
   current_team_id: string | null
   profile: ProfileSlots | null
   content: string
-  embedding: string | number[]
 }
 
-type MatchResult = Omit<ProfileDocument, 'embedding'> & {
+type MatchResult = ProfileDocument & {
   similarity: number
 }
 
 type RawUser = (typeof usersData)[number]
-type RawTeam = (typeof teamsData)[number]
+type TeamDetails = {
+  teamCode: string
+  name: string
+  intro: string
+  lookingFor: string[]
+  requiredSkills: string[]
+  preferredPersonality: string[]
+  tags: string[]
+  isOpen: boolean
+  memberCount: number
+  maxMembers: number
+  hackathonSlug?: string
+}
 
 const sourceTypeOptions: Array<{ value: DocType; label: string; icon: typeof Users }> = [
   { value: 'team', label: '팀 기준으로 팀원 찾기', icon: Users },
@@ -53,11 +62,6 @@ const formatList = (values?: string[]) => {
   return values.join(', ')
 }
 
-const normalizeEmbedding = (embedding: string | number[]) => {
-  if (typeof embedding === 'string') return embedding
-  return `[${embedding.join(',')}]`
-}
-
 function SourceSummary({
   doc,
   userMap,
@@ -65,7 +69,7 @@ function SourceSummary({
 }: {
   doc: ProfileDocument | MatchResult
   userMap: Map<string, RawUser>
-  teamMap: Map<string, RawTeam>
+  teamMap: Map<string, TeamDetails>
 }) {
   if (doc.type === 'team') {
     const team = teamMap.get(doc.source_id)
@@ -101,23 +105,19 @@ export default function Matcher() {
   const [myLeaderTeams, setMyLeaderTeams] = useState<Team[]>([])
 
   const userMap = useMemo(
-    () => new Map(usersData.map((item) => [item.userId, item] as const)),
-    [],
-  )
-  const teamMap = useMemo(
-    () => new Map(teamsData.map((item) => [item.teamCode, item] as const)),
+    () => new Map<string, RawUser>(usersData.map((item) => [item.userId, item] as const)),
     [],
   )
 
   const [documents, setDocuments] = useState<ProfileDocument[]>([])
   const [sourceType, setSourceType] = useState<DocType>('team')
   const [selectedSourceId, setSelectedSourceId] = useState('')
-  const [hackathonFilter, setHackathonFilter] = useState<FilterValue>('all')
   const [openOnly, setOpenOnly] = useState<'all' | 'open'>('all')
   const [results, setResults] = useState<MatchResult[]>([])
   const [loadingDocs, setLoadingDocs] = useState(true)
   const [loadingMatches, setLoadingMatches] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [teamMap, setTeamMap] = useState<Map<string, TeamDetails>>(new Map())
 
   // 내가 팀장인 팀 목록 조회
   useEffect(() => {
@@ -136,11 +136,9 @@ export default function Matcher() {
     const loadDocuments = async () => {
       setLoadingDocs(true)
       setError(null)
-      const { data, error: fetchError } = await supabase
-        .from('profile_documents')
-        .select('id, source_id, type, hackathon_slug, is_hackathon_linked, is_open, current_team_id, profile, content, embedding')
-        .order('type')
-        .order('source_id')
+      const { data, error: fetchError } = await supabase.rpc('list_matcher_profile_documents', {
+        filter_type: null,
+      })
 
       if (fetchError) {
         setError(fetchError.message)
@@ -155,6 +153,49 @@ export default function Matcher() {
     void loadDocuments()
   }, [])
 
+  useEffect(() => {
+    const loadTeamDetails = async () => {
+      const { data, error: fetchError } = await supabase
+        .from('teams')
+        .select('team_code, name, intro, looking_for, required_skills, preferred_personality, tags, is_open, member_count, max_members, hackathon_slug')
+
+      if (fetchError) {
+        console.error('Failed to load matcher teams:', fetchError)
+        return
+      }
+
+      const mappedEntries: Array<readonly [string, TeamDetails]> = []
+
+      for (const row of (data ?? []) as Array<Record<string, unknown>>) {
+        const teamCode = typeof row.team_code === 'string' ? row.team_code : ''
+        if (!teamCode) continue
+
+        mappedEntries.push([
+          teamCode,
+          {
+            teamCode,
+            name: typeof row.name === 'string' && row.name ? row.name : teamCode,
+            intro: typeof row.intro === 'string' ? row.intro : '',
+            lookingFor: Array.isArray(row.looking_for) ? row.looking_for.filter((item): item is string => typeof item === 'string') : [],
+            requiredSkills: Array.isArray(row.required_skills) ? row.required_skills.filter((item): item is string => typeof item === 'string') : [],
+            preferredPersonality: Array.isArray(row.preferred_personality) ? row.preferred_personality.filter((item): item is string => typeof item === 'string') : [],
+            tags: Array.isArray(row.tags) ? row.tags.filter((item): item is string => typeof item === 'string') : [],
+            isOpen: Boolean(row.is_open),
+            memberCount: typeof row.member_count === 'number' ? row.member_count : 0,
+            maxMembers: typeof row.max_members === 'number' ? row.max_members : 0,
+            hackathonSlug: typeof row.hackathon_slug === 'string' ? row.hackathon_slug : undefined,
+          },
+        ] as const)
+      }
+
+      const mapped = new Map<string, TeamDetails>(mappedEntries)
+
+      setTeamMap(mapped)
+    }
+
+    void loadTeamDetails()
+  }, [])
+
   const selectedSource = useMemo(() => {
     if (sourceType === 'team') {
       // 팀 모드: profile_documents에서 해당 팀 조회
@@ -166,18 +207,6 @@ export default function Matcher() {
   }, [selectedSourceId, documents, sourceType])
 
   const targetType: DocType = sourceType === 'team' ? 'user' : 'team'
-
-  const availableHackathons = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          documents
-            .map((doc) => doc.hackathon_slug)
-            .filter((slug): slug is string => Boolean(slug)),
-        ),
-      ).sort(),
-    [documents],
-  )
 
   useEffect(() => {
     if (sourceType === 'team') {
@@ -206,11 +235,12 @@ export default function Matcher() {
     setLoadingMatches(true)
     setError(null)
 
-    const { data, error: rpcError } = await supabase.rpc('match_profile_documents', {
-      query_embedding: normalizeEmbedding(selectedSource.embedding),
+    const { data, error: rpcError } = await supabase.rpc('match_profile_documents_by_source', {
+      query_source_id: selectedSource.source_id,
+      query_source_type: selectedSource.type,
       match_count: 6,
       filter_type: targetType,
-      filter_hackathon_slug: hackathonFilter === 'all' ? null : hackathonFilter,
+      filter_hackathon_slug: null,
       filter_is_open: targetType === 'team' && openOnly === 'open' ? true : null,
       exclude_source_id: selectedSource.source_id,
     })
@@ -227,9 +257,12 @@ export default function Matcher() {
   }
 
   useEffect(() => {
-    if (!selectedSource) return
+    if (!selectedSource) {
+      setResults([])
+      return
+    }
     void runMatch()
-  }, [selectedSourceId, sourceType, hackathonFilter, openOnly])
+  }, [selectedSourceId, sourceType, openOnly])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
@@ -330,26 +363,6 @@ export default function Matcher() {
                 )}
               </div>
             )}
-
-            <div>
-              <p className="mb-2 text-sm font-semibold text-slate-700">해커톤 필터</p>
-              <select
-                value={hackathonFilter}
-                onChange={(event) => {
-                  const newFilter = event.target.value as FilterValue
-                  setHackathonFilter(newFilter)
-                  recordEvent('matcher_filter', sourceType, newFilter, { filterType: 'hackathon', filterValue: newFilter })
-                }}
-                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-[#3B82F6]/40 focus:ring-4 focus:ring-[#3B82F6]/10"
-              >
-                <option value="all">전체</option>
-                {availableHackathons.map((slug) => (
-                  <option key={slug} value={slug}>
-                    {slug}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             {targetType === 'team' && (
               <div>
