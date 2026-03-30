@@ -12,7 +12,7 @@ import Prize from '../features/Prize'
 import Teams from '../features/Teams'
 import Submit from '../features/Submit'
 import Leaderboard from '../features/Leaderboard'
-import hackathonDetailDefaultImage from '../assets/hackathon_detail_default.png'
+import { getHackathonImage } from '../utils/hackathonImage'
 
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -134,10 +134,9 @@ export default function HackathonDetail() {
       <Card className="bg-white border-0 shadow-2xl mb-10 overflow-hidden rounded-3xl">
         <div className="relative h-72 bg-gray-900">
           <img 
-            src={heroImageLoadFailed || !hackathon.thumbnailUrl ? hackathonDetailDefaultImage : hackathon.thumbnailUrl} 
+            src={getHackathonImage(hackathon.slug)} 
             alt={hackathon.title} 
             className="w-full h-full object-cover opacity-60"
-            onError={() => setHeroImageLoadFailed(true)}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent" />
           <div className="absolute bottom-8 left-8 right-8">

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, MapPin, Search, Trophy, Heart, ArrowLeft } from 'lucide-react'
+import { Calendar, MapPin, Search, Heart, ArrowLeft, Trophy } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import type { Hackathon } from '../types/hackathon'
 import { useUser } from '../contexts/UserContext'
 import { useLog } from '../contexts/LogContext'
 import { isHackathonInterested, toggleHackathonInterest } from '../utils/interestStorage'
+import { getHackathonImage } from '../utils/hackathonImage'
 
 const HACKATHONS_STORAGE_KEY = 'hackathons'
 
@@ -31,7 +32,6 @@ export default function Hackathons() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [tagFilter, setTagFilter] = useState<string>('all')
   const [, setInterestVersion] = useState(0)
-  const [imageLoadFailed, setImageLoadFailed] = useState<Record<string, boolean>>({})
 
   const hackathons = useMemo(() => getHackathonsFromStorage(), [])
   
@@ -186,7 +186,7 @@ export default function Hackathons() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredHackathons.map((hackathon) => {
             const isInterested = user ? isHackathonInterested(user.id, hackathon.slug) : false
-            const canShowImage = Boolean(hackathon.thumbnailUrl) && !imageLoadFailed[hackathon.slug]
+            const hackathonImage = getHackathonImage(hackathon.slug)
             
             return (
               <Card 
@@ -209,21 +209,11 @@ export default function Hackathons() {
               >
                 {/* Thumbnail Area */}
                 <div className="relative h-48 bg-gray-100 overflow-hidden">
-                  {canShowImage ? (
-                    <img 
-                      src={hackathon.thumbnailUrl} 
-                      alt={hackathon.title} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      onError={() => {
-                        setImageLoadFailed((prev) => ({ ...prev, [hackathon.slug]: true }))
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[#3B82F6]/20 to-[#0EA5E9]/20 flex flex-col items-center justify-center gap-2">
-                      <Trophy className="w-10 h-10 text-[#3B82F6]/40" />
-                      <span className="text-xs font-semibold text-slate-500">이미지 준비중</span>
-                    </div>
-                  )}
+                  <img 
+                    src={hackathonImage} 
+                    alt={hackathon.title} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
                   <div className="absolute top-4 right-4">
                     <Button
                       size="icon"
