@@ -1,6 +1,9 @@
-import { useMemo } from 'react'
-import { Trophy } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { CheckCircle2, Trophy } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useTeams } from '../hooks/useTeams'
+import { useUser } from '../contexts/UserContext'
+import { getVoteEligibility } from '../lib/voteEligibility'
 
 type LeaderboardProps = {
   hackathonSlug: string
@@ -24,7 +27,30 @@ type LeaderboardRow = {
   rank: number | null
 }
 
+type Submission = {
+  hackathonSlug: string
+  notes: string
+  artifact: string
+  createdAt: string
+  artifactType?: string
+  teamId?: string
+  teamName?: string
+}
+
+type VoteRecord = {
+  [hackathonSlug: string]: {
+    [userId: string]: {
+      teamCode: string
+      teamName: string
+      votedAt: string
+    }
+  }
+}
+
 const LEADERBOARD_SUBMISSIONS_STORAGE_KEY = 'leaderboard_submissions'
+const SUBMISSIONS_STORAGE_KEY = 'submissions'
+const VOTE_STORAGE_KEY = 'hackathon_votes_v1'
+const HACKATHONS_STORAGE_KEY = 'hackathons'
 
 function normalizeLeaderboardSubmission(item: unknown): LeaderboardSubmission | null {
   if (typeof item !== 'object' || item === null) return null
@@ -56,6 +82,84 @@ function getLeaderboardSubmissionsFromStorage(): LeaderboardSubmission[] {
       .filter((item): item is LeaderboardSubmission => item !== null)
   } catch {
     return []
+  }
+}
+
+function getSubmissionsFromStorage(): Submission[] {
+  const raw = localStorage.getItem(SUBMISSIONS_STORAGE_KEY)
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as Submission[]) : []
+  } catch {
+    return []
+  }
+}
+
+function loadVoteRecord(): VoteRecord {
+  const raw = localStorage.getItem(VOTE_STORAGE_KEY)
+  if (!raw) return {}
+  try {
+    const parsed = JSON.parse(raw)
+    return typeof parsed === 'object' && parsed !== null ? (parsed as VoteRecord) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveVoteRecord(record: VoteRecord) {
+  localStorage.setItem(VOTE_STORAGE_KEY, JSON.stringify(record))
+}
+
+function getVotingPhase(hackathonSlug: string): 'before' | 'open' | 'ended' | 'unknown' {
+  const raw = localStorage.getItem(HACKATHONS_STORAGE_KEY)
+  if (!raw) return 'unknown'
+
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return 'unknown'
+
+    const target = parsed.find((item) => {
+      if (typeof item !== 'object' || item === null) return false
+      return (item as { slug?: unknown }).slug === hackathonSlug
+    }) as { period?: { submissionDeadlineAt?: string; endAt?: string } } | undefined
+
+    const submissionTime = Date.parse(target?.period?.submissionDeadlineAt ?? '')
+    const endTime = Date.parse(target?.period?.endAt ?? '')
+    if (!Number.isFinite(submissionTime) || !Number.isFinite(endTime)) {
+      return 'unknown'
+    }
+
+    const now = Date.now()
+    if (now < submissionTime) return 'before'
+    if (now > endTime) return 'ended'
+    return 'open'
+  } catch {
+    return 'unknown'
+  }
+}
+
+function isAfterSubmissionDeadline(hackathonSlug: string): boolean {
+  const raw = localStorage.getItem(HACKATHONS_STORAGE_KEY)
+  if (!raw) return false
+
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return false
+
+    const target = parsed.find((item) => {
+      if (typeof item !== 'object' || item === null) return false
+      return (item as { slug?: unknown }).slug === hackathonSlug
+    }) as { period?: { submissionDeadlineAt?: string } } | undefined
+
+    const submissionTime = Date.parse(target?.period?.submissionDeadlineAt ?? '')
+    if (!Number.isFinite(submissionTime)) {
+      return false
+    }
+
+    return Date.now() >= submissionTime
+  } catch {
+    return false
   }
 }
 
@@ -94,7 +198,48 @@ function getRankStyle(rank: number | null): string {
 }
 
 export default function Leaderboard({ hackathonSlug }: LeaderboardProps) {
+  const { user } = useUser()
   const { data: teams = [] } = useTeams(hackathonSlug)
+  const voteEligibility = useMemo(() => getVoteEligibility(hackathonSlug, user), [hackathonSlug, user])
+  const votingPhase = useMemo(() => getVotingPhase(hackathonSlug), [hackathonSlug])
+  const isVoteHackathon = voteEligibility.isVoteSource
+  const canPreviewSubmissions = useMemo(() => isAfterSubmissionDeadline(hackathonSlug), [hackathonSlug])
+
+  const isParticipantByTeamMembership = useMemo(() => {
+    if (!user) return false
+
+    const userIds = new Set([user.id, user.userId].filter(Boolean))
+
+    return teams.some((team) => {
+      if (team.hackathonSlug !== hackathonSlug) return false
+
+      const isLeader = userIds.has(team.leaderId)
+      const isMember = team.members.some((member) => userIds.has(member.userId))
+      return isLeader || isMember
+    })
+  }, [hackathonSlug, teams, user])
+
+  // 팀-유저 연결이 존재하면 participations 더미가 없어도 참여자로 인정한다.
+  const canVoteOnLeaderboard = voteEligibility.isVoteSource && voteEligibility.isWithinVotingPeriod && (
+    voteEligibility.isParticipant || isParticipantByTeamMembership
+  )
+
+  const [previewTeamId, setPreviewTeamId] = useState<string | null>(null)
+  const [votedTeamCode, setVotedTeamCode] = useState<string>(() => {
+    if (!user) return ''
+    const voteRecord = loadVoteRecord()
+    return voteRecord[hackathonSlug]?.[user.userId]?.teamCode ?? ''
+  })
+
+  useEffect(() => {
+    if (!user) {
+      setVotedTeamCode('')
+      return
+    }
+
+    const voteRecord = loadVoteRecord()
+    setVotedTeamCode(voteRecord[hackathonSlug]?.[user.userId]?.teamCode ?? '')
+  }, [hackathonSlug, user])
 
   const rows = useMemo(() => {
     const submissions = getLeaderboardSubmissionsFromStorage().filter(
@@ -164,6 +309,47 @@ export default function Leaderboard({ hackathonSlug }: LeaderboardProps) {
   const submittedRows = rows.filter((row) => row.status === '제출')
   const topRow = rows.find((row) => row.rank === 1) ?? null
 
+  const previewSubmissionByTeamId = useMemo(() => {
+    const map = new Map<string, Submission>()
+    const submissions = getSubmissionsFromStorage().filter(
+      (submission) => submission.hackathonSlug === hackathonSlug && submission.teamId
+    )
+
+    submissions.forEach((submission) => {
+      const teamId = submission.teamId as string
+      const existing = map.get(teamId)
+      if (!existing || toTimestamp(submission.createdAt) > toTimestamp(existing.createdAt)) {
+        map.set(teamId, submission)
+      }
+    })
+
+    return map
+  }, [hackathonSlug])
+
+  const previewSubmission = previewTeamId ? previewSubmissionByTeamId.get(previewTeamId) : null
+
+  const onVoteTeam = (row: LeaderboardRow) => {
+    if (!user || !canVoteOnLeaderboard || row.status !== '제출') {
+      return
+    }
+
+    const voteRecord = loadVoteRecord()
+    const nextRecord: VoteRecord = {
+      ...voteRecord,
+      [hackathonSlug]: {
+        ...(voteRecord[hackathonSlug] ?? {}),
+        [user.userId]: {
+          teamCode: row.teamId,
+          teamName: row.teamName,
+          votedAt: new Date().toISOString()
+        }
+      }
+    }
+
+    saveVoteRecord(nextRecord)
+    setVotedTeamCode(row.teamId)
+  }
+
   return (
     <section className="space-y-8">
       <div className="rounded-[28px] border border-amber-100 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-6 sm:p-8">
@@ -191,6 +377,75 @@ export default function Leaderboard({ hackathonSlug }: LeaderboardProps) {
         </div>
       </div>
 
+      {previewSubmission ? (
+        <div className="rounded-3xl border border-sky-200 bg-sky-50 px-6 py-5">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-700/80">제출물 안내</p>
+          <h3 className="mt-2 text-xl font-black text-slate-900">{previewSubmission.teamName ?? previewTeamId} 제출물</h3>
+          <p className="mt-2 text-sm text-slate-700">
+            제출 시각: {formatDateTime(previewSubmission.createdAt)}
+          </p>
+          <p className="mt-1 text-sm text-slate-700 break-all">
+            제출물: {previewSubmission.artifact}
+          </p>
+          {previewSubmission.notes ? (
+            <p className="mt-2 text-sm text-slate-700 whitespace-pre-line">비고: {previewSubmission.notes}</p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {isVoteHackathon ? (
+        <div className={`rounded-3xl px-6 py-5 ${canVoteOnLeaderboard ? 'border border-emerald-200 bg-emerald-50' : 'border border-rose-100 bg-rose-50'}`}>
+          <p className={`text-xs font-black uppercase tracking-[0.2em] ${canVoteOnLeaderboard ? 'text-emerald-700/80' : 'text-rose-700/80'}`}>
+            Vote Status
+          </p>
+          <h3 className="mt-2 text-lg font-black text-slate-900">
+            {canVoteOnLeaderboard ? '현재 투표 가능합니다.' : '현재 투표할 수 없습니다.'}
+          </h3>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+              votingPhase === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'
+            }`}>
+              투표 기간: {
+                votingPhase === 'before'
+                  ? '투표 시작 전'
+                  : votingPhase === 'open'
+                    ? '진행중'
+                    : votingPhase === 'ended'
+                      ? '종료됨'
+                      : '확인 불가'
+              }
+            </span>
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+              voteEligibility.isParticipant || isParticipantByTeamMembership
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-slate-200 text-slate-700'
+            }`}>
+              참가자 여부: {voteEligibility.isParticipant || isParticipantByTeamMembership ? '참가자' : '미참가'}
+            </span>
+          </div>
+
+          {!canVoteOnLeaderboard ? (
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {[...voteEligibility.reasons, '팀 참여 정보가 있으면 투표 권한으로 인정됩니다.'].map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          ) : votedTeamCode ? (
+            <div className="mt-3 flex items-center gap-2 text-emerald-700 font-bold">
+              <CheckCircle2 className="h-5 w-5" />
+              투표 완료: {rows.find((row) => row.teamId === votedTeamCode)?.teamName ?? votedTeamCode}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-emerald-700/90">아직 투표하지 않았습니다. 아래 테이블에서 팀을 선택하세요.</p>
+          )}
+
+          {canVoteOnLeaderboard ? (
+            <p className="mt-2 text-sm text-emerald-700/90">마감 전까지 다른 팀으로 다시 투표해 변경할 수 있습니다.</p>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="overflow-hidden rounded-[28px] border border-slate-100 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full border-separate border-spacing-0">
@@ -214,6 +469,14 @@ export default function Leaderboard({ hackathonSlug }: LeaderboardProps) {
                 <th className="border-b border-slate-200 px-5 py-4 text-left text-xs font-black uppercase tracking-[0.18em] text-slate-500">
                   Status
                 </th>
+                <th className="border-b border-slate-200 px-5 py-4 text-left text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                  Submit
+                </th>
+                {isVoteHackathon ? (
+                  <th className="border-b border-slate-200 px-5 py-4 text-left text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                    Vote
+                  </th>
+                ) : null}
               </tr>
             </thead>
             <tbody>
@@ -261,6 +524,35 @@ export default function Leaderboard({ hackathonSlug }: LeaderboardProps) {
                       {row.status}
                     </span>
                   </td>
+                  <td className="border-b border-slate-100 px-5 py-4 align-top">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={
+                        row.status !== '제출' ||
+                        !previewSubmissionByTeamId.get(row.teamId) ||
+                        !canPreviewSubmissions
+                      }
+                      onClick={() => setPreviewTeamId(row.teamId)}
+                    >
+                      제출물보기
+                    </Button>
+                  </td>
+                  {isVoteHackathon ? (
+                    <td className="border-b border-slate-100 px-5 py-4 align-top">
+                      <Button
+                        size="sm"
+                        disabled={
+                          row.status !== '제출' ||
+                          !canVoteOnLeaderboard
+                        }
+                        onClick={() => onVoteTeam(row)}
+                        variant={votedTeamCode === row.teamId ? 'secondary' : 'default'}
+                      >
+                        {votedTeamCode === row.teamId ? '선택됨' : '이 팀에 투표'}
+                      </Button>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
