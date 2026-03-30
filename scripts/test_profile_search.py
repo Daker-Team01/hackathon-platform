@@ -3,16 +3,16 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import urllib.request
 from pathlib import Path
 from typing import Any
 
-from sentence_transformers import SentenceTransformer
 from supabase import create_client
 
-MODEL_NAME = "intfloat/multilingual-e5-small"
+MODEL_NAME = "text-embedding-3-small"
+EMBEDDING_DIMENSIONS = 384
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-USER_DATA_PATH = PROJECT_ROOT / "src" / "data" / "user_dummy_data.json"
-TEAM_DATA_PATH = PROJECT_ROOT / "src" / "data" / "team_dummy_data.json"
+USER_DATA_PATH = PROJECT_ROOT / "src" / "data" / "user_dummy_v2.json"
 
 
 def load_env_file(path: str = ".env") -> None:
@@ -36,6 +36,13 @@ def create_supabase():
     return create_client(url, key)
 
 
+def get_openai_api_key() -> str:
+    api_key = os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OpenAI API key is missing")
+    return api_key
+
+
 def load_json(path: Path) -> list[dict[str, Any]]:
     with path.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
@@ -44,19 +51,38 @@ def load_json(path: Path) -> list[dict[str, Any]]:
     return data
 
 
-def load_source_maps() -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+def load_team_map(client: Any) -> dict[str, dict[str, Any]]:
+    response = (
+        client.table("teams")
+        .select("team_code,name,intro,looking_for,required_skills,preferred_personality,tags,is_open,member_count,max_members")
+        .execute()
+    )
+    return {
+        item["team_code"]: {
+            "teamCode": item.get("team_code"),
+            "name": item.get("name"),
+            "intro": item.get("intro"),
+            "lookingFor": item.get("looking_for") or [],
+            "requiredSkills": item.get("required_skills") or [],
+            "preferredPersonality": item.get("preferred_personality") or [],
+            "tags": item.get("tags") or [],
+            "isOpen": item.get("is_open"),
+            "memberCount": item.get("member_count"),
+            "maxMembers": item.get("max_members"),
+        }
+        for item in (response.data or [])
+        if isinstance(item, dict) and isinstance(item.get("team_code"), str)
+    }
+
+
+def load_source_maps(client: Any) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
     users = load_json(USER_DATA_PATH)
-    teams = load_json(TEAM_DATA_PATH)
     user_map = {
         item["userId"]: item
         for item in users
         if isinstance(item, dict) and isinstance(item.get("userId"), str)
     }
-    team_map = {
-        item["teamCode"]: item
-        for item in teams
-        if isinstance(item, dict) and isinstance(item.get("teamCode"), str)
-    }
+    team_map = load_team_map(client)
     return user_map, team_map
 
 
@@ -73,9 +99,31 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def get_query_embedding(model: SentenceTransformer, text: str) -> list[float]:
-    vector = model.encode([f"query: {text}"], normalize_embeddings=True)[0]
-    return vector.tolist()
+def get_query_embedding(text: str) -> list[float]:
+    request = urllib.request.Request(
+        "https://api.openai.com/v1/embeddings",
+        data=json.dumps({
+            "input": [f"query: {text}"],
+            "model": MODEL_NAME,
+            "dimensions": EMBEDDING_DIMENSIONS,
+        }).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {get_openai_api_key()}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(request) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    data = payload.get("data")
+    if not isinstance(data, list) or not data:
+        raise RuntimeError("Invalid embeddings response from OpenAI API")
+
+    embedding = data[0].get("embedding")
+    if not isinstance(embedding, list):
+        raise RuntimeError("Embedding payload missing embedding array")
+    return embedding
 
 
 def find_source_document(client: Any, source_id: str, source_type: str) -> dict[str, Any]:
@@ -123,8 +171,7 @@ def print_source_payload(row: dict[str, Any], user_map: dict[str, dict[str, Any]
 
 def run_search(args: argparse.Namespace) -> None:
     client = create_supabase()
-    model = SentenceTransformer(MODEL_NAME)
-    user_map, team_map = load_source_maps()
+    user_map, team_map = load_source_maps(client)
 
     query_text = args.query
     if args.mode == "similar":
@@ -137,7 +184,7 @@ def run_search(args: argparse.Namespace) -> None:
         if args.exclude_source_id is None:
             args.exclude_source_id = args.query
 
-    query_embedding = get_query_embedding(model, query_text)
+    query_embedding = get_query_embedding(query_text)
     filter_is_open = None
     if args.is_open is not None:
         filter_is_open = args.is_open == "true"

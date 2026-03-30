@@ -14,6 +14,10 @@ import {
 } from "./realtimeChatApi"
 
 const HACKATHON_TAG_PREFIX = "hackathon:"
+const TEAM_PROFILE_SYNC_FUNCTION = "sync-team-profile"
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined
+
+type TeamProfileSyncAction = 'upsert' | 'delete'
 
 type SupabaseTeamRow = {
   id: number
@@ -69,6 +73,20 @@ const announceGeneralToUsers = (userIds: string[], text: string) => {
 const announceGeneralToUser = (userId: string, text: string) => {
   if (!userId) return
   enqueueGeneralChatNotification(userId, text)
+}
+
+const syncTeamProfileDocument = async (teamCode: string, action: TeamProfileSyncAction) => {
+  const { error } = await supabase.functions.invoke(TEAM_PROFILE_SYNC_FUNCTION, {
+    body: {
+      teamCode,
+      action,
+      openAIApiKey: OPENAI_API_KEY,
+    },
+  })
+
+  if (error) {
+    throw error
+  }
 }
 
 const ensureSupabaseTeamChatRoom = async (team: Team): Promise<string | null> => {
@@ -359,6 +377,12 @@ export const createTeam = async (
 
   announceGeneralToUser(createdTeam.leaderId, `${createdTeam.name} 팀을 생성했습니다. 팀 채팅방이 생성되었습니다.`)
 
+  try {
+    await syncTeamProfileDocument(createdTeam.teamCode, 'upsert')
+  } catch (error) {
+    console.error('Failed to sync team profile document after team creation:', error)
+  }
+
   return createdTeam
 }
 
@@ -419,6 +443,12 @@ export const updateTeam = async (
 
   if (updateError) throw updateError
 
+  try {
+    await syncTeamProfileDocument(teamCode, 'upsert')
+  } catch (error) {
+    console.error('Failed to sync team profile document after team update:', error)
+  }
+
   return mapSupabaseTeamToTeam(updatedRow as SupabaseTeamRow)
 }
 
@@ -453,6 +483,12 @@ export const deleteTeam = async (teamCode: string): Promise<void> => {
   )
 
   announceGeneralToUsers(memberIds, `${targetTeam.name} 팀이 삭제되어 팀 채팅방이 종료되었습니다.`)
+
+  try {
+    await syncTeamProfileDocument(teamCode, 'delete')
+  } catch (error) {
+    console.error('Failed to delete team profile document after team deletion:', error)
+  }
 }
 
 // Invitation APIs
