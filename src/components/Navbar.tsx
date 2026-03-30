@@ -18,6 +18,7 @@ type Props = {
   chatOpen?: boolean
   authCardOpen?: boolean
   onAuthCardOpenChange?: (open: boolean) => void
+  onUnreadNotificationCountChange?: (count: number) => void
 }
 
 const HACKATHONS_STORAGE_KEY = 'hackathons'
@@ -55,7 +56,8 @@ function getHackathonsFromStorage(): Hackathon[] {
 export default function Navbar({
   chatOpen = false,
   authCardOpen = false,
-  onAuthCardOpenChange
+  onAuthCardOpenChange,
+  onUnreadNotificationCountChange
 }: Props) {
   const navigate = useNavigate()
   const { isLoggedIn, user } = useUser()
@@ -151,6 +153,10 @@ export default function Navbar({
     () => notificationIds.filter((id) => !seenNotificationIds.includes(id)).length,
     [notificationIds, seenNotificationIds]
   )
+
+  useEffect(() => {
+    onUnreadNotificationCountChange?.(isLoggedIn ? unreadNotificationCount : 0)
+  }, [isLoggedIn, onUnreadNotificationCountChange, unreadNotificationCount])
 
   useEffect(() => {
     const updateLayout = () => {
@@ -359,6 +365,7 @@ export default function Navbar({
             <Link to="/camp" style={{ textDecoration: 'none', color: '#334155', fontWeight: 600 }}>Camp</Link>
             <Link to="/rankings" style={{ textDecoration: 'none', color: '#334155', fontWeight: 600 }}>Rankings</Link>
             <Link to="/analytics" style={{ textDecoration: 'none', color: '#334155', fontWeight: 600 }}>Analytics</Link>
+            <Link to="/matcher" style={{ textDecoration: 'none', color: '#334155', fontWeight: 600 }}>AI Matching</Link>
           </nav>
         </div>
 

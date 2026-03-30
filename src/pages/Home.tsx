@@ -1,9 +1,19 @@
 import { Link } from 'react-router-dom'
 import { Search, Users, Trophy, BarChart3, ArrowRightLeft } from 'lucide-react'
 import { Card } from '@/components/ui/card'
+import hackathonDummyV4 from '../data/hackathon_dummy_v4.json'
+import userDummyV2 from '../data/user_dummy_v2.json'
+import { useTeams } from '../hooks/useTeams'
 import insighthonLogo from '../assets/insighthon_logo.png'
 
 export default function Home() {
+  const { data: teams = [] } = useTeams()
+
+  const ongoingHackathonCount = hackathonDummyV4.filter((hackathon) => hackathon.status === 'ongoing').length
+
+  const activeUserCount = userDummyV2.length
+  const formedTeamCount = teams.length
+
   const features = [
     {
       title: '해커톤 찾기',
@@ -41,6 +51,8 @@ export default function Home() {
       gradient: 'from-[#2563EB] to-[#38BDF8]'
     }
   ]
+
+  const formatCount = (count: number) => count.toLocaleString('ko-KR')
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -84,15 +96,15 @@ export default function Home() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
         <Card className="p-8 bg-white/75 backdrop-blur-sm border border-[#3B82F6]/10 shadow-lg text-center">
-          <div className="text-4xl font-extrabold text-[#3B82F6] mb-2">250+</div>
+          <div className="text-4xl font-extrabold text-[#3B82F6] mb-2">+{formatCount(ongoingHackathonCount)}</div>
           <div className="text-gray-600 font-medium">진행중인 해커톤</div>
         </Card>
         <Card className="p-8 bg-white/75 backdrop-blur-sm border border-[#3B82F6]/10 shadow-lg text-center">
-          <div className="text-4xl font-extrabold text-[#3B82F6] mb-2">15,000+</div>
+          <div className="text-4xl font-extrabold text-[#3B82F6] mb-2">+{formatCount(activeUserCount)}</div>
           <div className="text-gray-600 font-medium">활성 사용자</div>
         </Card>
         <Card className="p-8 bg-white/75 backdrop-blur-sm border border-[#3B82F6]/10 shadow-lg text-center">
-          <div className="text-4xl font-extrabold text-[#3B82F6] mb-2">500+</div>
+          <div className="text-4xl font-extrabold text-[#3B82F6] mb-2">+{formatCount(formedTeamCount)}</div>
           <div className="text-gray-600 font-medium">형성된 팀</div>
         </Card>
       </div>

@@ -9,7 +9,9 @@ const OPEN_CHAT_PANEL_KEY = 'openChatPanel'
 export default function App({ children }: { children: React.ReactNode }) {
   const [chatOpen, setChatOpen] = useState(false)
   const [authCardOpen, setAuthCardOpen] = useState(false)
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const { unreadTotalCount } = useChat()
+  const totalBadgeCount = unreadTotalCount + unreadNotificationCount
 
   // sessionStorage 변화를 감시하여 ChatPanel 자동 열기
   useEffect(() => {
@@ -45,6 +47,7 @@ export default function App({ children }: { children: React.ReactNode }) {
         chatOpen={chatOpen}
         authCardOpen={authCardOpen}
         onAuthCardOpenChange={setAuthCardOpen}
+        onUnreadNotificationCountChange={setUnreadNotificationCount}
       />
 
       <main className="relative z-10 min-h-[calc(100vh-84px)]">
@@ -53,7 +56,7 @@ export default function App({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      <ChatButton onClick={() => setChatOpen(true)} open={chatOpen} unreadCount={unreadTotalCount} />
+      <ChatButton onClick={() => setChatOpen(true)} open={chatOpen} unreadCount={totalBadgeCount} />
       <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   )
