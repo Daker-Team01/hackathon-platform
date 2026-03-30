@@ -10,6 +10,14 @@ export type Hackathon = {
     submissionDeadlineAt: string
     endAt: string
   }
+  stats?: {
+    participantCount?: number
+    teamCount?: number
+    submissionCount?: number
+  }
+  prize?: {
+    totalKRW?: number
+  }
   links: {
     detail: string
     rules: string

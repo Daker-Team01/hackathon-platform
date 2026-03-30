@@ -3,7 +3,7 @@ import type { Hackathon } from "../types/hackathon"
 
 type RawHackathon = (typeof rawHackathonData)[number]
 
-export const HACKATHON_DATA_VERSION = "2026-03-31-dummy-v4-region-restored"
+export const HACKATHON_DATA_VERSION = "2026-03-31-dummy-v4-hack3-vote-open"
 
 function normalizeStatus(status: string): string {
   if (status === "ongoing" || status === "upcoming" || status === "ended") {
@@ -35,6 +35,14 @@ export function normalizeHackathon(item: RawHackathon): Hackathon {
       timezone: "Asia/Seoul",
       submissionDeadlineAt: item.period?.submissionDeadlineAt || "",
       endAt: item.period?.endAt || "",
+    },
+    stats: {
+      participantCount: item.stats?.participantCount,
+      teamCount: item.stats?.teamCount,
+      submissionCount: item.stats?.submissionCount,
+    },
+    prize: {
+      totalKRW: item.prize?.totalKRW,
     },
     links: buildLinks(slug),
   }

@@ -95,6 +95,15 @@ export default function HackathonDetail() {
     }
   }
 
+  const participantSummary = hackathon.stats?.participantCount
+    ? `${hackathon.stats.participantCount.toLocaleString()}명 참여`
+    : '참가 정보 준비 중'
+
+  const totalPrizeSummary =
+    typeof hackathon.prize?.totalKRW === 'number'
+      ? `₩${hackathon.prize.totalKRW.toLocaleString()}`
+      : '상금 정보 준비 중'
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Navigation & Actions */}
@@ -178,7 +187,7 @@ export default function HackathonDetail() {
               </div>
               <div>
                 <div className="text-xs font-bold text-purple-600/60 uppercase tracking-widest mb-1">참가 규모</div>
-                <div className="text-base font-bold text-gray-900">150+ 팀 참여 중</div>
+                <div className="text-base font-bold text-gray-900">{participantSummary}</div>
               </div>
             </div>
 
@@ -188,7 +197,7 @@ export default function HackathonDetail() {
               </div>
               <div>
                 <div className="text-xs font-bold text-amber-600/60 uppercase tracking-widest mb-1">총 상금</div>
-                <div className="text-base font-bold text-gray-900">₩20,000,000</div>
+                <div className="text-base font-bold text-gray-900">{totalPrizeSummary}</div>
               </div>
             </div>
           </div>
