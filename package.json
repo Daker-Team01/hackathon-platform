@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "export:profile-documents": "tsc -p tsconfig.scripts.json && node .generated-scripts/scripts/export_profile_documents.js",
+    "update:cf-recommendations": "tsc -p tsconfig.scripts.json && node .generated-scripts/scripts/update_cf_recommendations.js",
     "upsert:profile-documents": "python3 scripts/upsert_profile_embeddings.py",
     "sync:profile-documents": "npm run export:profile-documents && npm run upsert:profile-documents"
   },
