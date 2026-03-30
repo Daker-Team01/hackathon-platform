@@ -13,6 +13,7 @@
   },
   "include": [
     "scripts/**/*.ts",
-    "src/utils/profileText.ts"
+    "src/utils/profileText.ts",
+    "src/lib/profileDocuments.ts"
   ]
 }
