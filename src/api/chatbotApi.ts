@@ -2,7 +2,6 @@
 // 내부 데이터만 사용하여 챗봇 응답 생성
 
 import { normalizedHackathons as hackathons } from '../lib/hackathonData'
-import teams from '../data/team_dummy_data.json'
 import { allUsers } from '../contexts/UserContext'
 import type { User } from '../contexts/UserContext'
 import type { EventLog } from '../types/log'

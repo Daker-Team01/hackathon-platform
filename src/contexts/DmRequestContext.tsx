@@ -25,6 +25,7 @@ type DmRequestContextType = {
   getPendingForUser: (userId: string) => DmRequest[]
   respondToRequest: (requestId: string, toUserId: string, status: 'ACCEPTED' | 'REJECTED') => Promise<void>
   hasSentPendingRequest: (fromUserId: string, toUserId: string) => boolean
+  setupSubscriptionForUser: (userId: string) => void
 }
 
 const DmRequestContext = createContext<DmRequestContextType | undefined>(undefined)
@@ -212,7 +213,7 @@ export function DmRequestProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <DmRequestContext.Provider value={{ sendDmRequest, getPendingForUser, respondToRequest, hasSentPendingRequest, setupSubscriptionForUser: setupSubscriptionForUser as any }}>
+    <DmRequestContext.Provider value={{ sendDmRequest, getPendingForUser, respondToRequest, hasSentPendingRequest, setupSubscriptionForUser }}>
       {children}
     </DmRequestContext.Provider>
   )
@@ -228,5 +229,5 @@ export function useDmRequests() {
 export function useSetupDmRequestSubscription() {
   const context = useContext(DmRequestContext)
   if (!context) throw new Error('useSetupDmRequestSubscription must be used within DmRequestProvider')
-  return (context as any).setupSubscriptionForUser
+  return context.setupSubscriptionForUser
 }

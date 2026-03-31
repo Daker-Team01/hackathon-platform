@@ -44,6 +44,7 @@ const ACTIVITY_RULES: Record<EventType, ActivityRule> = {
   invite_send: { weight: 6, category: 'engagement' },
   invite_cancel: { weight: -2, category: 'engagement' },
   team_member_kick: { weight: 2, category: 'engagement' },
+  team_member_role_update: { weight: 3, category: 'engagement', dailyCapPoints: 12 },
   team_notice_send: { weight: 5, category: 'engagement' },
   team_recruit_toggle: { weight: 3, category: 'intent', dailyCapPoints: 12 },
   api_error: { weight: 0, category: 'neutral' },
