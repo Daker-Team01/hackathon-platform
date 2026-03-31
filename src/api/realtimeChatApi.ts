@@ -352,33 +352,23 @@ export const addChatMember = async (
   nickname: string
 ) => {
   try {
+    const joinedAt = new Date().toISOString()
+
     const { data, error } = await supabase
       .from("chat_members")
-      .insert({
+      .upsert({
         room_id: roomId,
         user_id: userId,
         nickname,
+        joined_at: joinedAt,
         is_active: true
+      }, {
+        onConflict: "room_id,user_id"
       })
       .select()
       .single()
 
-    if (error) {
-      // Unique 제약으로 이미 있는 경우 업데이트
-      if (error.code === "23505") {
-        const { data: updateData, error: updateError } = await supabase
-          .from("chat_members")
-          .update({ is_active: true, joined_at: new Date().toISOString() })
-          .eq("room_id", roomId)
-          .eq("user_id", userId)
-          .select()
-          .single()
-
-        if (updateError) throw updateError
-        return updateData
-      }
-      throw error
-    }
+    if (error) throw error
     return data
   } catch (error) {
     console.error("Failed to add chat member:", error)
@@ -464,15 +454,21 @@ export const addTeamMembersToChatRoom = async (
   members: Array<{ userId: string; userName: string }>
 ) => {
   try {
+    const joinedAt = new Date().toISOString()
+
     const { error } = await supabase
       .from("chat_members")
-      .insert(
+      .upsert(
         members.map((member) => ({
           room_id: roomId,
           user_id: member.userId,
           nickname: member.userName,
+          joined_at: joinedAt,
           is_active: true
-        }))
+        })),
+        {
+          onConflict: "room_id,user_id"
+        }
       )
 
     if (error) throw error
