@@ -405,29 +405,40 @@ export default function AnalyticsRevamp() {
   }, [hourlyUsageData])
 
   const popularHackathonsTop3 = useMemo(() => {
-    const stats: Record<string, { title: string; views: number; joins: number }> = {}
+    const stats: Record<
+      string,
+      { title: string; viewerIds: Set<string>; anonymousViews: number; joins: number }
+    > = {}
 
     hackathons.forEach((hackathon) => {
       stats[hackathon.slug] = {
         title: hackathon.title,
-        views: 0,
+        viewerIds: new Set<string>(),
+        anonymousViews: 0,
         joins: 0
       }
     })
 
     dbLogs.forEach((log) => {
       if (!stats[log.target_id]) return
-      if (log.action_type === 'hackathon_view') stats[log.target_id].views += 1
+      if (log.action_type === 'hackathon_view') {
+        if (log.user_id) {
+          stats[log.target_id].viewerIds.add(log.user_id)
+        } else {
+          stats[log.target_id].anonymousViews += 1
+        }
+      }
       if (log.action_type === 'hackathon_join') stats[log.target_id].joins += 1
     })
 
     return Object.entries(stats)
       .map(([slug, item]) => {
-        const conversion = item.views > 0 ? (item.joins / item.views) * 100 : item.joins > 0 ? 100 : 0
+        const views = item.viewerIds.size + item.anonymousViews
+        const conversion = views > 0 ? (item.joins / views) * 100 : item.joins > 0 ? 100 : 0
         return {
           slug,
           title: item.title,
-          views: item.views,
+          views,
           joins: item.joins,
           conversion: Math.round(conversion)
         }
@@ -925,7 +936,7 @@ export default function AnalyticsRevamp() {
                 <div key={item.slug} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="font-bold text-slate-900 text-sm">#{index + 1} {item.title}</div>
-                    <Badge className="bg-emerald-100 text-emerald-700 border-0">전환률 {item.conversion}%</Badge>
+                    <Badge className="bg-emerald-100 text-emerald-700 border-0">전환율 {item.conversion}%</Badge>
                   </div>
                   <div className="text-xs text-slate-500 font-semibold">
                     조회 {item.views.toLocaleString()} · 참가 {item.joins.toLocaleString()}
@@ -941,10 +952,15 @@ export default function AnalyticsRevamp() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
         <Card className="p-8 border-0 shadow-xl bg-white rounded-3xl">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <Hash className="w-5 h-5 text-purple-500" />
-            해커톤 기술 태그
-          </h3>
+          <div className="mb-3">
+            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Hash className="w-5 h-5 text-purple-500" />
+              해커톤 기술 태그
+            </h3>
+            <p className="text-xs text-slate-500 mt-2">
+              해커톤 공고에 언급된 기술들을 한눈에 확인하세요.
+            </p>
+          </div>
           <div className="space-y-5">
             {hackathonTagStats.map((tag) => (
               <div key={tag.name}>
@@ -961,10 +977,15 @@ export default function AnalyticsRevamp() {
         </Card>
 
         <Card className="p-8 border-0 shadow-xl bg-white rounded-3xl">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <Activity className="w-5 h-5 text-cyan-500" />
-            인기 기술 스택
-          </h3>
+          <div className="mb-3">
+            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-cyan-500" />
+              인기 기술 스택
+            </h3>
+            <p className="text-xs text-slate-500 mt-2">
+              참여자들이 가장 많이 사용하는 기술 스택을 살펴보세요.
+            </p>
+          </div>
           <div className="space-y-5">
             {userTechStackStats.map((tech) => (
               <div key={tech.name}>
