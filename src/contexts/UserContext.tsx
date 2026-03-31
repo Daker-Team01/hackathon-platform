@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import userDummyData from '../data/user_dummy_v2.json'
 import { useChat } from './ChatContext'
+import { supabase } from '../lib/supabase'
+import { calculateActivityScore } from '../lib/activityScore'
+import type { EventLog } from '../types/log'
 
 export type UserParticipation = {
   hackathonSlug: string
@@ -293,6 +296,73 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // initializeChatData는 컨텍스트 렌더마다 참조가 바뀔 수 있어 최초 복원 시점에만 실행
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (!user?.id) return
+
+    let cancelled = false
+    const currentUserId = user.id
+
+    async function syncActivityScore() {
+      const pageSize = 1000
+      const maxLogs = 10000
+      const activityLogs: EventLog[] = []
+      let from = 0
+
+      while (activityLogs.length < maxLogs) {
+        const remaining = maxLogs - activityLogs.length
+        const currentPageSize = Math.min(pageSize, remaining)
+        const { data, error } = await supabase
+          .from('user_logs')
+          .select('*')
+          .eq('user_id', currentUserId)
+          .order('created_at', { ascending: false })
+          .range(from, from + currentPageSize - 1)
+
+        if (error) {
+          console.error('Failed to sync user activity score:', error)
+          return
+        }
+
+        const rows = (data || []) as EventLog[]
+        activityLogs.push(...rows)
+
+        if (rows.length < currentPageSize) {
+          break
+        }
+
+        from += currentPageSize
+      }
+
+      if (cancelled) return
+
+      const nextActivityScore = calculateActivityScore(activityLogs)
+
+      setUser((currentUser) => {
+        if (!currentUser || currentUser.id !== currentUserId) {
+          return currentUser
+        }
+
+        if (Math.abs(currentUser.activityScore - nextActivityScore) < 0.001) {
+          return currentUser
+        }
+
+        const updatedUser = {
+          ...currentUser,
+          activityScore: nextActivityScore
+        }
+
+        saveUserToStorage(updatedUser)
+        return updatedUser
+      })
+    }
+
+    void syncActivityScore()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 
   const login = (username: string, password: string): boolean => {
     const identifier = username.trim().toLowerCase()

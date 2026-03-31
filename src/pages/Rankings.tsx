@@ -10,6 +10,11 @@ import { allUsers, useUser } from '../contexts/UserContext'
 import { normalizedHackathons as hackathonData } from '../lib/hackathonData'
 import { useDmRequests } from '../contexts/DmRequestContext'
 import { useChat } from '../contexts/ChatContext'
+import { supabase } from '../lib/supabase'
+import { buildActivityScoreMap } from '../lib/activityScore'
+import { ALL_TECH_STACK_OPTIONS } from '../lib/userProfileOptions'
+import type { EventLog } from '../types/log'
+import type { UserWorkStyle } from '../contexts/UserContext'
 
 interface RankingUser {
   rank: number
@@ -24,6 +29,7 @@ interface RankingUser {
   techStack: string[]
   personalityTags: string[]
   preferredRoles: string[]
+  workStyle: UserWorkStyle
 }
 
 interface RankingData {
@@ -33,6 +39,11 @@ interface RankingData {
 }
 
 const AVATARS = ["👑", "🧙", "🥷", "🤖", "🦸", "🎯", "🚀", "💡", "⚡", "🔥"]
+const WORK_STYLE_LABELS: Record<string, string> = {
+  high: '높음',
+  medium: '보통',
+  low: '낮음'
+}
 
 const PAGE_SIZE = 10
 const FILTER_SHOW_LIMIT = 8
@@ -191,6 +202,30 @@ function UserInfoModal({ user, open, onClose }: { user: RankingUser | null; open
             </div>
           </div>
 
+          <div>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">협업 스타일</div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
+                <div className="text-[11px] text-slate-500 mb-1">소통</div>
+                <div className="text-sm font-bold text-slate-900">
+                  {WORK_STYLE_LABELS[user.workStyle.communication] ?? user.workStyle.communication}
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
+                <div className="text-[11px] text-slate-500 mb-1">리더십</div>
+                <div className="text-sm font-bold text-slate-900">
+                  {WORK_STYLE_LABELS[user.workStyle.leadership] ?? user.workStyle.leadership}
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center">
+                <div className="text-[11px] text-slate-500 mb-1">실행력</div>
+                <div className="text-sm font-bold text-slate-900">
+                  {WORK_STYLE_LABELS[user.workStyle.execution] ?? user.workStyle.execution}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* 선호 역할 */}
           {user.preferredRoles.length > 0 && (
             <div>
@@ -289,11 +324,7 @@ export default function Rankings() {
   const totalHackathons = hackathonData.length
 
   /* ─── 필터 옵션 (빈도순) ─── */
-  const allTechStacks = useMemo(() => {
-    const counts = new Map<string, number>()
-    allUsers.forEach((u) => u.techStack.forEach((s) => counts.set(s, (counts.get(s) ?? 0) + 1)))
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([s]) => s)
-  }, [])
+  const allTechStacks = ALL_TECH_STACK_OPTIONS
 
   const allPersonalityTags = useMemo(() => {
     const counts = new Map<string, number>()
@@ -321,39 +352,97 @@ export default function Rankings() {
   }
 
   useEffect(() => {
-    try {
-      setError(null)
+    let cancelled = false
 
-      const sorted = [...allUsers].sort((a, b) => {
-        if (b.points !== a.points) return b.points - a.points
-        return b.reputation - a.reputation
-      })
+    async function loadRankingData() {
+      try {
+        setError(null)
 
-      const toEntry = (user: typeof sorted[0], index: number, pointMultiplier: number): RankingUser => ({
-        rank: index + 1,
-        id: user.id,
-        userId: user.userId,
-        nickname: user.nickname,
-        points: Math.floor(user.points * pointMultiplier),
-        reputation: user.reputation,
-        activityScore: user.activityScore,
-        primaryRole: user.preferredRoles[0] ?? user.techStack[0] ?? '참여자',
-        avatar: AVATARS[index % AVATARS.length],
-        techStack: user.techStack,
-        personalityTags: user.personalityTags,
-        preferredRoles: user.preferredRoles,
-      })
+        const pageSize = 1000
+        const maxLogs = 20000
+        const allLogs: EventLog[] = []
+        let from = 0
 
-      const data: RankingData = {
-        all:    sorted.map((u, i) => toEntry(u, i, 1)),
-        days30: sorted.map((u, i) => toEntry(u, i, 0.6)),
-        days7:  sorted.map((u, i) => toEntry(u, i, 0.3)),
+        while (allLogs.length < maxLogs) {
+          const remaining = maxLogs - allLogs.length
+          const currentPageSize = Math.min(pageSize, remaining)
+          const { data, error } = await supabase
+            .from('user_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .range(from, from + currentPageSize - 1)
+
+          if (error) {
+            throw error
+          }
+
+          const rows = (data || []) as EventLog[]
+          allLogs.push(...rows)
+
+          if (rows.length < currentPageSize) {
+            break
+          }
+
+          from += currentPageSize
+        }
+
+        if (cancelled) return
+
+        const activityScoreAll = buildActivityScoreMap(allUsers, allLogs)
+        const activityScore30 = buildActivityScoreMap(allUsers, allLogs, 30)
+        const activityScore7 = buildActivityScoreMap(allUsers, allLogs, 7)
+
+        const sorted = [...allUsers].sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points
+
+          const activityGap = (activityScoreAll.get(b.id) ?? b.activityScore) - (activityScoreAll.get(a.id) ?? a.activityScore)
+          if (Math.abs(activityGap) > 0.0001) return activityGap
+
+          return b.reputation - a.reputation
+        })
+
+        const toEntry = (
+          user: typeof sorted[0],
+          index: number,
+          pointMultiplier: number,
+          activityScoreMap: Map<string, number>
+        ): RankingUser => ({
+          rank: index + 1,
+          id: user.id,
+          userId: user.userId,
+          nickname: user.nickname,
+          points: Math.floor(user.points * pointMultiplier),
+          reputation: user.reputation,
+          activityScore: activityScoreMap.get(user.id) ?? activityScoreMap.get(user.userId) ?? user.activityScore,
+          primaryRole: user.preferredRoles[0] ?? user.techStack[0] ?? '참여자',
+          avatar: AVATARS[index % AVATARS.length],
+          techStack: user.techStack,
+          personalityTags: user.personalityTags,
+          preferredRoles: user.preferredRoles,
+          workStyle: user.workStyle,
+        })
+
+        const data: RankingData = {
+          all: sorted.map((u, i) => toEntry(u, i, 1, activityScoreAll)),
+          days30: sorted.map((u, i) => toEntry(u, i, 0.6, activityScore30)),
+          days7: sorted.map((u, i) => toEntry(u, i, 0.3, activityScore7)),
+        }
+
+        if (cancelled) return
+
+        setRankingData(data)
+        setVisibleCount(PAGE_SIZE)
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : '랭킹 데이터를 불러오는 중 오류가 발생했습니다.')
+        }
       }
+    }
 
-      setRankingData(data)
-      setVisibleCount(PAGE_SIZE)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '랭킹 데이터를 불러오는 중 오류가 발생했습니다.')
+    void loadRankingData()
+
+    return () => {
+      cancelled = true
     }
   }, [])
 
