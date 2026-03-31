@@ -172,6 +172,8 @@ export default function Camp() {
       return
     }
 
+    const selectedTeamCreatedAt = selectedTeam.createdAt
+
     let cancelled = false
 
     async function fetchTeamInteractionLogs() {
@@ -179,7 +181,7 @@ export default function Camp() {
         .from('user_logs')
         .select('*')
         .in('user_id', selectedTeamMemberIds)
-        .gte('created_at', selectedTeam.createdAt)
+        .gte('created_at', selectedTeamCreatedAt)
         .order('created_at', { ascending: false })
         .limit(1000)
 

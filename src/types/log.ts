@@ -27,6 +27,7 @@ export type EventType =
   | 'invite_send'
   | 'invite_cancel'
   | 'team_member_kick'
+  | 'team_member_role_update'
   | 'team_notice_send'
   | 'team_recruit_toggle'
   | 'api_error'

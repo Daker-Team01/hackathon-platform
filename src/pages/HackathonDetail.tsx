@@ -1,8 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMemo, useEffect, useRef, useState } from 'react'
 import { 
-  Calendar, MapPin, Users, Trophy, Clock, Award, 
-  Target, CheckCircle, ArrowLeft, Heart, Share2, Info
+  Calendar, MapPin, Users, Trophy, ArrowLeft, Heart, Share2, Info
 } from "lucide-react"
 
 import Overview from '../features/Overview'
@@ -44,9 +43,7 @@ export default function HackathonDetail() {
   const { recordEvent } = useLog()
   const { user } = useUser()
   const hasLoggedView = useRef(false)
-  const [activeSection, setActiveSection] = useState<string>('overview')
   const [isInterested, setIsInterested] = useState(false)
-  const [heroImageLoadFailed, setHeroImageLoadFailed] = useState(false)
 
   const hackathon = useMemo(() => {
     const hackathons = getHackathonsFromStorage()
@@ -67,10 +64,6 @@ export default function HackathonDetail() {
     }
     setIsInterested(isHackathonInterested(user.id, hackathon.slug))
   }, [hackathon, user])
-
-  useEffect(() => {
-    setHeroImageLoadFailed(false)
-  }, [hackathon?.slug])
 
   if (!slug || !hackathon) {
     return (
@@ -206,7 +199,6 @@ export default function HackathonDetail() {
 
       {/* Tabs Section */}
       <Tabs defaultValue="overview" className="space-y-8" onValueChange={(value) => {
-        setActiveSection(value)
         recordEvent('tab_view', 'hackathon', hackathon.slug, { tab: value })
       }}>
         <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md py-4 border-b border-gray-100">

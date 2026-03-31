@@ -70,11 +70,6 @@ const sourceTypeOptions: Array<{ value: DocType; label: string; icon: typeof Use
   { value: 'user', label: '나와 맞는 팀 찾기', icon: UserRound },
 ]
 
-const formatList = (values?: string[]) => {
-  if (!values || values.length === 0) return '없음'
-  return values.join(', ')
-}
-
 function InfoBlock({
   label,
   value,
