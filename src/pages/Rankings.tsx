@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
 import { useNavigate } from 'react-router-dom'
-import { Trophy, Medal, Award, TrendingUp, Star, Crown, ArrowLeft, Users, Zap, Search, X, ChevronDown, ChevronUp, MessageCircle } from "lucide-react"
+import { Trophy, Medal, Award, TrendingUp, Star, Crown, ArrowLeft, Users, Zap, Search, X, ChevronDown, ChevronUp, MessageCircle, Flame } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import { useChat } from '../contexts/ChatContext'
 import { supabase } from '../lib/supabase'
 import { buildActivityScoreMap } from '../lib/activityScore'
 import { ALL_TECH_STACK_OPTIONS } from '../lib/userProfileOptions'
+import { getUserCollaborationTemperature } from '../lib/collaborationTemperature'
 import type { EventLog } from '../types/log'
 import type { UserWorkStyle } from '../contexts/UserContext'
 
@@ -137,6 +138,7 @@ function UserInfoModal({ user, open, onClose }: { user: RankingUser | null; open
   if (!user) return null
 
   const activityPct = Math.round(user.activityScore * 100)
+  const collaborationTemperature = getUserCollaborationTemperature(user.userId || user.id)
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -177,10 +179,10 @@ function UserInfoModal({ user, open, onClose }: { user: RankingUser | null; open
             </div>
             <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
               <div className="flex items-center justify-center gap-0.5 text-lg font-black text-gray-900">
-                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                {user.reputation.toFixed(1)}
+                <Flame className="w-4 h-4 text-orange-500" />
+                {collaborationTemperature.temperature.toFixed(1)}°C
               </div>
-              <div className="text-xs text-gray-500 mt-0.5">평판</div>
+              <div className="text-xs text-gray-500 mt-0.5">협업 온도</div>
             </div>
             <div className="bg-green-50 rounded-xl p-3 text-center border border-green-100">
               <div className="text-lg font-black text-gray-900">{activityPct}점</div>
