@@ -5,7 +5,7 @@ export type TeamRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELED'
 export interface TeamMember {
   userId: string;
   userName: string;
-  role: 'LEADER' | 'MEMBER';
+  role: string | null;
   joinedAt: string;
 }
 

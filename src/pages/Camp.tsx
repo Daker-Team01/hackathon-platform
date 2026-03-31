@@ -478,10 +478,16 @@ export default function Camp() {
       </div>
 
       {effectiveIsLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-64 bg-gray-50 rounded-3xl animate-pulse" />
-          ))}
+        <div className="space-y-6">
+          <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <span className="h-4 w-4 rounded-full border-2 border-slate-300 border-t-slate-600 animate-spin" />
+            <span>팀 목록을 불러오는 중입니다...</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-64 bg-gray-50 rounded-3xl animate-pulse" />
+            ))}
+          </div>
         </div>
       ) : hasLoadError ? (
         <Card className="p-12 text-center bg-red-50 border-red-100">
@@ -669,12 +675,17 @@ export default function Camp() {
                     {selectedTeam.members.map((member) => (
                       <div key={member.userId} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
                         <div>
-                          <p className="font-semibold text-gray-900">{member.userName}</p>
+                          <p className="font-semibold text-gray-900 flex items-center gap-2">
+                            <span>{member.userName}</span>
+                            {member.userId === selectedTeam.leaderId && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">팀장</span>
+                            )}
+                          </p>
                           <p className="text-xs text-gray-500">{member.userId}</p>
                         </div>
                         <div className="text-right">
                           <Badge variant="secondary" className="mb-1">
-                            {member.role === 'LEADER' ? '팀장' : '팀원'}
+                            {member.role || '미지정'}
                           </Badge>
                           <p className="text-xs text-gray-500">
                             참여일: {new Date(member.joinedAt).toLocaleDateString()}
@@ -763,7 +774,7 @@ export default function Camp() {
         </DialogContent>
       </Dialog>
 
-      {!isLoading && !hasLoadError && (teams?.length || 0) === 0 && (
+      {!effectiveIsLoading && !hasLoadError && sourceTeams.length === 0 && (
         <div className="text-center py-32 bg-gray-50/50 border-2 border-dashed border-gray-100 rounded-[3rem]">
           <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 mb-2">모집 중인 팀이 없습니다.</h3>
@@ -777,7 +788,7 @@ export default function Camp() {
         </div>
       )}
 
-      {!isLoading && !hasLoadError && (teams?.length || 0) > 0 && filteredTeams.length === 0 && (
+      {!effectiveIsLoading && !hasLoadError && sourceTeams.length > 0 && filteredTeams.length === 0 && (
         <div className="text-center py-32 bg-gray-50/50 border-2 border-dashed border-gray-100 rounded-[3rem]">
           <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 mb-2">조건에 맞는 팀이 없습니다.</h3>

@@ -7,12 +7,46 @@ import {
   useTeamInvites,
   useCancelInvite,
   useRespondToTeamRequest,
-  useTeamRequestsByTeam
+  useTeamRequestsByTeam,
+  useUpdateMemberRole
 } from '../hooks/useTeams';
 import { useUser, allUsers } from '../contexts/UserContext';
 import { useEffect, useState } from 'react';
 import { useLog } from '../contexts/LogContext';
 import { Button } from '../components/ui/button';
+
+const DEFAULT_ROLE_OPTIONS = [
+  '기획',
+  'PM',
+  '프론트엔드',
+  '백엔드',
+  '디자이너',
+  'AI/ML',
+  '데이터 분석',
+  'DevOps',
+  '모바일',
+  '풀스택',
+  'QA'
+];
+
+const getAllRoleOptions = (): string[] => {
+  const existingRoles = allUsers.flatMap(u => 
+    Array.isArray(u.preferredRoles) ? u.preferredRoles : []
+  );
+  const allOptions = new Set([...DEFAULT_ROLE_OPTIONS, ...existingRoles]);
+  return Array.from(allOptions).sort();
+};
+
+const filterRoles = (options: string[], query: string, selected: string[]): string[] => {
+  const trimmedQuery = query.trim().toLowerCase();
+  const selectedSet = new Set(selected.map(item => item.toLowerCase()));
+  
+  return options.filter(option => {
+    if (selectedSet.has(option.toLowerCase())) return false;
+    if (!trimmedQuery) return true;
+    return option.toLowerCase().includes(trimmedQuery);
+  }).slice(0, 8);
+};
 
 export default function TeamManagement() {
   const { teamCode } = useParams<{ teamCode: string }>();
@@ -27,9 +61,13 @@ export default function TeamManagement() {
   const cancelInviteMutation = useCancelInvite();
   const respondToTeamRequestMutation = useRespondToTeamRequest();
   const noticeMutation = useSendTeamNotice();
+  const updateRoleMutation = useUpdateMemberRole();
 
   const [inviteUserName, setInviteUserName] = useState('');
   const [teamNotice, setTeamNotice] = useState('');
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [editingRole, setEditingRole] = useState('');
+  const [roleQuery, setRoleQuery] = useState('');
 
   useEffect(() => {
     if (!teamCode) return
@@ -65,6 +103,44 @@ export default function TeamManagement() {
         }
       );
     }
+  };
+
+  const handleUpdateRole = (userId: string, newRole: string) => {
+    if (!user?.userId) return;
+    if (!newRole.trim()) {
+      alert('역할을 입력해주세요.');
+      return;
+    }
+
+    updateRoleMutation.mutate(
+      {
+        teamCode: team.teamCode,
+        userId,
+        newRole: newRole.trim(),
+        updatedByUserId: user.userId
+      },
+      {
+        onSuccess: () => {
+          recordEvent('team_member_role_update', 'team', team.teamCode, {
+            userId,
+            newRole: newRole.trim()
+          })
+          setEditingMemberId(null);
+          setEditingRole('');
+          setRoleQuery('');
+          alert('역할을 변경했습니다.');
+        },
+        onError: (error) => {
+          recordEvent('api_error', 'team', team.teamCode, {
+            api: 'updateMemberRole',
+            action: 'team_member_role_update',
+            userId,
+            message: error instanceof Error ? error.message : 'unknown_error'
+          })
+          alert(error instanceof Error ? error.message : '역할 변경에 실패했습니다.');
+        }
+      }
+    );
   };
 
   const handleInvite = (e: React.FormEvent) => {
@@ -229,28 +305,179 @@ export default function TeamManagement() {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">팀원 목록 ({team.memberCount}명)</h2>
         <div className="grid gap-3">
-          {team.members?.map((member) => (
-            <div key={member.userId} className="border p-4 rounded-lg flex justify-between items-center bg-background">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold">{member.userName}</span>
-                  <span className="text-xs text-muted-foreground">({member.userId})</span>
+          {team.members?.map((member) => {
+            const isEditing = editingMemberId === member.userId;
+            const allRoleOptions = getAllRoleOptions();
+            const filteredRoles = filterRoles(allRoleOptions, roleQuery, []);
+            const defaultRoleButtonsToShow = DEFAULT_ROLE_OPTIONS.slice(0, 8);
+
+            return (
+              <div key={member.userId} className="border p-4 rounded-lg bg-background">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold">{member.userName}</span>
+                      <span className="text-xs text-muted-foreground">({member.userId})</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      합류일: {new Date(member.joinedAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                  {isLeader && !isEditing && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingMemberId(member.userId);
+                        setEditingRole(member.role ?? '');
+                        setRoleQuery('');
+                      }}
+                    >
+                      역할 변경
+                    </Button>
+                  )}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {member.role === 'LEADER' ? '👑 팀장' : '멤버'} | 합류일: {new Date(member.joinedAt).toLocaleDateString()}
-                </div>
+
+                {isEditing ? (
+                  <div className="space-y-3 pt-3 border-t">
+                    <div>
+                      <label className="text-xs font-semibold text-gray-600 block mb-2">현재 역할</label>
+                      <div className="flex gap-2 flex-wrap mb-3">
+                        <button
+                          onClick={() => {
+                            setEditingRole('');
+                            setRoleQuery('');
+                          }}
+                          style={{
+                            padding: '6px 10px',
+                            border: '2px solid #0891b2',
+                            backgroundColor: '#cffafe',
+                            color: '#155e75',
+                            borderRadius: 999,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {editingRole || member.role || '미지정'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <input
+                        type="text"
+                        value={roleQuery}
+                        onChange={(e) => setRoleQuery(e.target.value)}
+                        placeholder="역할 검색"
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          fontSize: 12,
+                          border: '1px solid #d1d5db',
+                          borderRadius: 8,
+                          backgroundColor: '#ffffff'
+                        }}
+                      />
+                    </div>
+
+                    {roleQuery.trim().length > 0 ? (
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {filteredRoles.length > 0 ? (
+                          filteredRoles.map((role) => (
+                            <button
+                              key={`searched-role-${role}`}
+                              onClick={() => {
+                                setEditingRole(role);
+                                setRoleQuery('');
+                              }}
+                              style={{
+                                padding: '6px 10px',
+                                border: '1px solid #d1d5db',
+                                backgroundColor: '#ffffff',
+                                color: '#475569',
+                                borderRadius: 999,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {role}
+                            </button>
+                          ))
+                        ) : (
+                          <span style={{ fontSize: 12, color: '#94a3b8' }}>검색 결과가 없습니다.</span>
+                        )}
+                      </div>
+                    ) : null}
+
+                    <div>
+                      <label className="text-xs font-semibold text-gray-600 block mb-2">추천 역할</label>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {defaultRoleButtonsToShow.map((role) => (
+                          <button
+                            key={role}
+                            onClick={() => {
+                              setEditingRole(role);
+                              setRoleQuery('');
+                            }}
+                            style={{
+                              padding: '6px 10px',
+                              border: editingRole === role ? '2px solid #0891b2' : '1px solid #d1d5db',
+                              backgroundColor: editingRole === role ? '#cffafe' : '#ffffff',
+                              color: editingRole === role ? '#155e75' : '#475569',
+                              borderRadius: 999,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {role}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleUpdateRole(member.userId, editingRole)}
+                        disabled={updateRoleMutation.isPending || !editingRole?.trim()}
+                      >
+                        {updateRoleMutation.isPending ? '저장 중...' : '저장'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingMemberId(null);
+                          setEditingRole('');
+                          setRoleQuery('');
+                        }}
+                      >
+                        취소
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between pt-2">
+                    <div>
+                      <span className="text-sm font-medium">역할: {member.role || '미지정'}</span>
+                    </div>
+                    {isLeader && member.userId !== team.leaderId && (
+                      <Button 
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleKick(member.userId)}
+                      >
+                        내보내기
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
-              {isLeader && member.role !== 'LEADER' && (
-                <Button 
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleKick(member.userId)}
-                >
-                  내보내기
-                </Button>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

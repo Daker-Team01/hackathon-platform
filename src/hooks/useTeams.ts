@@ -19,7 +19,8 @@ import {
   getTeamRequestsByTeam,
   getTeamRequestsForUser,
   getPendingTeamRequestsForLeader,
-  respondToTeamRequest
+  respondToTeamRequest,
+  updateMemberRole
 } from "../api/teamApi"
 import type { Team, TeamInvite, TeamRequest } from "../types/team"
 import { useLog } from "../contexts/LogContext"
@@ -241,6 +242,18 @@ export const useRespondToTeamRequest = () => {
       queryClient.invalidateQueries({ queryKey: ["teamRequests", "user", data.requesterUserId] })
       queryClient.invalidateQueries({ queryKey: ["teams"] })
       queryClient.invalidateQueries({ queryKey: ["team", data.teamId] })
+    }
+  })
+}
+
+export const useUpdateMemberRole = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ teamCode, userId, newRole, updatedByUserId }: { teamCode: string; userId: string; newRole: string; updatedByUserId: string }) =>
+      updateMemberRole(teamCode, userId, newRole, updatedByUserId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["teams"] })
+      queryClient.invalidateQueries({ queryKey: ["team", variables.teamCode] })
     }
   })
 }
