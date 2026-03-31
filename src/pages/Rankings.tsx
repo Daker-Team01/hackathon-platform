@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
 import { useNavigate } from 'react-router-dom'
-import { Trophy, Medal, Award, TrendingUp, Star, Crown, ArrowLeft, Users, Zap, Search, X, ChevronDown, ChevronUp, MessageCircle, Flame } from "lucide-react"
+import { Trophy, Medal, Award, TrendingUp, Crown, ArrowLeft, Users, Zap, Search, X, ChevronDown, ChevronUp, MessageCircle, Flame } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,7 @@ interface RankingUser {
   nickname: string
   points: number
   reputation: number
+  collaborationTemperature: number
   activityScore: number
   primaryRole: string
   avatar?: string
@@ -415,6 +416,7 @@ export default function Rankings() {
           nickname: user.nickname,
           points: Math.floor(user.points * pointMultiplier),
           reputation: user.reputation,
+          collaborationTemperature: getUserCollaborationTemperature(user.userId || user.id).temperature,
           activityScore: activityScoreMap.get(user.id) ?? activityScoreMap.get(user.userId) ?? user.activityScore,
           primaryRole: user.preferredRoles[0] ?? user.techStack[0] ?? '참여자',
           avatar: AVATARS[index % AVATARS.length],
@@ -757,7 +759,7 @@ export default function Rankings() {
                             </span>
                             <div className="flex gap-2 text-xs text-gray-400 justify-center">
                               <span className="flex items-center gap-0.5">
-                                <Star className="w-3 h-3 text-yellow-400" />{user.reputation.toFixed(1)}
+                                <Flame className="w-3 h-3 text-orange-500" />{user.collaborationTemperature.toFixed(1)}°C
                               </span>
                               <span className="flex items-center gap-0.5">
                                 <TrendingUp className="w-3 h-3 text-green-500" />{Math.round(user.activityScore * 100)}점
@@ -789,7 +791,7 @@ export default function Rankings() {
                         {user.primaryRole}
                       </Badge>
                       <span className="flex items-center gap-0.5 text-xs text-gray-400 flex-shrink-0">
-                        <Star className="w-3 h-3 text-yellow-400" />{user.reputation.toFixed(1)}
+                        <Flame className="w-3 h-3 text-orange-500" />{user.collaborationTemperature.toFixed(1)}°C
                       </span>
                       <span className="text-sm font-bold text-gray-700 w-20 text-right flex-shrink-0">
                         {user.points.toLocaleString()} <span className="text-xs font-normal text-gray-400">pts</span>
