@@ -6,9 +6,13 @@ const MIN_SHARED_DURATION_MS = 24 * 60 * 60 * 1000
 export const BASE_TEMPERATURE = 36.5
 export const TEMPERATURE_DELTA_PER_SCORE = 1.0 // 점수 3 기준, 1점 차이 = ±1°C
 // Score 5 → 38.5°C, Score 4 → 37.5°C, Score 3 → 36.5°C, Score 2 → 35.5°C, Score 1 → 34.5°C
+export const MIN_TEMPERATURE = 18.0
+export const MAX_TEMPERATURE = 99.9
 
-export const scoreToTemperature = (avgScore: number): number =>
-  Math.round((BASE_TEMPERATURE + (avgScore - 3) * TEMPERATURE_DELTA_PER_SCORE) * 10) / 10
+export const scoreToTemperature = (avgScore: number): number => {
+  const raw = BASE_TEMPERATURE + (avgScore - 3) * TEMPERATURE_DELTA_PER_SCORE
+  return Math.round(Math.min(MAX_TEMPERATURE, Math.max(MIN_TEMPERATURE, raw)) * 10) / 10
+}
 
 const COLLABORATION_INTERACTION_ACTIONS = new Set([
   'team_create',

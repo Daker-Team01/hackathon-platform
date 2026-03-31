@@ -306,9 +306,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       if (isStale()) return
 
-      // 각 채팅방의 메시지 실시간 구독
+      // 각 채팅방의 메시지 실시간 구독 (이미 구독 중인 방은 건너뜀)
       rooms.forEach((room) => {
         if (isStale()) return
+        if (unsubscribeMapRef.current.has(room.id)) return
         const unsubscribeMessages = subscribeToRoomMessages(
           room.id,
           (message) => {
