@@ -123,10 +123,17 @@ export default function Navbar({
       if (!myMembership) return
 
       const existing = mergedByTeamCode.get(team.teamCode)
+      const resolvedRole =
+        (typeof myMembership.role === 'string' && myMembership.role.trim().length > 0
+          ? myMembership.role.trim()
+          : '') ||
+        (existing?.role?.trim() || '') ||
+        (team.leaderId === user.userId ? '팀장' : '팀원')
+
       mergedByTeamCode.set(team.teamCode, {
         hackathonSlug: existing?.hackathonSlug || team.hackathonSlug || '',
         teamCode: team.teamCode,
-        role: existing?.role || (team.leaderId === user.userId ? '팀장' : '팀원'),
+        role: resolvedRole,
         isLeader: existing?.isLeader ?? (team.leaderId === user.userId),
         contributionScore: existing?.contributionScore ?? 0,
         status: existing?.status ?? 'ongoing'
