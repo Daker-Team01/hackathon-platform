@@ -35,14 +35,6 @@ export default function ChatPanel({ open, onClose }: Props) {
     }
   }, [])
 
-  // 패널이 열릴 때 현재 DM 방을 읽음 처리
-  useEffect(() => {
-    if (!open) return
-    if (selectedRoomId && supabaseRoomIds.has(selectedRoomId)) {
-      markRoomSeen(selectedRoomId)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
   const [panelHeight, setPanelHeight] = useState(760)
   const [panelRight, setPanelRight] = useState(20)
   const [panelBottom, setPanelBottom] = useState(20)
@@ -152,6 +144,15 @@ export default function ChatPanel({ open, onClose }: Props) {
   const safeSelectedRoomId = selectedRoomId && allowedRoomIds.includes(selectedRoomId)
     ? selectedRoomId
     : fallbackRoomId
+
+  // 패널이 열려 있는 동안 현재 선택(또는 자동 선택)된 Supabase 방을 항상 읽음 처리
+  useEffect(() => {
+    if (!open) return
+    if (!safeSelectedRoomId) return
+    if (!supabaseRoomIds.has(safeSelectedRoomId)) return
+    markRoomSeen(safeSelectedRoomId)
+  }, [markRoomSeen, open, safeSelectedRoomId, supabaseRoomIds])
+
   const selectedSupabaseRoom = safeSelectedRoomId
     ? supabaseRooms.find((room) => room.id === safeSelectedRoomId)
     : undefined
