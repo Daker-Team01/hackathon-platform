@@ -131,11 +131,12 @@ const normalizeTeam = (team: Record<string, unknown>): Team => {
   const members: TeamMember[] = rawMembers.map((member) => {
     const m = (member && typeof member === "object") ? (member as Record<string, unknown>) : {}
     const userId = typeof m.userId === "string" ? m.userId : ""
+    const dbRole = typeof m.role === "string" ? m.role : null
 
     return {
       userId,
       userName: typeof m.userName === "string" ? m.userName : getNicknameByUserId(userId),
-      role: (m.role === 'LEADER' || m.role === 'MEMBER') ? m.role : (userId === leaderId ? 'LEADER' : 'MEMBER'),
+      role: dbRole,
       joinedAt: typeof m.joinedAt === "string"
         ? m.joinedAt
         : (typeof team.createdAt === "string" ? team.createdAt : new Date().toISOString())
@@ -411,7 +412,7 @@ export const createTeam = async (
     members: [{
       userId: team.leaderId,
       userName: leaderName || getNicknameByUserId(team.leaderId),
-      role: 'LEADER',
+      role: null,
       joinedAt: nowIso
     }],
     ...teamData
@@ -853,7 +854,7 @@ export const respondToTeamRequest = async (
       const newMember: TeamMember = {
         userId: request.requesterUserId,
         userName: request.requesterUserName,
-        role: 'MEMBER',
+        role: null,
         joinedAt: new Date().toISOString()
       }
 
@@ -1022,7 +1023,7 @@ export const respondToInvite = async (inviteId: string, status: 'ACCEPTED' | 'RE
         const newMember: TeamMember = {
           userId: updatedInvite.invitedUserId,
           userName: updatedInvite.invitedUserName,
-          role: 'MEMBER',
+          role: null,
           joinedAt: new Date().toISOString()
         }
 
@@ -1076,6 +1077,7 @@ export const respondToInvite = async (inviteId: string, status: 'ACCEPTED' | 'RE
 export const kickMember = async (teamCode: string, userId: string): Promise<Team> => {
   const team = await getTeamByCodeFromDb(teamCode)
   if (!team) throw new Error("Team not found")
+  if (team.leaderId === userId) throw new Error("팀장은 내보낼 수 없습니다.")
 
   const kickedMember = team.members.find((m) => m.userId === userId)
   team.members = team.members.filter(m => m.userId !== userId)
@@ -1123,4 +1125,34 @@ export const sendTeamNotice = async (teamCode: string, senderId: string, content
       await sendSystemMessage(room.id, message)
     })
   )
+}
+
+export const updateMemberRole = async (teamCode: string, userId: string, newRole: string, updatedByUserId: string): Promise<Team> => {
+  const team = await getTeamByCodeFromDb(teamCode)
+  if (!team) throw new Error('Team not found')
+
+  // 팀장만 역할 변경 가능
+  if (team.leaderId !== updatedByUserId) throw new Error('팀장만 팀원의 역할을 변경할 수 있습니다.')
+
+  // 해당 팀원 찾기
+  const memberToUpdate = team.members.find(m => m.userId === userId)
+  if (!memberToUpdate) throw new Error('Team member not found')
+
+  // members 배열 업데이트
+  const updatedMembers = team.members.map(m => 
+    m.userId === userId ? { ...m, role: newRole } : m
+  )
+
+  // Supabase에 업데이트
+  const { data, error } = await supabase
+    .from('teams')
+    .update({ members: updatedMembers })
+    .eq('team_code', teamCode)
+    .select()
+    .single()
+
+  if (error) throw error
+  if (!data) throw new Error('Failed to update member role')
+
+  return normalizeTeam(data)
 }

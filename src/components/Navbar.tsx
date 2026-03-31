@@ -126,8 +126,8 @@ export default function Navbar({
       mergedByTeamCode.set(team.teamCode, {
         hackathonSlug: existing?.hackathonSlug || team.hackathonSlug || '',
         teamCode: team.teamCode,
-        role: existing?.role || (myMembership.role === 'LEADER' ? '팀장' : '팀원'),
-        isLeader: existing?.isLeader ?? (myMembership.role === 'LEADER' || team.leaderId === user.userId),
+        role: existing?.role || (team.leaderId === user.userId ? '팀장' : '팀원'),
+        isLeader: existing?.isLeader ?? (team.leaderId === user.userId),
         contributionScore: existing?.contributionScore ?? 0,
         status: existing?.status ?? 'ongoing'
       })
