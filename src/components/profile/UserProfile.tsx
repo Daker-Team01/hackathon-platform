@@ -3,6 +3,8 @@ import { useUser, type UserWorkStyle } from '../../contexts/UserContext'
 import { router } from '../../router/router'
 import usersData from '../../data/user_dummy_v2.json'
 import { useTeams } from '../../hooks/useTeams'
+import { ALL_TECH_STACK_OPTIONS, TECH_STACK_OPTIONS, buildSearchOptions, normalizeStringArray } from '../../lib/userProfileOptions'
+import { getUserCollaborationTemperature } from '../../lib/collaborationTemperature'
 
 type Props = {
   activePanel?: 'teams' | 'interests' | null
@@ -17,30 +19,6 @@ const PERSONALITY_TAGS_OPTIONS = [
   '열정적',
   '독립적',
   '협력적'
-]
-
-const TECH_STACK_OPTIONS = [
-  'React',
-  'Vue',
-  'Angular',
-  'TypeScript',
-  'Python',
-  'Java',
-  'Node.js',
-  'Django',
-  'FastAPI',
-  'PyTorch',
-  'NLP',
-  'PostgreSQL',
-  'MongoDB',
-  'GraphQL',
-  'Docker',
-  'AWS',
-  'GCP',
-  'Kubernetes',
-  'UI/UX',
-  'Mobile',
-  'DevOps'
 ]
 
 const PREFERRED_ROLE_OPTIONS = [
@@ -75,29 +53,6 @@ const WORK_STYLE_LABELS: Record<string, string> = {
   high: '높음'
 }
 
-const normalizeStringArray = (value: unknown): string[] => {
-  if (Array.isArray(value)) {
-    return value
-      .filter((item): item is string => typeof item === 'string')
-      .map((item) => item.trim())
-      .filter(Boolean)
-  }
-
-  if (typeof value === 'string') {
-    return value
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
-  }
-
-  return []
-}
-
-const buildSearchOptions = (values: string[]) =>
-  Array.from(
-    new Map(values.map((value) => [value.trim().toLowerCase(), value.trim()])).values()
-  ).filter(Boolean)
-
 const ALL_ROLE_OPTIONS = buildSearchOptions([
   ...PREFERRED_ROLE_OPTIONS,
   ...usersData.flatMap((user) => normalizeStringArray(user.preferredRoles)),
@@ -106,11 +61,6 @@ const ALL_ROLE_OPTIONS = buildSearchOptions([
 const ALL_PERSONALITY_TAG_OPTIONS = buildSearchOptions([
   ...PERSONALITY_TAGS_OPTIONS,
   ...usersData.flatMap((user) => normalizeStringArray(user.personalityTags)),
-])
-
-const ALL_TECH_STACK_OPTIONS = buildSearchOptions([
-  ...TECH_STACK_OPTIONS,
-  ...usersData.flatMap((user) => normalizeStringArray(user.skills)),
 ])
 
 const filterOptions = (options: string[], query: string, selected: string[]) => {
@@ -164,6 +114,7 @@ export default function UserProfile({ activePanel = null, onOpenPanel }: Props) 
     return (localParticipation?.status ?? 'ongoing') === 'ongoing'
   }).length
   const activityPercent = Math.round(user.activityScore * 100)
+  const collaborationTemperature = getUserCollaborationTemperature(user.userId || user.id)
   const filteredRoleOptions = filterOptions(ALL_ROLE_OPTIONS, roleQuery, editData.preferredRoles).slice(0, 8)
   const filteredPersonalityOptions = filterOptions(
     ALL_PERSONALITY_TAG_OPTIONS,
@@ -403,9 +354,9 @@ export default function UserProfile({ activePanel = null, onOpenPanel }: Props) 
             textAlign: 'center'
           }}
         >
-          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>평판</p>
+          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>협업 온도</p>
           <p style={{ margin: '4px 0 0 0', fontSize: 16, fontWeight: 700, color: '#4f46e5' }}>
-            {user.reputation.toFixed(1)} / 5.0
+            {`${collaborationTemperature.temperature.toFixed(1)}°C`}
           </p>
         </div>
         <div

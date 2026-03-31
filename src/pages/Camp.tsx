@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams, useNavigate, Link } from "react-router-dom"
 import { 
   Users, MessageSquare, Plus, ArrowLeft, Filter, 
-  Settings, Edit, Lock, Unlock, ExternalLink, Shield
+  Settings, Edit, Lock, Unlock, ExternalLink, Shield, Flame
 } from "lucide-react"
 
 import {
@@ -16,6 +16,7 @@ import {
 } from "../hooks/useTeams"
 import { useUser } from "../contexts/UserContext"
 import { useLog } from "../contexts/LogContext"
+import { supabase } from "../lib/supabase"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -27,6 +28,13 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
+import type { EventLog } from "../types/log"
+import type { TeamMember } from "../types/team"
+import {
+  getCollaborationEligibility,
+  getUserCollaborationTemperature,
+  saveCollaborationTemperatureReview
+} from "../lib/collaborationTemperature"
 
 export default function Camp() {
   const navigate = useNavigate()
@@ -62,6 +70,10 @@ export default function Camp() {
   const mutation = useUpdateTeam()
   const createTeamRequestMutation = useCreateTeamRequest()
   const cancelTeamRequestMutation = useCancelTeamRequest()
+  const [teamInteractionLogs, setTeamInteractionLogs] = useState<EventLog[]>([])
+  const [selectedReviewMember, setSelectedReviewMember] = useState<TeamMember | null>(null)
+  const [reviewScore, setReviewScore] = useState(0)
+  const [reviewError, setReviewError] = useState('')
 
   const hackathonTitleMap = useMemo(
     () => new Map(normalizedHackathons.map((hackathon) => [hackathon.slug, hackathon.title] as const)),
@@ -73,6 +85,15 @@ export default function Camp() {
   )
 
   const selectedTeam = selectedTeamDetail || teams?.find((team) => team.teamCode === selectedTeamCode)
+  const selectedTeamMemberIds = useMemo(() => {
+    if (!selectedTeam) return []
+
+    return Array.from(new Set([selectedTeam.leaderId, ...selectedTeam.members.map((member) => member.userId)].filter(Boolean)))
+  }, [selectedTeam])
+  const currentSelectedTeamMember = useMemo(() => {
+    if (!selectedTeam || !currentUserId) return null
+    return selectedTeam.members.find((member) => member.userId === currentUserId) ?? null
+  }, [currentUserId, selectedTeam])
   const selectedTeamHackathonStatus = selectedTeam?.hackathonSlug
     ? normalizedHackathons.find((hackathon) => hackathon.slug === selectedTeam.hackathonSlug)?.status
     : undefined
@@ -143,6 +164,99 @@ export default function Camp() {
   const getHackathonLabel = (hackathonSlug?: string) => {
     if (!hackathonSlug) return "일반 프로젝트"
     return hackathonTitleMap.get(hackathonSlug) || hackathonSlug
+  }
+
+  useEffect(() => {
+    if (!selectedTeam || selectedTeamMemberIds.length === 0) {
+      setTeamInteractionLogs([])
+      return
+    }
+
+    let cancelled = false
+
+    async function fetchTeamInteractionLogs() {
+      const { data, error } = await supabase
+        .from('user_logs')
+        .select('*')
+        .in('user_id', selectedTeamMemberIds)
+        .gte('created_at', selectedTeam.createdAt)
+        .order('created_at', { ascending: false })
+        .limit(1000)
+
+      if (error) {
+        console.error('Failed to fetch team interaction logs:', error)
+        if (!cancelled) {
+          setTeamInteractionLogs([])
+        }
+        return
+      }
+
+      if (!cancelled) {
+        setTeamInteractionLogs((data || []) as EventLog[])
+      }
+    }
+
+    void fetchTeamInteractionLogs()
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedTeam, selectedTeamMemberIds])
+
+  const getMemberCollaborationEligibility = (member: TeamMember) => {
+    if (!selectedTeam) {
+      return { canReview: false, reason: '팀 정보를 찾을 수 없습니다.' }
+    }
+
+    if (!isSelectedTeamMember) {
+      return { canReview: false, reason: '소속된 팀원만 협업 온도를 평가할 수 있습니다.' }
+    }
+
+    return getCollaborationEligibility({
+      reviewerUserId: currentUserId,
+      revieweeUserId: member.userId,
+      teamCode: selectedTeam.teamCode,
+      teamCreatedAt: selectedTeam.createdAt,
+      reviewerJoinedAt: currentSelectedTeamMember?.joinedAt ?? selectedTeam.createdAt,
+      revieweeJoinedAt: member.joinedAt,
+      interactionLogs: teamInteractionLogs
+    })
+  }
+
+  const handleOpenCollaborationReview = (member: TeamMember) => {
+    setSelectedReviewMember(member)
+    setReviewScore(0)
+    setReviewError('')
+  }
+
+  const handleSubmitCollaborationReview = () => {
+    if (!selectedTeam || !selectedReviewMember || !currentUserId) return
+    if (reviewScore < 1 || reviewScore > 5) {
+      setReviewError('협업 온도 점수를 선택해주세요.')
+      return
+    }
+
+    const eligibility = getMemberCollaborationEligibility(selectedReviewMember)
+    if (!eligibility.canReview) {
+      setReviewError(eligibility.reason)
+      return
+    }
+
+    try {
+      saveCollaborationTemperatureReview({
+        reviewerUserId: currentUserId,
+        revieweeUserId: selectedReviewMember.userId,
+        teamCode: selectedTeam.teamCode,
+        score: reviewScore,
+        createdAt: new Date().toISOString()
+      })
+      setSelectedReviewMember(null)
+      setReviewScore(0)
+      setReviewError('')
+      window.alert('협업 온도 평가를 저장했습니다.')
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : '협업 온도 평가 저장에 실패했습니다.')
+    }
   }
 
   useEffect(() => {
@@ -672,27 +786,76 @@ export default function Camp() {
                 <h4 className="text-sm font-bold text-gray-500 mb-2">팀원 목록</h4>
                 {selectedTeam.members.length > 0 ? (
                   <div className="space-y-2">
-                    {selectedTeam.members.map((member) => (
-                      <div key={member.userId} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
-                        <div>
-                          <p className="font-semibold text-gray-900 flex items-center gap-2">
-                            <span>{member.userName}</span>
-                            {member.userId === selectedTeam.leaderId && (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">팀장</span>
-                            )}
-                          </p>
-                          <p className="text-xs text-gray-500">{member.userId}</p>
+                    {selectedTeam.members.map((member) => {
+                      const collaborationTemperature = getUserCollaborationTemperature(member.userId)
+                      const eligibility = getMemberCollaborationEligibility(member)
+
+                      return (
+                      <div key={member.userId} className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+                        {/* 상단: 이름 + 역할 */}
+                        <div className="flex items-center justify-between px-4 py-3 gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-100 to-blue-200 flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-bold text-indigo-700">
+                                {member.userName.charAt(0)}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 flex items-center gap-1.5">
+                                {member.userName}
+                                {member.userId === selectedTeam.leaderId && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">팀장</span>
+                                )}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-0.5">{member.userId}</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge variant="secondary" className="text-xs">{member.role || '미지정'}</Badge>
+                            <p className="text-[11px] text-gray-400">참여일: {new Date(member.joinedAt).toLocaleDateString()}</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <Badge variant="secondary" className="mb-1">
-                            {member.role || '미지정'}
-                          </Badge>
-                          <p className="text-xs text-gray-500">
-                            참여일: {new Date(member.joinedAt).toLocaleDateString()}
-                          </p>
-                        </div>
+
+                        {/* 하단: 협업 온도 + 평가 버튼 (내가 소속된 팀원이고, 본인 제외) */}
+                        {isSelectedTeamMember && member.userId !== currentUserId ? (
+                          <div className="border-t border-gray-100 bg-gray-50/60 px-4 py-2.5 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                                collaborationTemperature.temperature >= 37.5
+                                  ? 'bg-orange-100 text-orange-600'
+                                  : collaborationTemperature.temperature >= 36.5
+                                  ? 'bg-blue-50 text-blue-500'
+                                  : 'bg-gray-100 text-gray-500'
+                              }`}>
+                                <Flame className={`w-3 h-3 flex-shrink-0 ${collaborationTemperature.reviewCount === 0 ? 'opacity-40' : ''}`} />
+                                {`${collaborationTemperature.temperature.toFixed(1)}°C`}
+                                {collaborationTemperature.reviewCount === 0 && (
+                                  <span className="font-normal opacity-60 ml-0.5">(미평가)</span>
+                                )}
+                              </div>
+                              {user && !eligibility.canReview ? (
+                                <span className="text-[11px] text-gray-400 whitespace-nowrap truncate">{eligibility.reason}</span>
+                              ) : null}
+                            </div>
+                            {user ? (
+                              <Button
+                                size="sm"
+                                disabled={!eligibility.canReview}
+                                onClick={() => handleOpenCollaborationReview(member)}
+                                className={`h-7 rounded-full text-xs px-3 flex-shrink-0 ${
+                                  eligibility.canReview
+                                    ? 'bg-orange-500 hover:bg-orange-600 text-white border-0'
+                                    : 'bg-white text-gray-400 border border-gray-200'
+                                }`}
+                              >
+                                <Flame className="w-3 h-3 mr-1" />
+                                협업 평가
+                              </Button>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </div>
-                    ))}
+                    )})}
                   </div>
                 ) : (
                   <p className="text-sm text-gray-400 italic">아직 등록된 팀원이 없습니다.</p>
@@ -771,6 +934,59 @@ export default function Camp() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedReviewMember} onOpenChange={(isOpen) => (!isOpen ? setSelectedReviewMember(null) : undefined)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flame className="w-5 h-5 text-orange-500" />
+              협업 온도 평가
+            </DialogTitle>
+            <DialogDescription>
+              {selectedReviewMember
+                ? `${selectedReviewMember.userName}님과의 실제 협업 경험을 기준으로 평가해주세요.`
+                : '협업 온도를 평가합니다.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-5 gap-2">
+              {[1, 2, 3, 4, 5].map((score) => (
+                <Button
+                  key={score}
+                  type="button"
+                  variant={reviewScore === score ? 'default' : 'outline'}
+                  onClick={() => {
+                    setReviewScore(score)
+                    setReviewError('')
+                  }}
+                  className="rounded-xl"
+                >
+                  {score}점
+                </Button>
+              ))}
+            </div>
+
+            <div className="rounded-xl bg-orange-50 border border-orange-100 px-4 py-3 text-xs text-orange-700 space-y-1">
+              <p>평가는 실제 같은 팀 경험, 24시간 이상 협업, 팀 활동 로그가 있을 때만 가능합니다.</p>
+              <p>한 사용자는 다른 사용자를 한 번만 평가할 수 있습니다.</p>
+            </div>
+
+            {reviewError ? (
+              <p className="text-sm text-red-500">{reviewError}</p>
+            ) : null}
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSelectedReviewMember(null)}>
+                취소
+              </Button>
+              <Button onClick={handleSubmitCollaborationReview}>
+                평가 저장
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
