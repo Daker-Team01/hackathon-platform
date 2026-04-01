@@ -236,6 +236,7 @@ export const getChatbotAction = (userMessage: string): ChatbotAction | undefined
 
 // ─── OpenAI ──────────────────────────────────────────────────────────────────
 const OPENAI_CHAT_FUNCTION = 'openai-chat'
+const OPENAI_PERSONAL_ANALYSIS_FUNCTION = 'openai-personal-analytics'
 const OPENAI_CHATBOT_MODEL = 'gpt-4o-mini'
 const OPENAI_CHATBOT_FALLBACK_NOTICE = '현재 OpenAI 챗봇 응답이 불가능해 기본 답변 모드로 동작 중입니다. (API 키/모델 설정 확인 필요)'
 const OPENAI_PERSONAL_ANALYSIS_MODEL = 'gpt-4o-mini'
@@ -262,6 +263,20 @@ const invokeOpenAIChatCompletion = async (payload: OpenAIChatRequest): Promise<s
 
   if (error) {
     console.warn('OpenAI Edge Function invoke failed:', error)
+    return null
+  }
+
+  const content = (data as { content?: unknown } | null)?.content
+  return typeof content === 'string' && content.trim() ? content.trim() : null
+}
+
+const invokeOpenAIPersonalAnalyticsCompletion = async (payload: OpenAIChatRequest): Promise<string | null> => {
+  const { data, error } = await supabase.functions.invoke(OPENAI_PERSONAL_ANALYSIS_FUNCTION, {
+    body: payload,
+  })
+
+  if (error) {
+    console.warn('OpenAI personal analytics Edge Function invoke failed:', error)
     return null
   }
 
@@ -731,7 +746,7 @@ export const generatePersonalAnalyticsWithFallback = async (
   ].join('\n')
 
   try {
-    const content = await invokeOpenAIChatCompletion({
+    const content = await invokeOpenAIPersonalAnalyticsCompletion({
       model: OPENAI_PERSONAL_ANALYSIS_MODEL,
       temperature: 0.35,
       max_tokens: 900,
