@@ -70,7 +70,7 @@ const formatList = (values: string[]) => (values.length > 0 ? values.join(', ') 
 const toVectorString = (values: number[]) => `[${values.join(',')}]`
 
 const embedText = async (text: string): Promise<number[]> => {
-  const apiKey = Deno.env.get('OPENAI_API_KEY') ?? Deno.env.get('VITE_OPENAI_API_KEY')
+  const apiKey = Deno.env.get('OPENAI_API_KEY')
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is required')
   }
