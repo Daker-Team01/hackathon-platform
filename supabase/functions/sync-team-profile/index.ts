@@ -69,8 +69,8 @@ const formatList = (values: string[]) => (values.length > 0 ? values.join(', ') 
 
 const toVectorString = (values: number[]) => `[${values.join(',')}]`
 
-const embedText = async (text: string, apiKeyOverride?: string | null): Promise<number[]> => {
-  const apiKey = apiKeyOverride ?? Deno.env.get('OPENAI_API_KEY') ?? Deno.env.get('VITE_OPENAI_API_KEY')
+const embedText = async (text: string): Promise<number[]> => {
+  const apiKey = Deno.env.get('OPENAI_API_KEY')
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is required')
   }
@@ -153,7 +153,7 @@ const buildTeamProfileDocument = async (team: TeamRow, apiKeyOverride?: string |
     `Context: ${formatList(profile.context.map((item) => item.trim()).filter(Boolean))}`,
   ].join(' | ')
 
-  const embedding = await embedText(`passage: ${content}`, apiKeyOverride)
+  const embedding = await embedText(`passage: ${content}`)
 
   return {
     id: await deterministicId('team', sourceId),
@@ -186,10 +186,9 @@ Deno.serve(async (request) => {
   }
 
   try {
-    const { teamCode, action, openAIApiKey } = await request.json() as { teamCode?: unknown; action?: unknown; openAIApiKey?: unknown }
+    const { teamCode, action } = await request.json() as { teamCode?: unknown; action?: unknown }
     const normalizedTeamCode = ensureString(teamCode)
     const normalizedAction = action === 'delete' ? 'delete' : action === 'upsert' ? 'upsert' : null
-    const normalizedOpenAIApiKey = ensureString(openAIApiKey)
 
     if (!normalizedTeamCode || !normalizedAction) {
       return new Response(JSON.stringify({ error: 'teamCode and action are required' }), {
@@ -222,7 +221,7 @@ Deno.serve(async (request) => {
 
     if (error) throw error
 
-    const document = await buildTeamProfileDocument(data as TeamRow, normalizedOpenAIApiKey)
+    const document = await buildTeamProfileDocument(data as TeamRow)
 
     const { error: upsertError } = await supabase
       .from('profile_documents')

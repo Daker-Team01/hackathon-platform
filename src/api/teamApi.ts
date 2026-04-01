@@ -25,7 +25,6 @@ type HackathonSnapshot = {
   }
 }
 const TEAM_PROFILE_SYNC_FUNCTION = "sync-team-profile"
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined
 
 type TeamProfileSyncAction = 'upsert' | 'delete'
 
@@ -90,7 +89,6 @@ const syncTeamProfileDocument = async (teamCode: string, action: TeamProfileSync
     body: {
       teamCode,
       action,
-      openAIApiKey: OPENAI_API_KEY,
     },
   })
 
