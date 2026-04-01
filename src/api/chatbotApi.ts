@@ -238,9 +238,9 @@ export const getChatbotAction = (userMessage: string): ChatbotAction | undefined
 const OPENAI_CHAT_FUNCTION = 'openai-chat'
 const OPENAI_PERSONAL_ANALYSIS_FUNCTION = 'openai-personal-analytics'
 const OPENAI_CHATBOT_MODEL = 'gpt-4o-mini'
-const OPENAI_CHATBOT_FALLBACK_NOTICE = '현재 OpenAI 챗봇 응답이 불가능해 기본 답변 모드로 동작 중입니다. (API 키/모델 설정 확인 필요)'
+const OPENAI_CHATBOT_FALLBACK_NOTICE = '현재 기본 답변 모드로 동작 중입니다'
 const OPENAI_PERSONAL_ANALYSIS_MODEL = 'gpt-4o-mini'
-const OPENAI_PERSONAL_ANALYSIS_FALLBACK_NOTICE = '현재 OpenAI 개인 분석 응답이 불가능해 기본 분석 모드로 동작 중입니다. (API 키/모델 설정 확인 필요)'
+const OPENAI_PERSONAL_ANALYSIS_FALLBACK_NOTICE = '현재 기본 답변 모드로 동작 중입니다'
 const OPENAI_STACK_REASON_MODEL = 'gpt-4o-mini'
 
 type OpenAIChatMessage = {
