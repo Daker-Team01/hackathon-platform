@@ -205,26 +205,18 @@ const parseHackathonsFromStorage = (): HackathonSnapshot[] => {
   }
 }
 
-const isEndedHackathon = (hackathon: HackathonSnapshot, nowMs: number) => {
+const isEndedHackathon = (hackathon: HackathonSnapshot) => {
   if (hackathon.status === 'ended') return true
-
-  const endAt = hackathon.period?.endAt
-  if (!endAt) return false
-
-  const endMs = Date.parse(endAt)
-  if (Number.isNaN(endMs)) return false
-
-  return endMs < nowMs
+  return false
 }
 
 const getEndedHackathonSlugSet = (): Set<string> => {
   const storedHackathons = parseHackathonsFromStorage()
   const source = storedHackathons.length > 0 ? storedHackathons : normalizedHackathons
-  const nowMs = Date.now()
 
   return new Set(
     source
-      .filter((hackathon) => isEndedHackathon(hackathon, nowMs))
+      .filter((hackathon) => isEndedHackathon(hackathon))
       .map((hackathon) => hackathon.slug)
   )
 }

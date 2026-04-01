@@ -38,6 +38,10 @@ export default function CampEdit() {
   const { user } = useUser()
   const { data: team, isLoading } = useTeam(teamCode || "")
   const hackathons = useMemo(() => getHackathonsFromStorage(), [])
+  const selectableHackathons = useMemo(
+    () => hackathons.filter((hackathon) => hackathon.status !== "ended"),
+    [hackathons]
+  )
   const updateMutation = useUpdateTeam()
   const deleteMutation = useDeleteTeam()
   const hasAlerted = useRef(false)
@@ -231,7 +235,7 @@ export default function CampEdit() {
                   className={inputClasses}
                 >
                   <option value="none">해커톤 미지정</option>
-                  {hackathons?.map((h) => (
+                  {selectableHackathons.map((h) => (
                     <option key={h.slug} value={h.slug}>
                       {h.title}
                     </option>
