@@ -1,3 +1,6 @@
+
+
+
 # InsighThon
 
 ![React](https://img.shields.io/badge/React-18-blue)
@@ -9,6 +12,9 @@
 > 해커톤 탐색, 팀 빌딩, 실시간 채팅, 분석/추천, AI 매칭 기능을 제공하는 웹 플랫폼
 
 ---
+
+<img width="1920" height="1080" alt="데이커 해커톤 피피티- 최종솔루션ppt" src="https://github.com/user-attachments/assets/f3c75d3f-b6b5-4801-8b1d-6c269b13a546" />
+
 
 ## 📌 프로젝트 개요
 
